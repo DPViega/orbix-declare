@@ -30,6 +30,7 @@ Sem back-end, o app roda em **modo demonstração**, com os mesmos dados dos moc
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 - [Telas e rotas](#telas-e-rotas)
 - [Como o front fala com o back-end](#como-o-front-fala-com-o-back-end)
+- [Idiomas (PT / EN)](#idiomas-pt--en)
 - [Estrutura de pastas](#estrutura-de-pastas)
 - [Scripts](#scripts)
 - [Deploy](#deploy)
@@ -83,6 +84,7 @@ Todas as telas seguem os mockups em [`docs/`](docs/), nos temas claro e escuro. 
 
 | # | Tela do mockup | Rota | Acesso |
 |---|---|---|---|
+| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | primeira entrada na aba, por cima de qualquer rota exceto `/v/*` | — |
 | 01 | Login | `/login` | público |
 | 02 | Sincronização | `/sincronizacao` | logado |
 | 03 | Carteiras | `/carteiras` | logado |
@@ -115,7 +117,24 @@ Tela  ──►  api.*  (src/lib/api/index.ts)
 - **Uma única porta de entrada.** Nenhuma tela chama `fetch` direto; todas usam `api.*`. Para integrar, basta configurar `NEXT_PUBLIC_API_URL`, sem mudar nenhuma tela.
 - **Contrato tipado.** Os formatos de request e response estão em [`src/lib/api/types.ts`](src/lib/api/types.ts) e as rotas em [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
 - **Login com carteira (Sign-In With Solana).** O front pede um nonce, a carteira assina a mensagem e o back-end valida a assinatura e devolve um token. O front nunca decide se o login é válido. Ver [`src/lib/wallet-login.ts`](src/lib/wallet-login.ts).
-- **Erros.** O back-end responde `{ "error": { "code", "message" } }` com a mensagem em português, e o front mostra essa mensagem ao usuário. Um `401` encerra a sessão e leva ao login.
+- **Erros.** O back-end responde `{ "error": { "code", "message" } }` com a mensagem no idioma pedido, e o front mostra essa mensagem ao usuário. Um `401` encerra a sessão e leva ao login.
+- **Idioma.** Toda requisição leva `Accept-Language` (`pt-BR` ou `en-US`); os textos que vêm do back-end devem respeitar esse header (detalhes em [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md)).
+
+## Idiomas (PT / EN)
+
+A interface inteira existe em **português** e **inglês**. O seletor PT | EN fica no login, na barra lateral, em Configurações, na tela de sincronização e na página pública de verificação.
+
+| Peça | Arquivo |
+|---|---|
+| Textos (fonte da verdade em português) | [`src/lib/i18n/messages/pt.ts`](src/lib/i18n/messages/pt.ts) |
+| Textos em inglês (mesmas chaves; o TypeScript acusa qualquer texto faltando) | [`src/lib/i18n/messages/en.ts`](src/lib/i18n/messages/en.ts) |
+| Hook `useI18n()` → `{ t, locale, setLocale }` | [`src/lib/i18n/index.tsx`](src/lib/i18n/index.tsx) |
+| Idioma no servidor (títulos da aba, `<html lang>`) | [`src/lib/i18n/server.ts`](src/lib/i18n/server.ts) |
+
+- **Como o idioma é escolhido:** cookie `orbix.locale` (gravado pelo seletor); sem cookie, o idioma do navegador (`Accept-Language`: `pt*` → português, o resto → inglês). O servidor já renderiza no idioma certo, sem piscar.
+- **Números e datas** seguem o idioma (`R$ 28.940,13` / `R$28,940.13`, `30/09/2026` / `Sep 30, 2026`), mas os valores continuam **em reais** e no **fuso de Brasília**: é o que vale para o fisco.
+- **Ficam em português nos dois idiomas:** o CSV oficial do relatório (vai para a Receita) e os nomes próprios do fisco (DeCripto, PTAX, DARF, LGPD), com uma explicação curta no texto em inglês.
+- **Novo texto na interface:** adicione a chave em `pt.ts` e em `en.ts` e use `t.secao.chave` no componente.
 
 ## Estrutura de pastas
 
@@ -195,6 +214,8 @@ Se alguém pedir para fazer uma dessas coisas do back-end aqui, a resposta é n�
 
 ## Documentação adicional
 
+- [`docs/BRAND_GUIDE.md`](docs/BRAND_GUIDE.md): paleta, tipografia, cores da marca e comportamento visual do login.
+
 - [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md): todas as rotas que o front chama, com exemplos de JSON, autenticação, CORS e erros. **Comece por aqui se você é do back-end.**
 - [`docs/RELATORIO_DESENVOLVIMENTO.md`](docs/RELATORIO_DESENVOLVIMENTO.md): como o front foi construído, decisões, verificação feita, limitações conhecidas e próximos passos.
 - [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md): mapa da arquitetura, fluxos (login, sincronização, verificação) e onde mexer para cada tipo de mudança.
@@ -214,6 +235,7 @@ escrito pela equipe durante o período do evento (14/09–12/10/2026). Partimos 
 | @solana/web3.js | 1.99 | MIT | tipos e chave pública Solana |
 | @phosphor-icons/react | 2.1 | MIT | ícones |
 | next-themes | 0.4 | MIT | tema claro/escuro |
+| three | 0.186 | MIT | logo 3D da abertura e planeta do login (carregado sob demanda) |
 | bs58 | 6.0 | MIT | codificar a assinatura |
 | Fontes Outfit, DM Sans, JetBrains Mono | — | SIL OFL 1.1 | via `next/font/google` |
 

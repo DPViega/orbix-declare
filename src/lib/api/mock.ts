@@ -8,6 +8,9 @@
  *
  * Nenhum cálculo fiscal "de verdade" acontece aqui: os números são os do mockup, escalados
  * para os outros meses. O motor fiscal é responsabilidade do back-end.
+ *
+ * Textos que viriam do back-end (etapas da sincronização, respostas do agente, erros) seguem o
+ * idioma da interface, como o back-end real deve fazer a partir do header Accept-Language.
  */
 import { ApiError } from "./client";
 import type {
@@ -31,13 +34,16 @@ import type {
 } from "./types";
 import { reportToCsv, sha256Hex } from "@/lib/report-file";
 import { explorerTxUrl } from "@/lib/config";
-import { monthLabel, monthSlash, previousMonthKey } from "@/lib/format";
+import { formatBRL, formatDate, monthLabel, monthName, previousMonthKey } from "@/lib/format";
+import { getLocale } from "@/lib/i18n/locale";
+
+/** Texto no idioma atual da interface. */
+const tr = (pt: string, en: string) => (getLocale() === "en" ? en : pt);
 
 const wait = (ms = 380) => new Promise((r) => setTimeout(r, ms + Math.random() * 220));
 
 /** Data às 12:00 de Brasília (15:00 UTC) para não "virar o dia" em fuso nenhum do BR. */
-const day = (y: number, m: number, d: number, h = 15, min = 0) =>
-  new Date(Date.UTC(y, m - 1, d, h, min)).toISOString();
+const day = (y: number, m: number, d: number, h = 15, min = 0) => new Date(Date.UTC(y, m - 1, d, h, min)).toISOString();
 
 const DEMO_ADDRESS = "7xKp9mQ2vR4tLw8NcZ1bYd6HsJe5fGu3Hd83fQa";
 const FULL_TX = "5hN2vQpR8cW3mT7yLk4dZs1aFj6uBe9xGt2HnV8qKr3MwY5pC7oDiE4bUz1Xk9P";
@@ -57,7 +63,7 @@ let wallets: Wallet[] = [
     id: "w_sol_main",
     network: "solana",
     address: DEMO_ADDRESS,
-    label: "Principal",
+    label: "Principal|Main",
     isLogin: true,
     verifiedAt: day(2026, 9, 2, 13, 10),
     lastSyncAt: day(2026, 9, 30, 17, 32),
@@ -67,7 +73,7 @@ let wallets: Wallet[] = [
     id: "w_hl_perps",
     network: "hyperliquid",
     address: "0x4f2A8b1C9d3E7f6A5b2C1d0E9f8A7b6C5d4E9c1E",
-    label: "Trading de perps",
+    label: "Trading de perps|Perps trading",
     isLogin: false,
     verifiedAt: null,
     lastSyncAt: day(2026, 9, 30, 17, 35),
@@ -77,13 +83,19 @@ let wallets: Wallet[] = [
     id: "w_sol_reserve",
     network: "solana",
     address: "9bWeT3kR7pQ1mZ5xN8vC2yH6jL4fD0sA9gU3Lm4T",
-    label: "Reserva",
+    label: "Reserva|Reserve",
     isLogin: false,
     verifiedAt: null,
     lastSyncAt: day(2026, 9, 28, 12, 10),
     status: "synced",
   },
 ];
+
+/** Rótulos das carteiras de exemplo guardam "pt|en"; o usuário digita rótulos sem "|". */
+const localizeWallet = (w: Wallet): Wallet => {
+  const [pt, en] = w.label.split("|");
+  return en === undefined ? w : { ...w, label: tr(pt, en) };
+};
 
 /* ---------------- Dados-base (setembro/2026, idênticos ao mockup) ---------------- */
 
@@ -101,26 +113,151 @@ interface BaseEvent {
 }
 
 const BASE: BaseEvent[] = [
-  { d: 28, network: "solana", type: "swap", asset: "SOL → USDC", qty: 12.4, qtyAsset: "SOL", brl: 11284.0, hash: "4Zq8nV2xK9pR3sL7wY1cB5mT2k", ptax: 5.4128, cost: 9412.6 },
-  { d: 26, network: "hyperliquid", type: "perp", asset: "HYPE-PERP", qty: 150, qtyAsset: "HYPE", brl: 6912.5, hash: "0x9a3f7c2b5e8d1a4f6c3b9e2d7a5f8c1be41c", ptax: 5.4096, cost: 5980.0 },
-  { d: 25, network: "hyperliquid", type: "funding", asset: "USDC", qty: 18.42, qtyAsset: "USDC", brl: 99.83, hash: "0x1c7e4a9d2f6b8c3e5a1d7f9b2c4e6a8db208", ptax: 5.4096, cost: 0 },
-  { d: 21, network: "solana", type: "swap", asset: "JUP → SOL", qty: 2400, qtyAsset: "JUP", brl: 7416.0, hash: "2vRt6yH3kP9mW1qN5xC8bL4jZ7f8KpL", ptax: 5.3987, cost: 6524.4 },
-  { d: 17, network: "hyperliquid", type: "perp", asset: "HYPE-PERP", qty: 60, qtyAsset: "HYPE", brl: 2764.8, hash: "0x6d02b8e1f4a7c3d9e5b2a6f1c8d4e7b37f9a", ptax: 5.3915, cost: 2410.77 },
-  { d: 12, network: "solana", type: "swap", asset: "USDC → SOL", qty: 85, qtyAsset: "USDC", brl: 463.0, hash: "5mWc8tR2nK6pX4vB9yL1hQ7jF3dTz3Q", ptax: 5.4471, cost: 430.0 },
-  { d: 9, network: "solana", type: "swap", asset: "JUP → USDC", qty: 310, qtyAsset: "JUP", brl: null, hash: "2kLm7pV4xN1rT8cW5bQ9yH3jZ6fQw7R", ptax: 5.4302, cost: 801.6 },
+  {
+    d: 28,
+    network: "solana",
+    type: "swap",
+    asset: "SOL → USDC",
+    qty: 12.4,
+    qtyAsset: "SOL",
+    brl: 11284.0,
+    hash: "4Zq8nV2xK9pR3sL7wY1cB5mT2k",
+    ptax: 5.4128,
+    cost: 9412.6,
+  },
+  {
+    d: 26,
+    network: "hyperliquid",
+    type: "perp",
+    asset: "HYPE-PERP",
+    qty: 150,
+    qtyAsset: "HYPE",
+    brl: 6912.5,
+    hash: "0x9a3f7c2b5e8d1a4f6c3b9e2d7a5f8c1be41c",
+    ptax: 5.4096,
+    cost: 5980.0,
+  },
+  {
+    d: 25,
+    network: "hyperliquid",
+    type: "funding",
+    asset: "USDC",
+    qty: 18.42,
+    qtyAsset: "USDC",
+    brl: 99.83,
+    hash: "0x1c7e4a9d2f6b8c3e5a1d7f9b2c4e6a8db208",
+    ptax: 5.4096,
+    cost: 0,
+  },
+  {
+    d: 21,
+    network: "solana",
+    type: "swap",
+    asset: "JUP → SOL",
+    qty: 2400,
+    qtyAsset: "JUP",
+    brl: 7416.0,
+    hash: "2vRt6yH3kP9mW1qN5xC8bL4jZ7f8KpL",
+    ptax: 5.3987,
+    cost: 6524.4,
+  },
+  {
+    d: 17,
+    network: "hyperliquid",
+    type: "perp",
+    asset: "HYPE-PERP",
+    qty: 60,
+    qtyAsset: "HYPE",
+    brl: 2764.8,
+    hash: "0x6d02b8e1f4a7c3d9e5b2a6f1c8d4e7b37f9a",
+    ptax: 5.3915,
+    cost: 2410.77,
+  },
+  {
+    d: 12,
+    network: "solana",
+    type: "swap",
+    asset: "USDC → SOL",
+    qty: 85,
+    qtyAsset: "USDC",
+    brl: 463.0,
+    hash: "5mWc8tR2nK6pX4vB9yL1hQ7jF3dTz3Q",
+    ptax: 5.4471,
+    cost: 430.0,
+  },
+  {
+    d: 9,
+    network: "solana",
+    type: "swap",
+    asset: "JUP → USDC",
+    qty: 310,
+    qtyAsset: "JUP",
+    brl: null,
+    hash: "2kLm7pV4xN1rT8cW5bQ9yH3jZ6fQw7R",
+    ptax: 5.4302,
+    cost: 801.6,
+  },
 ];
 
 const BASE_TOTAL = 28940.13;
 
 /** Meses disponíveis, com o total (em R$) que cada um deve somar. */
-const MONTHS: { key: string; total: number; status: ReportSummary["status"]; updatedAt: string; events: number }[] = [
-  { key: "2026-10", total: 6214.9, status: "draft", updatedAt: day(2026, 9, 30, 17, 35), events: 4 },
-  { key: "2026-09", total: BASE_TOTAL, status: "final", updatedAt: day(2026, 10, 5, 13, 14), events: 7 },
-  { key: "2026-08", total: 41207.88, status: "final", updatedAt: day(2026, 9, 4), events: 12 },
-  { key: "2026-07", total: 19563.4, status: "final", updatedAt: day(2026, 8, 6), events: 9 },
-  { key: "2026-06", total: 36118.02, status: "final", updatedAt: day(2026, 7, 3), events: 14 },
-  { key: "2026-05", total: 12870.55, status: "final", updatedAt: day(2026, 6, 5), events: 6 },
-  { key: "2026-03", total: 52304.9, status: "final", updatedAt: day(2026, 4, 6), events: 18 },
+const MONTHS: {
+  key: string;
+  total: number;
+  status: ReportSummary["status"];
+  updatedAt: string;
+  events: number;
+}[] = [
+  {
+    key: "2026-10",
+    total: 6214.9,
+    status: "draft",
+    updatedAt: day(2026, 9, 30, 17, 35),
+    events: 4,
+  },
+  {
+    key: "2026-09",
+    total: BASE_TOTAL,
+    status: "final",
+    updatedAt: day(2026, 10, 5, 13, 14),
+    events: 7,
+  },
+  {
+    key: "2026-08",
+    total: 41207.88,
+    status: "final",
+    updatedAt: day(2026, 9, 4),
+    events: 12,
+  },
+  {
+    key: "2026-07",
+    total: 19563.4,
+    status: "final",
+    updatedAt: day(2026, 8, 6),
+    events: 9,
+  },
+  {
+    key: "2026-06",
+    total: 36118.02,
+    status: "final",
+    updatedAt: day(2026, 7, 3),
+    events: 14,
+  },
+  {
+    key: "2026-05",
+    total: 12870.55,
+    status: "final",
+    updatedAt: day(2026, 6, 5),
+    events: 6,
+  },
+  {
+    key: "2026-03",
+    total: 52304.9,
+    status: "final",
+    updatedAt: day(2026, 4, 6),
+    events: 18,
+  },
 ];
 
 /** Preços manuais informados pelo usuário (id do evento → preço unitário em R$). */
@@ -128,7 +265,7 @@ const manualPrices = new Map<string, number>();
 
 function monthInfo(key: string) {
   const m = MONTHS.find((x) => x.key === key);
-  if (!m) throw new ApiError("Não há dados para este mês.", 404, "month_not_found");
+  if (!m) throw new ApiError(tr("Não há dados para este mês.", "There's no data for this month."), 404, "month_not_found");
   return m;
 }
 
@@ -201,7 +338,13 @@ function totals(rows: ReportRow[]) {
 async function buildReport(key: string): Promise<ReportDetail> {
   const info = monthInfo(key);
   const rows = rowsFor(key);
-  const report: ReportDetail = { month: key, status: info.status, totals: totals(rows), rows, attestation: null };
+  const report: ReportDetail = {
+    month: key,
+    status: info.status,
+    totals: totals(rows),
+    rows,
+    attestation: null,
+  };
   if (info.status === "final") {
     const hash = await sha256Hex(reportToCsv(report));
     const sig = key === "2026-09" ? FULL_TX : `${FULL_TX.slice(0, 40)}${hash.slice(0, 23)}`;
@@ -238,15 +381,18 @@ export const mockApi = {
       nonce,
       expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
       message: [
-        "orbixdeclare.com quer que você entre com sua conta Solana:",
+        tr("orbixdeclare.com quer que você entre com sua conta Solana:", "orbixdeclare.com wants you to sign in with your Solana account:"),
         address,
         "",
-        "Entrar no Orbix Declare. Esta assinatura não envia transações nem move fundos.",
+        tr(
+          "Entrar no Orbix Declare. Esta assinatura não envia transações nem move fundos.",
+          "Sign in to Orbix Declare. This signature sends no transactions and moves no funds.",
+        ),
         "",
         "URI: https://orbixdeclare.com",
-        "Versão: 1",
+        `${tr("Versão", "Version")}: 1`,
         `Nonce: ${nonce}`,
-        `Emitido em: ${issuedAt}`,
+        `${tr("Emitido em", "Issued At")}: ${issuedAt}`,
       ].join("\n"),
     };
   },
@@ -257,7 +403,11 @@ export const mockApi = {
       user = { ...user, address: req.address };
       wallets = wallets.map((w) => (w.isLogin ? { ...w, address: req.address, verifiedAt: new Date().toISOString() } : w));
     }
-    return { token: `demo.${Date.now()}`, expiresAt: new Date(Date.now() + 86_400_000).toISOString(), user };
+    return {
+      token: `demo.${Date.now()}`,
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+      user,
+    };
   },
 
   async me(): Promise<User> {
@@ -273,47 +423,68 @@ export const mockApi = {
 
   async listWallets(): Promise<Wallet[]> {
     await wait();
-    return wallets;
+    return wallets.map(localizeWallet);
   },
 
   async addWallet(req: AddWalletRequest): Promise<Wallet> {
     await wait(600);
     if (!/^0x[0-9a-fA-F]{40}$/.test(req.address.trim())) {
-      throw new ApiError("Endereço Hyperliquid inválido. Ele começa com 0x e tem 42 caracteres.", 422, "invalid_address");
+      throw new ApiError(
+        tr(
+          "Endereço Hyperliquid inválido. Ele começa com 0x e tem 42 caracteres.",
+          "Invalid Hyperliquid address. It starts with 0x and has 42 characters.",
+        ),
+        422,
+        "invalid_address",
+      );
     }
     if (wallets.some((w) => w.address.toLowerCase() === req.address.trim().toLowerCase())) {
-      throw new ApiError("Esta carteira já está conectada.", 409, "duplicate_wallet");
+      throw new ApiError(tr("Esta carteira já está conectada.", "This wallet is already connected."), 409, "duplicate_wallet");
     }
     if (wallets.length >= 3 && user.plan === "free") {
-      throw new ApiError("O plano Grátis permite até 3 carteiras. Remova uma ou conheça o Pro.", 403, "plan_limit");
+      throw new ApiError(
+        tr(
+          "O plano Grátis permite até 3 carteiras. Remova uma ou conheça o Pro.",
+          "The Free plan allows up to 3 wallets. Remove one or check out Pro.",
+        ),
+        403,
+        "plan_limit",
+      );
     }
     const w: Wallet = {
       id: `w_${Date.now()}`,
       network: req.network,
       address: req.address.trim(),
-      label: req.label?.trim() || "Nova carteira",
+      label: req.label?.trim() || "Nova carteira|New wallet",
       isLogin: false,
       verifiedAt: null,
       lastSyncAt: null,
       status: "empty",
     };
     wallets = [...wallets, w];
-    return w;
+    return localizeWallet(w);
   },
 
   async removeWallet(id: string): Promise<void> {
     await wait();
     const w = wallets.find((x) => x.id === id);
-    if (w?.isLogin) throw new ApiError("A carteira de login não pode ser removida.", 409, "login_wallet");
+    if (w?.isLogin)
+      throw new ApiError(tr("A carteira de login não pode ser removida.", "The sign-in wallet can't be removed."), 409, "login_wallet");
     wallets = wallets.filter((x) => x.id !== id);
   },
 
   async syncWallet(id: string): Promise<Wallet> {
     await wait(900);
     wallets = wallets.map((w) =>
-      w.id === id ? { ...w, lastSyncAt: new Date().toISOString(), status: w.status === "empty" ? "empty" : "synced" } : w,
+      w.id === id
+        ? {
+            ...w,
+            lastSyncAt: new Date().toISOString(),
+            status: w.status === "empty" ? "empty" : "synced",
+          }
+        : w,
     );
-    return wallets.find((w) => w.id === id)!;
+    return localizeWallet(wallets.find((w) => w.id === id)!);
   },
 
   async startSync(): Promise<SyncStatus> {
@@ -340,15 +511,50 @@ export const mockApi = {
       read: sol + hl,
       estimated: 1896,
       wallets: [
-        { walletId: "w_sol_main", network: "solana", address: wallets[0]?.address ?? DEMO_ADDRESS, read: sol, total: 1036, state: solT >= 1 ? "done" : "running" },
-        { walletId: "w_hl_perps", network: "hyperliquid", address: "0x4f2A8b1C9d3E7f6A5b2C1d0E9f8A7b6C5d4E9c1E", read: hl, total: hlT >= 1 ? 860 : null, state: hlT >= 1 ? "done" : hlT > 0 ? "running" : "pending", detail: "fills e funding" },
+        {
+          walletId: "w_sol_main",
+          network: "solana",
+          address: wallets[0]?.address ?? DEMO_ADDRESS,
+          read: sol,
+          total: 1036,
+          state: solT >= 1 ? "done" : "running",
+        },
+        {
+          walletId: "w_hl_perps",
+          network: "hyperliquid",
+          address: "0x4f2A8b1C9d3E7f6A5b2C1d0E9f8A7b6C5d4E9c1E",
+          read: hl,
+          total: hlT >= 1 ? 860 : null,
+          state: hlT >= 1 ? "done" : hlT > 0 ? "running" : "pending",
+          detail: tr("fills e funding", "fills and funding"),
+        },
       ],
       steps: [
-        { key: "verify", label: "Carteira verificada por assinatura", state: "done" },
-        { key: "solana", label: "Histórico Solana lido", state: step(solT >= 1, solT < 1) },
-        { key: "hyperliquid", label: "Buscando fills e funding na Hyperliquid", state: step(hlT >= 1, hlT > 0 && hlT < 1) },
-        { key: "prices", label: "Cotando cada evento pela PTAX", state: step(t >= 0.95, hlT >= 1 && t < 0.95) },
-        { key: "dashboard", label: "Montando o painel do mês", state: step(done, t >= 0.95 && !done) },
+        {
+          key: "verify",
+          label: tr("Carteira verificada por assinatura", "Wallet verified by signature"),
+          state: "done",
+        },
+        {
+          key: "solana",
+          label: tr("Histórico Solana lido", "Solana history read"),
+          state: step(solT >= 1, solT < 1),
+        },
+        {
+          key: "hyperliquid",
+          label: tr("Buscando fills e funding na Hyperliquid", "Fetching fills and funding from Hyperliquid"),
+          state: step(hlT >= 1, hlT > 0 && hlT < 1),
+        },
+        {
+          key: "prices",
+          label: tr("Cotando cada evento pela PTAX", "Pricing every event at the PTAX rate"),
+          state: step(t >= 0.95, hlT >= 1 && t < 0.95),
+        },
+        {
+          key: "dashboard",
+          label: tr("Montando o painel do mês", "Building this month's dashboard"),
+          state: step(done, t >= 0.95 && !done),
+        },
       ],
     };
   },
@@ -408,12 +614,20 @@ export const mockApi = {
   /** No modo demo o CSV é gerado no navegador; ver src/app/(app)/relatorios/[mes]/page.tsx */
   async reportCsv(month: string): Promise<DownloadLink> {
     await wait(300);
-    return { url: "", filename: `orbix-declare-${month}.csv`, expiresAt: new Date().toISOString() };
+    return {
+      url: "",
+      filename: `orbix-declare-${month}.csv`,
+      expiresAt: new Date().toISOString(),
+    };
   },
 
   async generateDecripto(month: string): Promise<DownloadLink> {
     await wait(1100);
-    return { url: "", filename: `decripto-${month}.txt`, expiresAt: new Date().toISOString() };
+    return {
+      url: "",
+      filename: `decripto-${month}.txt`,
+      expiresAt: new Date().toISOString(),
+    };
   },
 
   async verifyPublic(publicId: string): Promise<PublicVerification> {
@@ -423,7 +637,10 @@ export const mockApi = {
       if (r.attestation && r.attestation.publicId === publicId.toLowerCase()) {
         return {
           publicId: r.attestation.publicId,
-          description: `Relatório mensal · ${monthLabel(m.key).replace(" ", "/")} · titular ocultado`,
+          description: tr(
+            `Relatório mensal · ${monthLabel(m.key).replace(" ", "/")} · titular ocultado`,
+            `Monthly report · ${monthLabel(m.key).replace(" ", "/")} · holder hidden`,
+          ),
           month: m.key,
           hash: r.attestation.hash,
           txSignature: r.attestation.txSignature,
@@ -433,13 +650,21 @@ export const mockApi = {
         };
       }
     }
-    throw new ApiError("Não encontramos um relatório com este código de verificação.", 404, "not_found");
+    throw new ApiError(
+      tr("Não encontramos um relatório com este código de verificação.", "We couldn't find a report with this verification code."),
+      404,
+      "not_found",
+    );
   },
 
   async agent(req: AgentRequest): Promise<AgentReply> {
     await wait(1200);
     if (user.agentQuestionsLeft <= 0) {
-      throw new ApiError("Você usou as 20 perguntas do mês no plano Grátis.", 429, "quota");
+      throw new ApiError(
+        tr("Você usou as 20 perguntas do mês no plano Grátis.", "You've used this month's 20 questions on the Free plan."),
+        429,
+        "quota",
+      );
     }
     user = { ...user, agentQuestionsLeft: user.agentQuestionsLeft - 1 };
     const q = req.message.toLowerCase();
@@ -451,72 +676,191 @@ export const mockApi = {
       gainBrl: 8912.4,
       taxBrl: 1336.86,
       taxRatePct: 15,
-      sourceTx: { title: "Swap SOL → USDC · Jupiter", signature: "3JpRk8sT2wQ9mYc4LnB7xVe1HdZ6fGu5aP3rKt9vN8e", date: day(2026, 3, 14, 19, 42), slot: 318442107 },
+      sourceTx: {
+        title: "Swap SOL → USDC · Jupiter",
+        signature: "3JpRk8sT2wQ9mYc4LnB7xVe1HdZ6fGu5aP3rKt9vN8e",
+        date: day(2026, 3, 14, 19, 42),
+        slot: 318442107,
+      },
     };
-    const base = { conversationId: req.conversationId ?? `conv_${Date.now()}`, context: ctx, questionsLeft: user.agentQuestionsLeft };
+    const base = {
+      conversationId: req.conversationId ?? `conv_${Date.now()}`,
+      context: ctx,
+      questionsLeft: user.agentQuestionsLeft,
+    };
 
-    if (q.includes("custo médio") || q.includes("custo medio")) {
+    const sol = (n: number) => `${n.toLocaleString(getLocale() === "en" ? "en-US" : "pt-BR", { minimumFractionDigits: 2 })} SOL`;
+    const mar14 = formatDate(day(2026, 3, 14));
+    const mar13 = formatDate(day(2026, 3, 13));
+    const march = monthName("2026-03");
+
+    if (q.includes("custo médio") || q.includes("custo medio") || q.includes("average cost")) {
       return {
         ...base,
-        suggestions: ["Esse ganho gerou imposto?", "Mostrar todas as vendas de SOL em março"],
+        suggestions: [
+          tr("Esse ganho gerou imposto?", "Did this gain trigger tax?"),
+          tr("Mostrar todas as vendas de SOL em março", "Show all SOL sales in March"),
+        ],
         message: {
           id: `m_${Date.now()}`,
           role: "assistant",
           createdAt: now,
           blocks: [
-            { type: "text", text: "O custo médio soma tudo o que você pagou pelo SOL (convertido em reais pela PTAX de cada compra) e divide pela quantidade que você tinha. A cada venda, o custo médio não muda; só a quantidade diminui." },
-            { type: "breakdown", rows: [
-              { label: "Compras acumuladas até 13/03", value: "61,20 SOL" },
-              { label: "Custo total em R$", value: "R$ 48.111,62" },
-              { label: "Custo médio por SOL", value: "R$ 786,06", emphasis: "total" },
-              { label: "× 38,00 SOL vendidos", value: "R$ 29.870,15", emphasis: "gain" },
-            ] },
-            { type: "citations", items: [{ kind: "report", label: "Relatório · março/2026" }] },
+            {
+              type: "text",
+              text: tr(
+                "O custo médio soma tudo o que você pagou pelo SOL (convertido em reais pela PTAX de cada compra) e divide pela quantidade que você tinha. A cada venda, o custo médio não muda; só a quantidade diminui.",
+                "The average cost adds up everything you paid for SOL (converted to reais at each purchase's PTAX rate) and divides it by the amount you held. Each sale leaves the average cost unchanged; only the amount goes down.",
+              ),
+            },
+            {
+              type: "breakdown",
+              rows: [
+                {
+                  label: tr(`Compras acumuladas até ${mar13}`, `Purchases accumulated through ${mar13}`),
+                  value: sol(61.2),
+                },
+                {
+                  label: tr("Custo total em R$", "Total cost in R$"),
+                  value: formatBRL(48111.62),
+                },
+                {
+                  label: tr("Custo médio por SOL", "Average cost per SOL"),
+                  value: formatBRL(786.06),
+                  emphasis: "total",
+                },
+                {
+                  label: tr(`× ${sol(38)} vendidos`, `× ${sol(38)} sold`),
+                  value: formatBRL(29870.15),
+                  emphasis: "gain",
+                },
+              ],
+            },
+            {
+              type: "citations",
+              items: [
+                {
+                  kind: "report",
+                  label: tr(`Relatório · ${march}/2026`, `Report · ${march} 2026`),
+                },
+              ],
+            },
           ],
         },
       };
     }
-    if (q.includes("imposto")) {
+    if (q.includes("imposto") || q.includes("tax")) {
       return {
         ...base,
-        suggestions: ["Como foi calculado o custo médio?", "Quando vence o DARF de março?"],
+        suggestions: [
+          tr("Como foi calculado o custo médio?", "How was the average cost calculated?"),
+          tr("Quando vence o DARF de março?", "When is March's DARF due?"),
+        ],
         message: {
           id: `m_${Date.now()}`,
           role: "assistant",
           createdAt: now,
           blocks: [
-            { type: "text", text: "Sim. Em março o total alienado foi de R$ 52.304,90, acima do limite de isenção de R$ 35.000,00 no mês. Por isso o ganho de capital do mês inteiro é tributado." },
-            { type: "breakdown", rows: [
-              { label: "Ganho de capital do mês", value: "R$ 8.912,40" },
-              { label: "× alíquota", value: "15%" },
-              { label: "Imposto devido", value: "R$ 1.336,86", emphasis: "total" },
-            ] },
-            { type: "text", text: "Confirme o valor com seu contador antes de emitir o DARF." },
+            {
+              type: "text",
+              text: tr(
+                `Sim. Em março o total alienado foi de ${formatBRL(52304.9)}, acima do limite de isenção de ${formatBRL(35000)} no mês. Por isso o ganho de capital do mês inteiro é tributado.`,
+                `Yes. In March the total disposed was ${formatBRL(52304.9)}, above the monthly exemption limit of ${formatBRL(35000)}. That's why the whole month's capital gain is taxed.`,
+              ),
+            },
+            {
+              type: "breakdown",
+              rows: [
+                {
+                  label: tr("Ganho de capital do mês", "Capital gain for the month"),
+                  value: formatBRL(8912.4),
+                },
+                { label: tr("× alíquota", "× rate"), value: "15%" },
+                {
+                  label: tr("Imposto devido", "Tax due"),
+                  value: formatBRL(1336.86),
+                  emphasis: "total",
+                },
+              ],
+            },
+            {
+              type: "text",
+              text: tr(
+                "Confirme o valor com seu contador antes de emitir o DARF.",
+                "Confirm the amount with your accountant before issuing the DARF (the Brazilian tax payment slip).",
+              ),
+            },
           ],
         },
       };
     }
     return {
       ...base,
-      suggestions: ["Como foi calculado o custo médio?", "Mostrar todas as vendas de SOL em março", "Esse ganho gerou imposto?"],
+      suggestions: [
+        tr("Como foi calculado o custo médio?", "How was the average cost calculated?"),
+        tr("Mostrar todas as vendas de SOL em março", "Show all SOL sales in March"),
+        tr("Esse ganho gerou imposto?", "Did this gain trigger tax?"),
+      ],
       message: {
         id: `m_${Date.now()}`,
         role: "assistant",
         createdAt: now,
         blocks: [
-          { type: "text", text: `A maior parte do ganho de ${monthSlash("2026-03").split("/")[0]} (R$ 6.335,75 de R$ 8.912,40) veio de uma única venda: 38,00 SOL trocados por USDC na Jupiter em 14/03/2026. O SOL tinha custo médio bem abaixo do preço de venda.` },
-          { type: "breakdown", rows: [
-            { label: "Valor da venda", value: "US$ 7.182,00" },
-            { label: "× PTAX venda · 13/03/2026", value: "R$ 5,0412" },
-            { label: "Valor de alienação", value: "R$ 36.205,90" },
-            { label: "− Custo médio de 38,00 SOL", value: "R$ 29.870,15" },
-            { label: "Ganho de capital", value: "R$ 6.335,75", emphasis: "gain" },
-          ] },
-          { type: "text", text: "Usei a PTAX de venda do dia útil anterior à operação, publicada pelo Banco Central, como manda a regra de conversão." },
-          { type: "citations", items: [
-            { kind: "ptax", label: "PTAX · Banco Central · 13/03/2026", url: "https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" },
-            { kind: "tx", label: "Transação 3JpR…vN8e", url: explorerTxUrl("3JpRk8sT2wQ9mYc4LnB7xVe1HdZ6fGu5aP3rKt9vN8e") },
-          ] },
+          {
+            type: "text",
+            text: tr(
+              `A maior parte do ganho de ${march} (${formatBRL(6335.75)} de ${formatBRL(8912.4)}) veio de uma única venda: ${sol(38)} trocados por USDC na Jupiter em ${mar14}. O SOL tinha custo médio bem abaixo do preço de venda.`,
+              `Most of the ${march} gain (${formatBRL(6335.75)} of ${formatBRL(8912.4)}) came from a single sale: ${sol(38)} swapped for USDC on Jupiter on ${mar14}. The SOL's average cost was well below the sale price.`,
+            ),
+          },
+          {
+            type: "breakdown",
+            rows: [
+              {
+                label: tr("Valor da venda", "Sale value"),
+                value: getLocale() === "en" ? "US$7,182.00" : "US$ 7.182,00",
+              },
+              {
+                label: tr(`× PTAX venda · ${mar13}`, `× PTAX sell rate · ${mar13}`),
+                value: getLocale() === "en" ? "R$5.0412" : "R$ 5,0412",
+              },
+              {
+                label: tr("Valor de alienação", "Disposal value"),
+                value: formatBRL(36205.9),
+              },
+              {
+                label: tr(`− Custo médio de ${sol(38)}`, `− Average cost of ${sol(38)}`),
+                value: formatBRL(29870.15),
+              },
+              {
+                label: tr("Ganho de capital", "Capital gain"),
+                value: formatBRL(6335.75),
+                emphasis: "gain",
+              },
+            ],
+          },
+          {
+            type: "text",
+            text: tr(
+              "Usei a PTAX de venda do dia útil anterior à operação, publicada pelo Banco Central, como manda a regra de conversão.",
+              "I used the PTAX sell rate from the business day before the trade, published by Brazil's Central Bank, as the conversion rule requires.",
+            ),
+          },
+          {
+            type: "citations",
+            items: [
+              {
+                kind: "ptax",
+                label: tr(`PTAX · Banco Central · ${mar13}`, `PTAX · Central Bank of Brazil · ${mar13}`),
+                url: "https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes",
+              },
+              {
+                kind: "tx",
+                label: tr("Transação 3JpR…vN8e", "Transaction 3JpR…vN8e"),
+                url: explorerTxUrl("3JpRk8sT2wQ9mYc4LnB7xVe1HdZ6fGu5aP3rKt9vN8e"),
+              },
+            ],
+          },
         ],
       },
     };
@@ -527,4 +871,3 @@ export const mockApi = {
     if (typeof window !== "undefined") window.sessionStorage.removeItem(SYNC_KEY);
   },
 };
-

@@ -3,13 +3,15 @@
 **Projeto:** Orbix Declare · Orbix Lab
 **Evento:** Crypto World's Fair Hackathon (Colosseum), 14/09–12/10/2026
 **Escopo deste repositório:** somente o front-end
-**Data deste relatório:** 30/09/2026
+**Data deste relatório:** 01/10/2026
 
 Este documento explica **como o front foi construído**, **por que** cada decisão foi tomada, **o que falta** e **como continuar**. Ele serve para quem vai integrar o back-end e para qualquer pessoa que assuma este código depois.
 
 ---
 
 ## 1. Ponto de partida
+
+Os materiais abaixo registram a origem do projeto. Os HTMLs standalone e prints antigos foram removidos da árvore de trabalho; a referência visual atual está em [`BRAND_GUIDE.md`](BRAND_GUIDE.md) e na implementação.
 
 O que existia antes do código:
 
@@ -92,6 +94,8 @@ A página `/v/<id>` recalcula o **SHA-256 do CSV no navegador** (`crypto.subtle`
 
 ## 5. Como foi verificado
 
+As verificações abaixo registram a implementação inicial, antes da atualização visual de 01/10. Não representam uma nova validação visual das animações e modelos 3D; veja a seção 9 para o estado atual.
+
 - `npm run typecheck`: sem erros.
 - `npm run lint`: sem erros, incluindo as regras novas do React 19 (sem `setState` síncrono em efeitos).
 - `npm run build`: build de produção sem erros (12 rotas).
@@ -134,3 +138,29 @@ A página `/v/<id>` recalcula o **SHA-256 do CSV no navegador** (`crypto.subtle`
 3. **Nova tela logada:** crie `src/app/(app)/<rota>/page.tsx`. A sidebar e a guarda de sessão vêm do layout; o item de menu vai em `NAV`, em `app-shell.tsx`.
 4. **Nova cor ou ajuste de tema:** edite os tokens em `globals.css` (`:root` e `[data-theme="dark"]`) e, se for cor nova, registre-a em `@theme inline`.
 5. Antes de abrir PR: `npm run check`.
+
+## 9. Atualização consolidada — 01/10/2026
+
+### Idiomas e integração
+
+- Interface em português e inglês, com dicionários tipados em `src/lib/i18n/`, seletor de idioma e seleção inicial por cookie/`Accept-Language`.
+- Formatação de datas, meses, valores e entrada de preços conforme o idioma; valores fiscais continuam em BRL.
+- Cliente HTTP envia `Accept-Language`; erros de rede, carteira e textos do modo demonstração acompanham o idioma.
+- Mock ampliado com dados por mês e respostas localizadas, mantendo o processamento fiscal real como responsabilidade do back-end.
+
+### Abertura, login e identidade visual
+
+- Tela de abertura por aba, com progresso e logo 3D `public/od-logo.glb`, carregada com Three.js sob demanda.
+- Painel esquerdo do login com degradê radial roxo, três camadas de estrelas animadas e transição suave para o fundo do formulário. O teste de degradê horizontal foi revertido.
+- Textos do painel aparecem por digitação sequencial. A implementação revela texto contínuo, preservando o espaço do conteúdo; a linha divisória aparece após a digitação. A sequência aguarda a abertura e respeita redução de movimento.
+- Novo planeta `public/voxel-planet-orbits.glb` apenas na marca do painel esquerdo, em 112 × 112 px e rotação de 40 segundos por volta. A logo original serve de fallback durante o carregamento ou em falha do WebGL.
+- Paleta centralizada, Outfit com pesos até 900 e escala responsiva compartilhada para títulos; DM Sans no corpo e JetBrains Mono nos dados.
+- “Orbix” dourado nos títulos da marca. Exceção: “Entrar no Orbix Declare” usa a cor padrão. Assinatura `orbix. lab` com ponto `#D4A843` e `lab` em `#1F0D5C`.
+- Referências em vídeo/modelo adicionadas em `docs`; os arquivos públicos são usados pelo navegador. Detalhes visuais em [`BRAND_GUIDE.md`](BRAND_GUIDE.md).
+
+### Validação e pendências desta revisão
+
+- `npm run typecheck` e `npm run lint`: concluídos sem erros em 01/10/2026 ao preparar esta documentação.
+- Build de produção e navegação visual completa não foram repetidos nesta revisão. A validação histórica da seção 5 não cobre o estado visual atual.
+- Pendente conferir desktop/mobile, temas claro/escuro, PT/EN, digitação após a abertura, fallback WebGL e login com carteira real.
+- O tom escuro solicitado para `lab` pode ter pouco contraste sobre fundos escuros; a escolha visual foi mantida conforme a referência aprovada.

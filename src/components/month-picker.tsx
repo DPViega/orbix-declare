@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarBlankIcon, CaretDownIcon, CheckIcon } from "@phosphor-icons/react";
 import { monthLabel } from "@/lib/format";
 import { cn } from "@/components/ui";
+import { useI18n } from "@/lib/i18n";
 
 /** Botão "Setembro 2026 ▾" do painel, com lista de meses disponíveis. */
 export function MonthPicker({ value, months, onChange }: { value: string; months: string[]; onChange: (m: string) => void }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function MonthPicker({ value, months, onChange }: { value: string; months
       {open && (
         <ul
           role="listbox"
-          aria-label="Escolher mês"
+          aria-label={t.monthPicker.choose}
           className="absolute right-0 z-20 mt-2 max-h-80 w-56 overflow-auto rounded-xl border border-line bg-panel p-1.5 shadow-frame md:left-0"
         >
           {months.map((m) => (

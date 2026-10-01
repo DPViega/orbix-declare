@@ -14,13 +14,28 @@ import {
 import { api, errorMessage, type Wallet } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime, shortAddress } from "@/lib/format";
-import { Badge, Button, Card, Chip, IconButton, InlineError, Input, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  IconButton,
+  InlineError,
+  Input,
+  Kicker,
+  PageHeader,
+  Panel,
+  Skeleton,
+  StateBlock,
+} from "@/components/ui";
 import { Table, Td } from "@/components/table";
+import { useI18n } from "@/lib/i18n";
 
 const NETWORK = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
 const HL_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 export default function CarteirasPage() {
+  const { t } = useI18n();
   const list = useApi(() => api.listWallets(), []);
   const [address, setAddress] = useState("");
   const [adding, setAdding] = useState(false);
@@ -36,7 +51,7 @@ export default function CarteirasPage() {
     e.preventDefault();
     const value = address.trim();
     if (!HL_ADDRESS.test(value)) {
-      setAddError("Endereço Hyperliquid inválido. Ele começa com 0x e tem 42 caracteres.");
+      setAddError(t.wallets.invalidAddress);
       return;
     }
     setAdding(true);
@@ -68,14 +83,16 @@ export default function CarteirasPage() {
 
   return (
     <>
-      <PageHeader kicker={list.data ? `${wallets.length} ${wallets.length === 1 ? "carteira" : "carteiras"} · somente leitura` : "Carregando…"} title="Carteiras" />
+      <PageHeader kicker={list.data ? t.wallets.kicker(wallets.length) : t.common.loading} title={t.wallets.title} />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {loginWallet ? (
           <Card className="flex min-w-0 flex-col gap-5 p-7">
             <div className="flex items-center justify-between gap-3">
-              <Kicker>Carteira de login</Kicker>
-              <Badge tone="ok" icon={SealCheckIcon}>Verificada</Badge>
+              <Kicker>{t.wallets.loginWallet}</Kicker>
+              <Badge tone="ok" icon={SealCheckIcon}>
+                {t.wallets.verified}
+              </Badge>
             </div>
             <div className="flex min-w-0 flex-col gap-1.5">
               <span className="font-display text-[22px] font-medium">
@@ -87,12 +104,12 @@ export default function CarteirasPage() {
               {loginWallet.verifiedAt && (
                 <span className="flex items-center gap-1.5">
                   <SignatureIcon size={16} aria-hidden />
-                  Assinatura em {formatDate(loginWallet.verifiedAt)}
+                  {t.wallets.signedOn(formatDate(loginWallet.verifiedAt))}
                 </span>
               )}
               <span className="flex items-center gap-1.5">
                 <EyeIcon size={16} aria-hidden />
-                Somente leitura
+                {t.common.readOnly}
               </span>
             </div>
           </Card>
@@ -102,7 +119,7 @@ export default function CarteirasPage() {
 
         <Panel className="flex flex-col gap-4 p-7">
           <Kicker as="h2">
-            <label htmlFor="hl-address">Adicionar endereço Hyperliquid</label>
+            <label htmlFor="hl-address">{t.wallets.addTitle}</label>
           </Kicker>
           <form onSubmit={add} className="flex flex-col gap-2.5 sm:flex-row">
             <Input
@@ -119,31 +136,30 @@ export default function CarteirasPage() {
               className="flex-1"
             />
             <Button type="submit" icon={PlusIcon} loading={adding}>
-              Adicionar carteira
+              {t.wallets.addButton}
             </Button>
           </form>
           <InlineError>{addError}</InlineError>
-          <p className="m-0 text-[13px] leading-[1.55] text-muted">
-            Só o endereço público. Nunca pedimos chave privada, seed ou chave de API com permissão de trade.
-          </p>
+          <p className="m-0 text-[13px] leading-[1.55] text-muted">{t.wallets.addNote}</p>
         </Panel>
       </div>
 
       {emptyWallet && (
         <StateBlock
           icon={TrayIcon}
-          title="Nenhuma transação encontrada"
+          title={t.wallets.emptyTitle}
           actions={
             <>
-              <Button onClick={() => document.getElementById("hl-address")?.focus()}>Adicionar outra carteira</Button>
+              <Button onClick={() => document.getElementById("hl-address")?.focus()}>{t.wallets.addAnother}</Button>
               <Button variant="secondary" icon={ArrowsClockwiseIcon} loading={syncing[emptyWallet.id]} onClick={() => sync(emptyWallet)}>
-                Sincronizar de novo
+                {t.wallets.syncAgain}
               </Button>
             </>
           }
         >
-          A carteira <span className="font-mono text-ink">{shortAddress(emptyWallet.address)}</span> não tem transações entre 01/01/2025 e hoje.
-          Confira o endereço ou conecte outra carteira.
+          {t.wallets.emptyText(formatDate("2025-01-01T15:00:00Z"))[0]}
+          <span className="font-mono text-ink">{shortAddress(emptyWallet.address)}</span>
+          {t.wallets.emptyText(formatDate("2025-01-01T15:00:00Z"))[1]}
         </StateBlock>
       )}
 
@@ -153,18 +169,20 @@ export default function CarteirasPage() {
         {list.error ? (
           <div className="flex flex-wrap items-center gap-3 p-6 text-sm text-danger">
             {list.error}
-            <Button size="sm" variant="secondary" onClick={list.reload}>Tentar de novo</Button>
+            <Button size="sm" variant="secondary" onClick={list.reload}>
+              {t.common.retry}
+            </Button>
           </div>
         ) : (
           <Table
-            caption="Carteiras conectadas"
+            caption={t.wallets.tableCaption}
             minWidth={860}
             columns={[
-              { label: "Rede", width: "150px" },
-              { label: "Endereço", width: "200px" },
-              { label: "Rótulo" },
-              { label: "Última sincronização", width: "220px" },
-              { label: "Status", width: "160px" },
+              { label: t.wallets.cols.network, width: "150px" },
+              { label: t.wallets.cols.address, width: "200px" },
+              { label: t.wallets.cols.label },
+              { label: t.wallets.cols.lastSync, width: "220px" },
+              { label: t.wallets.cols.status, width: "160px" },
               { label: "", width: "72px" },
             ]}
           >
@@ -178,8 +196,10 @@ export default function CarteirasPage() {
                 ))
               : wallets.map((w) => (
                   <tr key={w.id}>
-                    <Td className="py-4"><Chip>{NETWORK[w.network]}</Chip></Td>
-                    <Td className="font-mono text-[13px]" >
+                    <Td className="py-4">
+                      <Chip>{NETWORK[w.network]}</Chip>
+                    </Td>
+                    <Td className="font-mono text-[13px]">
                       <span title={w.address}>{shortAddress(w.address)}</span>
                     </Td>
                     <Td>{w.label}</Td>
@@ -190,7 +210,7 @@ export default function CarteirasPage() {
                     <Td align="right">
                       <IconButton
                         icon={ArrowsClockwiseIcon}
-                        label={`Sincronizar ${shortAddress(w.address)}`}
+                        label={t.wallets.syncWallet(shortAddress(w.address))}
                         spinning={!!syncing[w.id]}
                         disabled={!!syncing[w.id]}
                         onClick={() => sync(w)}
@@ -207,32 +227,33 @@ export default function CarteirasPage() {
 }
 
 function WalletStatus({ w, syncing }: { w: Wallet; syncing: boolean }) {
+  const { t } = useI18n();
   if (syncing || w.status === "syncing")
     return (
       <span className="inline-flex items-center gap-1.5 text-[13px] text-accent-text">
         <ArrowsClockwiseIcon size={16} className="animate-spin-slow" aria-hidden />
-        Sincronizando…
+        {t.wallets.syncing}
       </span>
     );
   if (w.status === "error")
     return (
       <span className="inline-flex items-center gap-1.5 text-[13px] text-danger" title={w.error ?? undefined}>
         <WarningCircleIcon size={16} aria-hidden />
-        Falhou
+        {t.common.failed}
       </span>
     );
   if (w.status === "empty")
     return (
       <span className="inline-flex items-center gap-1.5 text-[13px] text-muted">
         <TrayIcon size={16} aria-hidden />
-        Sem histórico
+        {t.wallets.noHistory}
       </span>
     );
-  if (w.status === "pending") return <span className="text-[13px] text-muted">Na fila</span>;
+  if (w.status === "pending") return <span className="text-[13px] text-muted">{t.common.queued}</span>;
   return (
     <span className="inline-flex items-center gap-1.5 text-[13px] text-ok">
       <CheckCircleIcon size={16} aria-hidden />
-      Sincronizada
+      {t.wallets.synced}
     </span>
   );
 }

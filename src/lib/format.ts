@@ -1,41 +1,64 @@
-/** Formatadores pt-BR. Toda a apresentação de números e datas passa por aqui. */
+/**
+ * Formatadores de números e datas no idioma da interface (pt-BR ou en-US, ver lib/i18n/locale.ts).
+ * Valores continuam em reais (R$) e no fuso de Brasília nos dois idiomas: é o que vale para o fisco.
+ * O CSV oficial do relatório não passa por aqui (lib/report-file.ts usa formato fixo).
+ */
+import { getLocale, intlLocale, type Locale } from "@/lib/i18n/locale";
 
-const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-const dec2 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const dec4 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-const int = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
-const pct1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const cache = new Map<string, Intl.NumberFormat | Intl.DateTimeFormat>();
+function nf(name: string, opts: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = `${getLocale()}:${name}`;
+  let f = cache.get(key) as Intl.NumberFormat | undefined;
+  if (!f) cache.set(key, (f = new Intl.NumberFormat(intlLocale(getLocale()), opts)));
+  return f;
+}
 
-/** "R$ 28.940,13" (com espaço normal, não o NBSP do Intl, para bater com o mockup) */
-export const formatBRL = (v: number) => brl.format(v).replace(/ /g, " ");
+/** "R$ 28.940,13" / "R$28,940.13" (espaço normal no lugar do NBSP do Intl, para bater com o mockup) */
+export const formatBRL = (v: number) =>
+  nf("brl", { style: "currency", currency: "BRL" })
+    .format(v)
+    .replace(/\u00a0/g, " ");
+/** "R$ 35.000" — sem centavos quando o valor é inteiro (limites, eixos) */
+export const formatBRLShort = (v: number) =>
+  nf(Number.isInteger(v) ? "brl0" : "brl", {
+    style: "currency",
+    currency: "BRL",
+    ...(Number.isInteger(v) ? { maximumFractionDigits: 0 } : {}),
+  })
+    .format(v)
+    .replace(/\u00a0/g, " ");
 /** "28.940,13" — valor sem símbolo, usado nas tabelas do relatório */
-export const formatMoney = (v: number) => dec2.format(v);
-export const formatQty = (v: number) => dec2.format(v);
-export const formatPtax = (v: number) => dec4.format(v);
-export const formatInt = (v: number) => int.format(v);
-export const formatPct = (v: number) => `${v > 0 ? "+" : ""}${pct1.format(v)}%`;
+export const formatMoney = (v: number) => nf("dec2", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+export const formatQty = formatMoney;
+export const formatPtax = (v: number) => nf("dec4", { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(v);
+export const formatInt = (v: number) => nf("int", { maximumFractionDigits: 0 }).format(v);
+export const formatPct = (v: number) =>
+  `${v > 0 ? "+" : ""}${nf("pct1", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)}%`;
 
 const tz = "America/Sao_Paulo";
+const dtf = (opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(intlLocale(getLocale()), { timeZone: tz, ...opts });
 
-/** "30/09/2026" */
+/** "30/09/2026" · "Sep 30, 2026" */
 export function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: tz, day: "2-digit", month: "2-digit", year: "numeric" }).format(
+  const en = getLocale() === "en";
+  return dtf(en ? { month: "short", day: "numeric", year: "numeric" } : { day: "2-digit", month: "2-digit", year: "numeric" }).format(
     new Date(iso),
   );
 }
 
-/** "30/09" */
+/** "30/09" · "Sep 30" */
 export function formatDayMonth(iso: string): string {
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: tz, day: "2-digit", month: "2-digit" }).format(new Date(iso));
+  const en = getLocale() === "en";
+  return dtf(en ? { month: "short", day: "numeric" } : { day: "2-digit", month: "2-digit" }).format(new Date(iso));
 }
 
-/** "14:32" */
+/** "14:32" (24 h nos dois idiomas) */
 export function formatTime(iso: string, seconds = false): string {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: tz,
+  return dtf({
     hour: "2-digit",
     minute: "2-digit",
     second: seconds ? "2-digit" : undefined,
+    hourCycle: "h23",
   }).format(new Date(iso));
 }
 
@@ -54,20 +77,11 @@ export function shortAddress(addr: string, head = 4, tail = 4): string {
  * A chave de mês trafegada com o back-end é "AAAA-MM" (ex.: "2026-09").
  */
 
-const MONTHS = [
-  "janeiro",
-  "fevereiro",
-  "março",
-  "abril",
-  "maio",
-  "junho",
-  "julho",
-  "agosto",
-  "setembro",
-  "outubro",
-  "novembro",
-  "dezembro",
-];
+const MONTHS: Record<Locale, string[]> = {
+  pt: ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+};
+const monthNameOf = (month: number) => MONTHS[getLocale()][month - 1];
 
 export function parseMonthKey(key: string): { year: number; month: number } | null {
   const m = /^(\d{4})-(\d{2})$/.exec(key);
@@ -79,28 +93,31 @@ export function parseMonthKey(key: string): { year: number; month: number } | nu
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** "Setembro 2026" */
+/** "Setembro 2026" · "September 2026" */
 export function monthLabel(key: string): string {
   const p = parseMonthKey(key);
-  return p ? `${cap(MONTHS[p.month - 1])} ${p.year}` : key;
+  return p ? `${cap(monthNameOf(p.month))} ${p.year}` : key;
 }
 
-/** "setembro de 2026" */
+/** "setembro de 2026" · "September 2026" */
 export function monthLong(key: string): string {
   const p = parseMonthKey(key);
-  return p ? `${MONTHS[p.month - 1]} de ${p.year}` : key;
+  if (!p) return key;
+  return getLocale() === "en" ? `${monthNameOf(p.month)} ${p.year}` : `${monthNameOf(p.month)} de ${p.year}`;
 }
 
-/** "março/2026" */
+/** "março/2026" · "Mar/2026" */
 export function monthSlash(key: string): string {
   const p = parseMonthKey(key);
-  return p ? `${MONTHS[p.month - 1]}/${p.year}` : key;
+  if (!p) return key;
+  const name = monthNameOf(p.month);
+  return `${getLocale() === "en" ? name.slice(0, 3) : name}/${p.year}`;
 }
 
-/** Nome do mês sozinho: "agosto" */
+/** Nome do mês sozinho: "agosto" · "August" */
 export function monthName(key: string): string {
   const p = parseMonthKey(key);
-  return p ? MONTHS[p.month - 1] : key;
+  return p ? monthNameOf(p.month) : key;
 }
 
 export function previousMonthKey(key: string): string {
@@ -110,11 +127,15 @@ export function previousMonthKey(key: string): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-/** Converte "R$ 3,08" / "3,08" / "3.08" em número. Retorna null se inválido. */
+/**
+ * Converte o preço digitado em número. Retorna null se inválido.
+ * pt: "R$ 1.234,56" / "3,08" / "3.08" · en: "R$1,234.56" / "3.08" (vírgula = milhar).
+ */
 export function parseBRLInput(raw: string): number | null {
   const cleaned = raw.replace(/[R$\s]/g, "");
   if (!cleaned) return null;
-  const normalized = cleaned.includes(",") ? cleaned.replace(/\./g, "").replace(",", ".") : cleaned;
+  const normalized =
+    getLocale() === "en" ? cleaned.replace(/,/g, "") : cleaned.includes(",") ? cleaned.replace(/\./g, "").replace(",", ".") : cleaned;
   const n = Number(normalized);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }

@@ -6,21 +6,26 @@
  * A sidebar usa a paleta "brand" fixa (sempre escura), como no mockup.
  */
 :root {
-  --bg: #f7f5ff;
+  --orbix-paper: #f7f5ff;
+  --orbix-night: #07040d;
+  --orbix-purple: #5b35c8;
+  --orbix-lilac: #8b6ae8;
+  --orbix-gold: #d4a843;
+  --bg: var(--orbix-paper);
   --panel: #fcfbff;
   --card: #ebe5ff;
-  --ink: #07040d;
+  --ink: var(--orbix-night);
   --muted: #5c5573;
   --faint: #8a83a1;
   --line: #e3dcf7;
   --line2: #cfc5ee;
-  --accent: #5b35c8;
+  --accent: var(--orbix-purple);
   --accent-hover: #4a28b0;
   --accent-text: #5b35c8;
   --on-accent: #f7f5ff;
   --chip: #ebe5ff;
   --chip-text: #3b1f9e;
-  --soft: #8b6ae8;
+  --soft: var(--orbix-lilac);
   --track: #e3dcf7;
   --ok: #1c7a4e;
   --ok-bg: #ddf2e6;
@@ -29,7 +34,7 @@
   --danger: #b42318;
   --danger-bg: #fbe3e0;
   --on-danger: #f7f5ff;
-  --gold: #d4a843;
+  --gold: var(--orbix-gold);
   --shadow: 0 12px 40px rgb(7 4 13 / 0.14);
   color-scheme: light;
 }
@@ -43,13 +48,13 @@
   --faint: #766d94;
   --line: #261e3c;
   --line2: #3a2f57;
-  --accent: #5b35c8;
+  --accent: var(--orbix-purple);
   --accent-hover: #6a45d6;
   --accent-text: #b3a0f4;
   --on-accent: #f7f5ff;
   --chip: #241a42;
   --chip-text: #cbbef8;
-  --soft: #8b6ae8;
+  --soft: var(--orbix-lilac);
   --track: #261e3c;
   --ok: #5cc98f;
   --ok-bg: #12301f;
@@ -89,14 +94,14 @@
   --color-gold: var(--gold);
 
   /* Paleta fixa da marca (sidebar, painel do login, avatar do agente) */
-  --color-brand-night: #07040d;
+  --color-brand-night: var(--orbix-night);
   --color-brand-deep: #1f0d5c;
   --color-brand-deep-line: #33207a;
   --color-brand-surface: #120c1f;
   --color-brand-line: #1e1631;
   --color-brand-lilac: #c9bcf7;
   --color-brand-mist: #ebe5ff;
-  --color-brand-paper: #f7f5ff;
+  --color-brand-paper: var(--orbix-paper);
   --color-brand-nav: #b3aacf;
   --color-brand-dim: #9d93bd;
 
@@ -159,6 +164,34 @@
 }
 
 @layer utilities {
+  .type-display {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+  .type-h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .type-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .type-h3 {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
   .text-pretty {
     text-wrap: pretty;
   }
@@ -177,7 +210,81 @@
   animation: spin-slow 1.4s linear infinite;
 }
 
-/* Linhas do painel de marca do login (components/floating-paths.tsx) */
+/* Keep the unrevealed text in the layout without per-letter compositing. */
+.login-untyped-text { visibility: hidden; }
+
+.login-typed-steps::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--color-brand-deep-line);
+  animation: login-type-character 600ms ease-out both;
+  animation-delay: var(--divider-delay);
+}
+
+html:not([data-splash="seen"]):has(.splash) .login-typed-steps::before {
+  animation-play-state: paused;
+}
+
+@keyframes login-type-character {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-untyped-text { visibility: visible; }
+  .login-typed-steps::before { animation: none !important; }
+}
+
+/* Login: three seamless star layers over a deep-space sky. */
+.login-panel-blend {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: clamp(64px, 8vw, 120px);
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--bg) 18%, transparent) 30%, color-mix(in srgb, var(--bg) 55%, transparent) 65%, var(--bg));
+}
+
+.login-star-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: inline-size;
+  background: radial-gradient(ellipse at 50% 25%, var(--orbix-lilac) 0%, var(--orbix-purple) 45%, var(--color-brand-deep) 100%);
+}
+
+.login-star-layer,
+.login-star-layer::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--star-size);
+  height: var(--star-size);
+  border-radius: 50%;
+  box-shadow: var(--star-shadows);
+}
+
+.login-star-layer {
+  animation: login-star-travel var(--star-duration) linear infinite;
+  animation-delay: -15s;
+}
+
+.login-star-layer::after {
+  content: "";
+  top: 2000px;
+}
+
+@keyframes login-star-travel {
+  to { transform: translateY(-2000px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-star-layer { animation: none !important; }
+}
+
+/* Linhas decorativas (components/floating-paths.tsx) */
 /* A onda corre: desloca exatamente 1 comprimento de onda (WAVELENGTH = 200) e repete sem emenda. */
 .wave-line {
   animation: wave-travel 12s linear infinite;
@@ -234,6 +341,89 @@
   }
 }
 
+/* ---------- Tela de abertura (components/splash-screen.tsx) ---------- */
+
+/* Já vista nesta aba: o script em app/layout.tsx marca o <html> antes da hidratação. */
+[data-splash="seen"] .splash {
+  display: none;
+}
+
+.splash-twinkle {
+  animation: splash-twinkle 3.6s ease-in-out infinite;
+}
+@keyframes splash-twinkle {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.splash-title {
+  animation: splash-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) 250ms both;
+}
+.splash-bar {
+  animation: splash-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) 450ms both;
+}
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.splash-label {
+  animation: splash-label 420ms ease-out both;
+}
+@keyframes splash-label {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* Cometa: cauda em degradê + núcleo brilhante, cruza o céu e some; repete com pausa. */
+.splash-comet {
+  background: linear-gradient(90deg, transparent, rgb(201 188 247 / 0.15) 40%, rgb(228 220 255 / 0.85));
+  border-radius: 2px;
+  opacity: 0;
+  transform-origin: right center;
+  animation: splash-comet 6.5s cubic-bezier(0.3, 0, 0.6, 1) 0.9s infinite;
+}
+.splash-comet::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  translate: 0 -50%;
+  background: #fff;
+  box-shadow: 0 0 14px 6px rgb(201 188 247 / 0.55);
+}
+@keyframes splash-comet {
+  0% {
+    opacity: 0;
+    transform: translate(-25vw, 6vh) rotate(-7deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.9;
+  }
+  62%,
+  100% {
+    opacity: 0;
+    transform: translate(105vw, -14vh) rotate(-7deg);
+  }
+}
+
 /* Barra de progresso indeterminada usada enquanto a estimativa não chegou */
 @keyframes progress-sheen {
   from {
@@ -267,7 +457,7 @@ dialog::backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *:not(.wave-line),
+  *:not(.wave-line, .animate-spin-slow),
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
@@ -287,5 +477,10 @@ dialog::backdrop {
   }
   .path-glint {
     display: none;
+  }
+
+  /* Ícones de carregamento informam estado ("em andamento"): continuam girando, só que mais devagar. */
+  .animate-spin-slow {
+    animation-duration: 2.4s !important;
   }
 }

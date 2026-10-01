@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { getMessages } from "@/lib/i18n/server";
 import { VerifyView } from "./verify-view";
 
-export const metadata: Metadata = {
-  title: "Verificação pública",
-  description: "Confira se um relatório do Orbix Declare foi alterado, comparando seu hash com o registro na blockchain Solana.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getMessages();
+  return { title: t.meta.verify, description: t.meta.verifyDescription };
+}
 
 export default async function VerifyPage({ params }: PageProps<"/v/[id]">) {
   const { id } = await params;
