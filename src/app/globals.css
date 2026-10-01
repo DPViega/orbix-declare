@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de tema — valores copiados 1:1 dos mockups em docs/ (mapas L e D).
+ * O tema escuro é aplicado por next-themes via [data-theme="dark"] no <html>.
+ * A sidebar usa a paleta "brand" fixa (sempre escura), como no mockup.
+ */
+:root {
+  --bg: #f7f5ff;
+  --panel: #fcfbff;
+  --card: #ebe5ff;
+  --ink: #07040d;
+  --muted: #5c5573;
+  --faint: #8a83a1;
+  --line: #e3dcf7;
+  --line2: #cfc5ee;
+  --accent: #5b35c8;
+  --accent-hover: #4a28b0;
+  --accent-text: #5b35c8;
+  --on-accent: #f7f5ff;
+  --chip: #ebe5ff;
+  --chip-text: #3b1f9e;
+  --soft: #8b6ae8;
+  --track: #e3dcf7;
+  --ok: #1c7a4e;
+  --ok-bg: #ddf2e6;
+  --warn: #9a5b06;
+  --warn-bg: #f8ecd5;
+  --danger: #b42318;
+  --danger-bg: #fbe3e0;
+  --on-danger: #f7f5ff;
+  --gold: #d4a843;
+  --shadow: 0 12px 40px rgb(7 4 13 / 0.14);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0e0a18;
+  --panel: #140f22;
+  --card: #1c1432;
+  --ink: #f2effb;
+  --muted: #a89fc5;
+  --faint: #766d94;
+  --line: #261e3c;
+  --line2: #3a2f57;
+  --accent: #5b35c8;
+  --accent-hover: #6a45d6;
+  --accent-text: #b3a0f4;
+  --on-accent: #f7f5ff;
+  --chip: #241a42;
+  --chip-text: #cbbef8;
+  --soft: #8b6ae8;
+  --track: #261e3c;
+  --ok: #5cc98f;
+  --ok-bg: #12301f;
+  --warn: #e8a560;
+  --warn-bg: #35230f;
+  --danger: #f0786b;
+  --danger-bg: #3a1613;
+  --on-danger: #0e0a18;
+  --shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-chip: var(--chip);
+  --color-chip-text: var(--chip-text);
+  --color-soft: var(--soft);
+  --color-track: var(--track);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-on-danger: var(--on-danger);
+  --color-gold: var(--gold);
+
+  /* Paleta fixa da marca (sidebar, painel do login, avatar do agente) */
+  --color-brand-night: #07040d;
+  --color-brand-deep: #1f0d5c;
+  --color-brand-deep-line: #33207a;
+  --color-brand-surface: #120c1f;
+  --color-brand-line: #1e1631;
+  --color-brand-lilac: #c9bcf7;
+  --color-brand-mist: #ebe5ff;
+  --color-brand-paper: #f7f5ff;
+  --color-brand-nav: #b3aacf;
+  --color-brand-dim: #9d93bd;
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-dm-sans), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --shadow-frame: var(--shadow);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 28%, transparent);
+    color: var(--ink);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--accent);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--faint);
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--soft);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  /* Números tabulares em todo lugar onde há valores (mono já é tabular) */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line2) transparent;
+  }
+}
+
+@layer utilities {
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Ícone de carregamento (ph-circle-notch / arrows-clockwise) */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 1.4s linear infinite;
+}
+
+/* Linhas do painel de marca do login (components/floating-paths.tsx) */
+/* A onda corre: desloca exatamente 1 comprimento de onda (WAVELENGTH = 200) e repete sem emenda. */
+.wave-line {
+  animation: wave-travel 12s linear infinite;
+}
+.wave-line-reverse {
+  animation-name: wave-travel-reverse;
+}
+@keyframes wave-travel {
+  to {
+    transform: translateX(-200px);
+  }
+}
+@keyframes wave-travel-reverse {
+  to {
+    transform: translateX(200px);
+  }
+}
+
+/* Brilho que percorre a linha: traço curto (14% do comprimento) viajando de ponta a ponta. */
+.path-glint {
+  stroke-dasharray: 0.14 0.86;
+  stroke-dashoffset: 0.14;
+  opacity: 0;
+  animation: path-glint 12s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes path-glint {
+  0% {
+    stroke-dashoffset: 0.14;
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  85%,
+  100% {
+    stroke-dashoffset: -0.86;
+    opacity: 0;
+  }
+}
+
+/* Deriva lenta do conjunto — usa `translate` para não brigar com o `scale` do Tailwind. */
+.paths-drift {
+  animation: paths-drift 16s ease-in-out infinite alternate;
+}
+@keyframes paths-drift {
+  from {
+    translate: -1.5% 0.5%;
+  }
+  to {
+    translate: 1.5% -1%;
+  }
+}
+
+/* Barra de progresso indeterminada usada enquanto a estimativa não chegou */
+@keyframes progress-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Entrada da página: um único momento, ease-out exponencial a partir de visível */
+@keyframes rise-in {
+  from {
+    opacity: 0.001;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.page-enter {
+  animation: rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+dialog::backdrop {
+  background: rgb(7 4 13 / 0.55);
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *:not(.wave-line),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /*
+   * Versão calma das ondas do login (decisão de produto): com "reduzir movimento" ligado, as ondas
+   * continuam andando, mas bem devagar, sem brilho e sem deriva — movimento ambiente, lento e sem piscar.
+   */
+  .wave-line {
+    animation-duration: 18s !important;
+  }
+  .wave-line-reverse {
+    animation-duration: 26s !important;
+  }
+  .path-glint {
+    display: none;
+  }
+}

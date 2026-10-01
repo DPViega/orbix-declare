@@ -1,0 +1,136 @@
+# Relatório de desenvolvimento — Front-end do Orbix Declare
+
+**Projeto:** Orbix Declare · Orbix Lab
+**Evento:** Crypto World's Fair Hackathon (Colosseum), 14/09–12/10/2026
+**Escopo deste repositório:** somente o front-end
+**Data deste relatório:** 30/09/2026
+
+Este documento explica **como o front foi construído**, **por que** cada decisão foi tomada, **o que falta** e **como continuar**. Ele serve para quem vai integrar o back-end e para qualquer pessoa que assuma este código depois.
+
+---
+
+## 1. Ponto de partida
+
+O que existia antes do código:
+
+| Material | Onde | Como foi usado |
+|---|---|---|
+| Mockups HTML tema claro e escuro (10 telas, 1440 px) | `docs/Orbix Declare - Claro/Escuro (standalone).html` | fonte da verdade visual |
+| Componente da sidebar | `docs/Orbix Declare - Sidebar (standalone).html` | sidebar do app |
+| Prints das telas | `docs/WhatsApp Image *.jpeg` | conferência rápida |
+| Logo (CD roxo com check dourado) | extraído do bundle → `public/brand/` | marca e favicon |
+| Dev Hub interno (orbix-lab-dev-hub-orbix-declare-264.vercel.app) | — | stack planejada, rotas da API e divisão front/back |
+
+**Como os mockups foram lidos.** Os arquivos "standalone" são bundles (manifesto + template com assets em base64/gzip). Eles foram desempacotados com um script Node para ler o HTML, os estilos inline e o JavaScript de cada tela. Isso permitiu copiar **os valores exatos** em vez de estimar pelo print:
+
+- os dois mapas de cores (`L` e `D` no script do mockup), que viraram os tokens em [`src/app/globals.css`](../src/app/globals.css);
+- tamanhos, espaçamentos, raios (12 px), fontes e pesos de cada elemento;
+- os dados de exemplo (carteiras, eventos, relatórios), que viraram o modo demonstração;
+- os ícones (Phosphor, estilo regular), que viraram `@phosphor-icons/react`.
+
+## 2. Stack e por quê
+
+| Escolha | Motivo |
+|---|---|
+| **Next.js 16 (App Router) + React 19 + TypeScript** | stack definida no Hub. A versão 16 tem mudanças incompatíveis (por exemplo, `params` assíncrono), por isso a documentação local em `node_modules/next/dist/docs` foi lida antes de codar. |
+| **Tailwind CSS 4** | stack do Hub. Os tokens do mockup viraram cores do tema (`bg-card`, `text-muted`, `border-line2`…). |
+| **Solana Wallet Adapter** (`-react`, `-base`) | login com Phantom/Solflare. A lista de carteiras fica vazia porque o **Wallet Standard** detecta as carteiras sozinho, sem pacote por carteira. |
+| **@phosphor-icons/react** | mesma família de ícones dos mockups. |
+| **next-themes** | tema claro/escuro sem "piscar" no carregamento; segue o sistema por padrão. |
+| **bs58** | codificar a assinatura da carteira para o back-end. |
+| Sem biblioteca de dados (SWR/React Query) | o app é pequeno; um hook de ~50 linhas ([`use-api.ts`](../src/lib/use-api.ts)) cobre carregar, erro, recarregar e descartar respostas antigas. |
+| Sem biblioteca de componentes | o visual é próprio e já estava desenhado; [`components/ui.tsx`](../src/components/ui.tsx) tem os poucos componentes necessários. |
+
+**Supabase ficou fora do front de propósito.** Com o back-end separado, o front fala com **uma única API**. Se o back-end usar Supabase Auth, o token do Supabase pode ser o `token` da sessão sem nenhuma mudança aqui. Ver [`API_CONTRACT.md`](API_CONTRACT.md#autenticação-sign-in-with-solana).
+
+## 3. Arquitetura
+
+### 3.1 Uma porta para o back-end
+
+```
+Tela ──► api.* (src/lib/api/index.ts) ──┬─► httpApi  → fetch(NEXT_PUBLIC_API_URL + /api/...)
+                                         └─► mockApi  → src/lib/api/mock.ts
+```
+
+- Nenhuma tela chama `fetch` direto.
+- `httpApi` e `mockApi` têm **o mesmo tipo** (o TypeScript reclama se divergirem). Assim o modo demonstração não fica desatualizado em relação ao contrato.
+- O modo demonstração liga sozinho quando `NEXT_PUBLIC_API_URL` está vazia. Por isso dá para clonar e rodar sem nada configurado, o que ajuda na avaliação do hackathon.
+
+### 3.2 Sessão
+
+- [`session.tsx`](../src/lib/session.tsx) guarda a sessão num store externo (`useSyncExternalStore`) ligado ao `localStorage`, com sincronização entre abas.
+- No servidor a sessão é "desconhecida" (`loading`), o que evita diferença de hidratação.
+- O layout da área logada ([`app-shell.tsx`](../src/components/app-shell.tsx)) redireciona para `/login?next=…` sem sessão. O `next` só aceita caminhos internos, para não virar *open redirect*.
+- Um 401 de qualquer rota encerra a sessão.
+
+### 3.3 Login com carteira
+
+[`wallet-login.ts`](../src/lib/wallet-login.ts): conectar → pedir o nonce → assinar a mensagem → enviar para o back-end validar → guardar a sessão. Os erros da carteira (cancelado, janela fechada, carteira sem `signMessage`) viram mensagens em português. **A validação da assinatura é só do back-end.**
+
+### 3.4 Verificação pública que não depende de confiança no servidor
+
+A página `/v/<id>` recalcula o **SHA-256 do CSV no navegador** (`crypto.subtle`) e compara com o hash registrado. O arquivo não é enviado a lugar nenhum. É a parte mais "blockchain" do front e é demonstrável: no modo demo, o hash é calculado a partir do próprio CSV gerado, então baixar o CSV e arrastá-lo na página de verificação dá ✓, e alterar uma linha do arquivo dá ✗.
+
+## 4. Fidelidade aos mockups
+
+| Tela | Rota | Observações |
+|---|---|---|
+| 01 Login | `/login` | painel roxo e formulário iguais ao mockup. Acrescentado: seletor quando há mais de uma carteira instalada, mensagens por fase ("Assine a mensagem na carteira…") e o botão de modo demonstração (só aparece no modo demo). |
+| 02 Sincronização | `/sincronizacao` | contador, barra geral, progresso por carteira e checklist. Acrescentado: barra indeterminada sem estimativa, estado "Tudo pronto." e erro com nova tentativa automática. |
+| 03 Carteiras | `/carteiras` | card da carteira de login, formulário Hyperliquid com validação e tabela com ressincronização por linha. |
+| 04 Painel | `/painel` | KPIs, barra do limite de isenção com marcador dourado em R$ 35.000, filtros e tabela. O seletor de mês funciona (`?mes=`). "Sem preço" abre o diálogo de preço manual. |
+| 05 Relatórios | `/relatorios` | lista, selos Final/Rascunho e aviso de prazo calculado (último dia útil do mês seguinte). |
+| 06 Relatório mensal | `/relatorios/AAAA-MM` | totais, tabela com linha de total, painel de verificação on-chain, copiar link, baixar CSV e gerar DeCripto. |
+| 07 Agente IA | `/agente` | chat em blocos (texto, quadro de cálculo, citações), sugestões e painel "Relatório citado". |
+| 08 Configurações | `/configuracoes` | plano, carteiras com remoção em duas etapas e zona de perigo com confirmação digitada ("EXCLUIR"). Acrescentado: escolha de tema. |
+| 09 Estados | — | integrados nas telas onde acontecem, em vez de uma tela própria. |
+| 10 Verificação | `/v/<id>` | igual ao mockup e com a conferência de arquivo funcionando. |
+
+**Além do mockup (feito para ser um produto, não uma imagem):** layout responsivo (os mockups só têm 1440 px), esqueletos de carregamento, foco visível no teclado, `aria-*` em navegação, abas, barras e diálogos, `prefers-reduced-motion`, seleção de texto e scrollbar no tom da marca, página 404 e tela de erro.
+
+**Desvio consciente:** o mockup do Painel mostra "R$ 28.948,13" em um print e "R$ 28.940,13" no HTML. Seguimos o HTML, cuja soma dos eventos fecha com os totais do relatório (R$ 28.940,13 − R$ 24.757,77 = R$ 4.182,36).
+
+## 5. Como foi verificado
+
+- `npm run typecheck`: sem erros.
+- `npm run lint`: sem erros, incluindo as regras novas do React 19 (sem `setState` síncrono em efeitos).
+- `npm run build`: build de produção sem erros (12 rotas).
+- **Navegação real** com o Edge headless (Puppeteer) em todas as telas, temas claro e escuro, em 1440 × 900 e 390 × 844 (mobile):
+  - sem erros no console;
+  - sem rolagem horizontal no mobile;
+  - fluxo completo: login demo → sincronização (até "Tudo pronto.") → painel → relatório → link público → verificação;
+  - comparação visual com os mockups. Dois problemas foram encontrados e corrigidos: o ganho do mock estava errado porque havia dois eventos `HYPE-PERP` com custos diferentes, e a tabela do relatório estourava a coluna em 1440 px.
+- **Não testado:** login com uma carteira real instalada, porque o ambiente de teste não tinha extensão. O fluxo segue a API oficial do Wallet Adapter, mas deve ser testado com a Phantom e a Solflare antes da demo.
+
+## 6. Limitações conhecidas e pendências
+
+| Item | Situação | Quem |
+|---|---|---|
+| Todas as rotas `/api/*` | contrato pronto em `API_CONTRACT.md`; o front está pronto para trocar o mock pela API | **back-end** |
+| Validação SIWS, nonce, sessão | só no back-end | **back-end** |
+| Motor fiscal (custo médio, PTAX, isenção, 15%) | o mock usa números do mockup e uma regra simplificada só para a demo | **back-end** |
+| Geração do CSV oficial e do arquivo DeCripto | no modo demo o CSV é gerado no navegador e a DeCripto mostra um aviso | **back-end** |
+| Registro do hash na Solana (Memo) | o front só exibe e confere | **back-end** |
+| Teste com carteira real (Phantom/Solflare) | pendente | front + QA |
+| Login em celular sem extensão (deep link da Phantom) | o Wallet Adapter cobre Android via Mobile Wallet Adapter; no iOS o usuário precisa abrir o site pelo navegador da Phantom | melhoria futura |
+| Página do plano Pro | botão "Conhecer o Pro" desativado ("Em breve"), como sugerido nos próximos passos do mockup | produto |
+| Notificação "Avisamos quando terminar" | texto da tela; o aviso em si (e-mail/push) depende do back-end | **back-end** |
+| Testes automatizados | não há; o próximo passo seria Playwright cobrindo o fluxo demo | front |
+| Sessão em `localStorage` | ok para o hackathon; para produção, cookie `httpOnly` (mudança pequena, descrita no contrato) | front + back |
+
+## 7. Segurança e privacidade (checklist do front)
+
+- Nenhum segredo no código ou em variável `NEXT_PUBLIC_*`; [`.env.example`](../.env.example) explica isso.
+- O app **nunca** pede chave privada ou seed e **nunca** envia transação. O login é só assinatura de mensagem.
+- Links externos com `rel="noopener noreferrer"`.
+- O parâmetro `next` do login aceita só caminhos internos.
+- A conferência do arquivo na verificação pública roda 100% no navegador.
+- A exclusão de dados exige confirmação digitada e explica o que permanece on-chain (LGPD).
+
+## 8. Como continuar
+
+1. **Integrar com o back-end:** definir `NEXT_PUBLIC_API_URL` e seguir o checklist do fim de [`API_CONTRACT.md`](API_CONTRACT.md).
+2. **Mudar um formato de dado:** edite `src/lib/api/types.ts`; o TypeScript aponta cada tela e o mock que precisam mudar.
+3. **Nova tela logada:** crie `src/app/(app)/<rota>/page.tsx`. A sidebar e a guarda de sessão vêm do layout; o item de menu vai em `NAV`, em `app-shell.tsx`.
+4. **Nova cor ou ajuste de tema:** edite os tokens em `globals.css` (`:root` e `[data-theme="dark"]`) e, se for cor nova, registre-a em `@theme inline`.
+5. Antes de abrir PR: `npm run check`.
