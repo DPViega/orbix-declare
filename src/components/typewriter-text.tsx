@@ -18,7 +18,7 @@ export function TypewriterText({ text, start = 0 }: { text: string; start?: numb
         return;
       }
       const splash = document.querySelector(".splash");
-      if (splash && document.documentElement.dataset.splash !== "seen") {
+      if (splash) {
         started = null;
         frame = requestAnimationFrame(tick);
         return;

@@ -223,7 +223,7 @@
   animation-delay: var(--divider-delay);
 }
 
-html:not([data-splash="seen"]):has(.splash) .login-typed-steps::before {
+html:has(.splash) .login-typed-steps::before {
   animation-play-state: paused;
 }
 
@@ -343,10 +343,6 @@ html:not([data-splash="seen"]):has(.splash) .login-typed-steps::before {
 
 /* ---------- Tela de abertura (components/splash-screen.tsx) ---------- */
 
-/* Já vista nesta aba: o script em app/layout.tsx marca o <html> antes da hidratação. */
-[data-splash="seen"] .splash {
-  display: none;
-}
 
 .splash-twinkle {
   animation: splash-twinkle 3.6s ease-in-out infinite;

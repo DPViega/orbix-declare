@@ -150,7 +150,7 @@ As verificações abaixo registram a implementação inicial, antes da atualiza�
 
 ### Abertura, login e identidade visual
 
-- Tela de abertura por aba, com progresso e logo 3D `public/od-logo.glb`, carregada com Three.js sob demanda.
+- Tela de abertura a cada carregamento completo, com progresso e logo 3D `public/od-logo.glb`, carregada com Three.js sob demanda.
 - Painel esquerdo do login com degradê radial roxo, três camadas de estrelas animadas e transição suave para o fundo do formulário. O teste de degradê horizontal foi revertido.
 - Textos do painel aparecem por digitação sequencial. A implementação revela texto contínuo, preservando o espaço do conteúdo; a linha divisória aparece após a digitação. A sequência aguarda a abertura e respeita redução de movimento.
 - Novo planeta `public/voxel-planet-orbits.glb` apenas na marca do painel esquerdo, em 112 × 112 px e rotação de 40 segundos por volta. A logo original serve de fallback durante o carregamento ou em falha do WebGL.

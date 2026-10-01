@@ -5,13 +5,12 @@ import { OrbixSignature } from "@/components/orbix-signature";
 /**
  * Tela de abertura (recriação em SVG/CSS de docs/Orbix Loading.mp4).
  *
- * Aparece na primeira entrada de cada aba, por cima do app, enquanto as fontes e a sessão carregam;
+ * Aparece a cada abertura ou recarga, por cima do app, enquanto as fontes e a sessão carregam;
  * depois some com fade e revela a página (normalmente o login). A barra acompanha etapas reais,
  * com um tempo mínimo por etapa para a animação não "piscar".
  *
  * - Não aparece em /v/* (verificação pública deve abrir direto).
- * - sessionStorage["orbix.splash"] evita repetir na mesma aba; o script em app/layout.tsx marca
- *   <html data-splash="seen"> antes da hidratação para não haver flash em recargas.
+ * - O estado do gate evita repetir durante a navega??o interna, sem persistir entre recargas.
  * - Logo 3D (splash-logo.tsx, public/od-logo.glb) no centro das órbitas: o download do modelo conta
  *   como etapa real (com teto de 3 s), dá uma volta no "Tudo pronto" e encolhe na saída.
  * - Com prefers-reduced-motion: órbitas, cometa e logo ficam parados; a barra continua informando o progresso.
@@ -22,7 +21,7 @@ import { useSession } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { SplashLogo, type LogoPhase } from "@/components/splash-logo";
 
-export const SPLASH_KEY = "orbix.splash";
+
 
 /** Etapas da barra; os textos vêm do dicionário (t.splash). */
 const STEPS = [
@@ -67,7 +66,7 @@ const PLANETS = [
   { orbit: INNER, dur: 14, begin: -10, r: 2.2 },
 ];
 
-const noopSubscribe = () => () => {};
+
 function useReducedMotion() {
   return useSyncExternalStore(
     (cb) => {
@@ -80,26 +79,10 @@ function useReducedMotion() {
   );
 }
 
-/** true quando a splash já foi vista nesta aba (lido só no cliente). */
-function useAlreadySeen() {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => {
-      try {
-        return window.sessionStorage.getItem(SPLASH_KEY) === "seen";
-      } catch {
-        return false;
-      }
-    },
-    () => false,
-  );
-}
-
 export function SplashGate() {
   const pathname = usePathname();
-  const seen = useAlreadySeen();
   const [done, setDone] = useState(false);
-  if (done || seen || pathname.startsWith("/v/")) return null;
+  if (done || pathname.startsWith("/v/")) return null;
   return <SplashScreen onDone={() => setDone(true)} />;
 }
 
@@ -152,11 +135,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       setTimeout(() => setExiting(true), 2650), // logo encolhe
       setTimeout(() => {
         setLeaving(true);
-        try {
-          window.sessionStorage.setItem(SPLASH_KEY, "seen");
-        } catch {
-          /* storage bloqueado: a splash só não fica lembrada */
-        }
+
       }, 3050), // a logo já está pela metade: o resto some em fade
       setTimeout(() => onDoneRef.current(), 3700),
     ];

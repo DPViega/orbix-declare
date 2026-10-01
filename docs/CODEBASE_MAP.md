@@ -16,7 +16,7 @@ total_tokens: 58432
 | `components/typewriter-text.tsx` | Revelação progressiva de texto, espera pela splash e redução de movimento |
 | `components/login-planet.tsx` | Planeta GLB de 112px exclusivo do login; Three.js sob demanda, rotação lenta e fallback |
 | `components/orbix-signature.tsx` | Assinatura traduzida com ponto dourado e `lab` roxo escuro |
-| `components/splash-screen.tsx`, `components/splash-logo.tsx` | Abertura por aba, etapas de progresso e logo OD em 3D |
+| `components/splash-screen.tsx`, `components/splash-logo.tsx` | Abertura a cada carregamento completo, etapas de progresso e logo OD em 3D |
 | `lib/i18n/`, `components/language-switch.tsx` | Dicionários PT/EN, contexto, escolha de idioma no servidor/cliente e seletor |
 | `app/globals.css` | Tokens de marca, escala `type-display`/`type-h1`/`type-h2`/`type-h3`, estrelas e divisor do login |
 

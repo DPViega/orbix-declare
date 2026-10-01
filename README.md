@@ -84,7 +84,7 @@ Todas as telas seguem os mockups em [`docs/`](docs/), nos temas claro e escuro. 
 
 | # | Tela do mockup | Rota | Acesso |
 |---|---|---|---|
-| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | primeira entrada na aba, por cima de qualquer rota exceto `/v/*` | — |
+| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | abertura ou recarga, por cima de qualquer rota exceto `/v/*` | — |
 | 01 | Login | `/login` | público |
 | 02 | Sincronização | `/sincronizacao` | logado |
 | 03 | Carteiras | `/carteiras` | logado |
