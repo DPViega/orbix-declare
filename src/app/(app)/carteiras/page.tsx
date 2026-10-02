@@ -225,9 +225,9 @@ export default function CarteirasPage() {
             </>
           }
         >
-          {t.wallets.emptyText(formatDate("2025-01-01T15:00:00Z"))[0]}
+          {t.wallets.emptyText(formatDate(emptyWallet.lastSyncAt!))[0]}
           <span className="font-mono text-ink">{shortAddress(emptyWallet.address)}</span>
-          {t.wallets.emptyText(formatDate("2025-01-01T15:00:00Z"))[1]}
+          {t.wallets.emptyText(formatDate(emptyWallet.lastSyncAt!))[1]}
         </StateBlock>
       )}
 

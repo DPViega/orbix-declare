@@ -6,16 +6,20 @@ import { api, errorMessage, type TaxEvent } from "@/lib/api";
 import { formatBRL, formatDate, formatQtyFull, parseBRLInput, shortAddress } from "@/lib/format";
 import { Button, Card, InlineError, Input, StateIcon } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
+import { config } from "@/lib/config";
 
 /**
  * "Preço não encontrado" — o usuário informa o preço unitário em R$ de um evento sem cotação.
  * PUT /api/events/:id/price. O valor fica marcado como manual no relatório.
  */
-export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | null; onClose: () => void; onSaved: (e: TaxEvent) => void }) {
+export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | null; onClose: () => void; onSaved: (e: TaxEvent, audited: boolean) => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [raw, setRaw] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [evidence, setEvidence] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -24,6 +28,9 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
     if (event && !d.open) {
       setRaw("");
       setError(null);
+      setReason("");
+      setEvidence("");
+      setConfirmed(false);
       d.showModal();
     } else if (!event && d.open) d.close();
   }, [event]);
@@ -38,11 +45,17 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
       setError(t.priceDialog.invalid);
       return;
     }
+    if (config.useMocks && (!reason.trim() || !evidence.trim() || !confirmed)) {
+      setError(t.priceDialog.reviewRequired);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const updated = await api.setManualPrice(event.id, price);
-      onSaved(updated);
+      const updated = config.useMocks
+        ? await api.reviewManualPrice(event.id, { unitPriceBrl: price, reason: reason.trim(), evidence: evidence.trim(), confirmed: true })
+        : await api.setManualPrice(event.id, price);
+      onSaved(updated, config.useMocks);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -101,10 +114,48 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
               {t.priceDialog.markedManual}
             </span>
           </div>
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-line px-4 py-3 text-sm">
+            <span className="text-muted">{t.priceDialog.before}</span>
+            <span className="text-right font-mono">{event.unitPriceBrl == null ? "—" : formatBRL(event.unitPriceBrl)}</span>
+            <span className="text-muted">{t.priceDialog.after}</span>
+            <span className="text-right font-mono">{price === null ? "—" : formatBRL(price)}</span>
+            <span className="text-muted">{t.priceDialog.projectedTotal}</span>
+            <span className="text-right font-mono">{total === null ? "—" : formatBRL(total)}</span>
+          </div>
+          {config.useMocks ? (
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor="review-reason">
+                {t.priceDialog.reason}
+                <Input id="review-reason" value={reason} onChange={(e) => setReason(e.target.value)} required />
+              </label>
+              <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor="review-evidence">
+                {t.priceDialog.evidence}
+                <textarea
+                  id="review-evidence"
+                  value={evidence}
+                  onChange={(e) => setEvidence(e.target.value)}
+                  required
+                  rows={3}
+                  className="w-full resize-y rounded-xl border border-line2 bg-bg px-3.5 py-3 text-sm text-ink outline-none focus:border-accent"
+                />
+              </label>
+              <label className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
+                <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-1 accent-[var(--accent)]" />
+                {t.priceDialog.confirm}
+              </label>
+              {!!event.reviewHistory?.length && (
+                <p className="m-0 text-xs text-muted">{t.priceDialog.historyCount(event.reviewHistory.length)}</p>
+              )}
+            </div>
+          ) : (
+            <p role="note" className="m-0 rounded-xl bg-warn-bg px-4 py-3 text-[13px] leading-relaxed text-warn">
+              {t.priceDialog.auditUnavailable}
+            </p>
+          )}
           <InlineError>{error}</InlineError>
           <div className="mt-2 flex flex-wrap gap-2.5">
-            <Button type="submit" loading={saving}>
-              {t.priceDialog.save}
+            <Button type="submit" loading={saving} disabled={config.useMocks && (!reason.trim() || !evidence.trim() || !confirmed)}>
+              {config.useMocks ? t.priceDialog.saveReview : t.priceDialog.savePriceOnly}
             </Button>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t.priceDialog.skip}

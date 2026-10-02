@@ -9,7 +9,7 @@ import type { ReportDetail } from "@/lib/api/types";
  * oficial vem do back-end (GET /api/report/:mes/csv) e o front só confere o hash na página /v/[id].
  */
 
-const CSV_HEADER = ["data", "tipo", "ativo", "quantidade", "ptax", "valor_brl", "custo_brl", "ganho_brl", "preco_manual"];
+const CSV_HEADER = ["date", "type", "asset", "quantity", "ptax", "value_brl", "cost_brl", "gain_brl", "manual_price"];
 
 const num = (v: number, digits = 2) => v.toFixed(digits);
 /** AAAA-MM-DD no fuso de Brasília (o mesmo dia que a tela mostra). */
@@ -29,7 +29,7 @@ export function reportToCsv(report: ReportDetail): string {
         num(r.valueBrl),
         num(r.costBrl),
         num(r.gainBrl),
-        r.manualPrice ? "sim" : "nao",
+        r.manualPrice ? "yes" : "no",
       ].join(","),
     );
   }

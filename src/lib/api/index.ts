@@ -17,6 +17,7 @@ import type {
   Dashboard,
   DownloadLink,
   ManualPriceRequest,
+  ManualPriceReviewRequest,
   NonceResponse,
   PublicVerification,
   ReportDetail,
@@ -53,6 +54,8 @@ const httpApi = {
   events: (month: string) => http<TaxEvent[]>("GET", `/api/events?month=${enc(month)}`),
   setManualPrice: (eventId: string, unitPriceBrl: number) =>
     http<TaxEvent>("PUT", `/api/events/${enc(eventId)}/price`, { unitPriceBrl } satisfies ManualPriceRequest),
+  reviewManualPrice: (eventId: string, request: ManualPriceReviewRequest) =>
+    http<TaxEvent>("PUT", `/api/events/${enc(eventId)}/price`, request),
 
   // Relatórios
   reports: () => http<ReportSummary[]>("GET", "/api/reports"),

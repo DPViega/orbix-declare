@@ -146,12 +146,18 @@ Campos **opcionais** para a revisão do evento (modal "Detalhes do evento" no pa
 ```json
 { "wallet": { "address": "7xKX…9sQp", "label": "Principal" }, "protocol": "Jupiter",
   "unitPriceBrl": 910.0, "priceProvider": "Birdeye", "ptax": 5.4128, "ptaxDate": "2026-09-27",
-  "costBrl": 9412.6, "gainBrl": 1871.4 }
+  "priceObservedAt": "2026-09-28T14:59:00Z", "ruleVersion": "2026.1", "feesBrl": 1.25,
+  "costBrl": 9412.6, "gainBrl": 1871.4,
+  "pendingReasons": [], "reviewHistory": [] }
 ```
 `unitPriceBrl` é o preço unitário usado (automático ou manual). `priceProvider` é a fonte da cotação automática (`null` quando manual ou sem preço). `ptax`/`ptaxDate`: PTAX de venda usada e o dia de referência. `costBrl`/`gainBrl`: custo de aquisição e ganho de capital do evento.
 
+`priceObservedAt`, `ruleVersion`, `feesBrl`, `pendingReasons` e `reviewHistory` são opcionais. Ausência significa que a informação não foi fornecida, não que seja zero/vazia. Cada item de `reviewHistory` deve incluir motivo, evidência, preço anterior, novo preço e instante persistidos pelo back-end.
+
 ### `PUT /api/events/:id/price` → `TaxEvent`
-Request: `{ "unitPriceBrl": 3.08 }`. Devolve o evento atualizado, com `priceSource: "manual"` e `valueBrl` recalculado. O relatório deve marcar essa linha como manual (`manualPrice: true`).
+Request básico: `{ "unitPriceBrl": 3.08 }`. Devolve o evento atualizado, com `priceSource: "manual"` e `valueBrl` recalculado. O relatório deve marcar essa linha como manual (`manualPrice: true`).
+
+Para revisão auditável, o front pode enviar também `reason`, `evidence` e `confirmed: true`. Até que o back-end aceite e persista esses campos, o front mantém a ação real limitada ao preço e informa que os demais dados não foram gravados.
 
 ## Relatórios
 
@@ -171,6 +177,8 @@ Ordene do mais recente para o mais antigo. `status`: `"draft" | "final"`.
                    "registeredAt": "2026-10-05T13:14:22Z", "publicId": "a3f9c27e" } }
 ```
 `attestation` é `null` em rascunhos e enquanto o registro on-chain não for confirmado.
+
+Metadados opcionais `review` devem trazer `engineVersion`, `coverage` (`state`, período importado e quantidade de eventos), `limitations`, `pendingReasons`, `unsupportedOperations`, `reviewItems` e `decriptoReady`. `reviewItems` descreve pendências revisáveis (`acquisition_cost` ou `classification`). O front só habilita a geração da DeCripto quando o relatório é final e o motor confirma cobertura completa, sem pendências/revisões/operações não suportadas e com `decriptoReady: true`. Sem esses metadados, a geração permanece indisponível. O CSV de revisão não equivale a um arquivo DeCripto validado.
 
 ### `GET /api/report/:month/csv` → `DownloadLink`
 ### `POST /api/report/:month/decripto` → `DownloadLink`

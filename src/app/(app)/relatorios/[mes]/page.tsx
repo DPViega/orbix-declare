@@ -15,15 +15,17 @@ import {
   SealCheckIcon,
   WarningIcon,
 } from "@phosphor-icons/react";
-import { api, errorMessage, type ReportDetail } from "@/lib/api";
+import { api, errorMessage, type EventType, type ReportDetail, type ReportReviewItem } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { config, explorerTxUrl, publicVerifyUrl } from "@/lib/config";
 import {
   formatBRL,
   formatDate,
+  formatDateTime,
   formatDayMonth,
   formatInt,
   formatMoney,
+  parseBRLInput,
   formatPtax,
   formatQty,
   formatQtyFull,
@@ -34,7 +36,7 @@ import {
   shortAddress,
 } from "@/lib/format";
 import { downloadText, reportToCsv, triggerDownload } from "@/lib/report-file";
-import { Badge, Button, ButtonLink, Card, InlineError, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, InlineError, Input, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
 import { DemoNotice } from "@/components/demo-notice";
@@ -115,7 +117,7 @@ function MonthReport({ mes }: { mes: string }) {
   };
 
   const generateDecripto = async () => {
-    if (!ready) return;
+    if (!ready || !decriptoReady) return;
     setBusy("decripto");
     setActionError(null);
     setNotice(null);
@@ -129,6 +131,12 @@ function MonthReport({ mes }: { mes: string }) {
       setBusy(null);
     }
   };
+
+  const review = data?.review;
+  const hasReviewItems = !!review?.reviewItems?.length;
+  const decriptoReady = !!data && data.status === "final" && review?.decriptoReady === true &&
+    review.coverage.state === "complete" && !!review.coverage.importedFrom && !!review.coverage.importedThrough &&
+    review.coverage.importedEvents !== null && review.pendingReasons.length === 0 && review.unsupportedOperations.length === 0 && !hasReviewItems;
 
   return (
     <>
@@ -164,13 +172,13 @@ function MonthReport({ mes }: { mes: string }) {
               loading={busy === "csv"}
               disabled={!ready || busy !== null}
             >
-              {t.report.downloadCsv}
+              {t.report.downloadReviewCsv}
             </Button>
             <Button
               icon={FileArrowUpIcon}
               onClick={generateDecripto}
               loading={busy === "decripto"}
-              disabled={!data || !ready || busy !== null || data.rows.length === 0}
+              disabled={!data || !ready || !decriptoReady || busy !== null || data.rows.length === 0}
             >
               {t.report.generateDecripto}
             </Button>
@@ -179,6 +187,8 @@ function MonthReport({ mes }: { mes: string }) {
       />
 
       <DemoNotice text={t.demo.report} />
+
+      {data && <ReportReviewPanel report={data} />}
 
       <InlineError>{actionError}</InlineError>
       {notice && (
@@ -227,6 +237,183 @@ function Total({ label, value }: { label: string; value: number }) {
       <Kicker as="h2">{label}</Kicker>
       <span className="font-mono text-[22px] font-medium">{formatBRL(value)}</span>
     </Card>
+  );
+}
+
+function ReportReviewPanel({ report }: { report: ReportDetail }) {
+  const { t } = useI18n();
+  const [history, setHistory] = useState<Record<string, ReviewRecord[]>>({});
+  const review = report.review;
+  const coverage = review?.coverage;
+  const period = coverage?.importedFrom && coverage.importedThrough
+    ? `${formatDate(`${coverage.importedFrom}T12:00:00Z`)} – ${formatDate(`${coverage.importedThrough}T12:00:00Z`)}`
+    : t.report.notReported;
+  const ready = report.status === "final" && review?.decriptoReady === true && coverage?.state === "complete" &&
+    !!coverage.importedFrom && !!coverage.importedThrough && coverage.importedEvents !== null &&
+    review.pendingReasons.length === 0 && review.unsupportedOperations.length === 0 && !review.reviewItems?.length;
+
+  return (
+    <Panel className="flex flex-col gap-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="type-h2 m-0">{t.report.reviewTitle}</h2>
+        <Badge tone={coverage?.state === "complete" ? "ok" : "warn"}>
+          {coverage?.state === "complete" ? t.report.coverageComplete : coverage?.state === "partial" ? t.report.coveragePartial : t.report.coverageUnknown}
+        </Badge>
+      </div>
+      <dl className="m-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+        <ReviewField label={t.report.coveragePeriod} value={period} />
+        <ReviewField label={t.report.importedEvents} value={coverage?.importedEvents == null ? t.report.notReported : String(coverage.importedEvents)} />
+        <ReviewField label={t.report.engineVersion} value={review?.engineVersion || t.report.notReported} />
+        <ReviewField label={t.report.decriptoStatus} value={ready ? t.report.decriptoReady : t.report.decriptoUnavailable} last />
+      </dl>
+      {!!review?.limitations.length && <ReviewList title={t.report.limitations} items={review.limitations} />}
+      {!!review?.pendingReasons.length && <ReviewList title={t.report.pending} items={review.pendingReasons} />}
+      {!!review?.unsupportedOperations.length && <ReviewList title={t.report.unsupported} items={review.unsupportedOperations} />}
+      {!!review?.reviewItems?.length && (
+        <section className="flex flex-col gap-3 border-t border-line pt-4" aria-labelledby="review-actions-title">
+          <h3 id="review-actions-title" className="m-0 text-sm font-medium">{t.report.reviewActions}</h3>
+          {review.reviewItems.map((item) => (
+            <ReviewAction
+              key={item.id}
+              item={item}
+              history={history[item.id] ?? []}
+              onSave={(entry) => setHistory((current) => ({ ...current, [item.id]: [...(current[item.id] ?? []), entry] }))}
+            />
+          ))}
+        </section>
+      )}
+      {!review && <p className="m-0 text-sm text-muted">{t.report.reviewMetadataMissing}</p>}
+      {review && !ready && <p className="m-0 text-sm text-muted">{t.report.decriptoBlocked}</p>}
+    </Panel>
+  );
+}
+
+interface ReviewRecord {
+  before: string;
+  after: string;
+  reason: string;
+  evidence: string;
+  createdAt: string;
+}
+
+function ReviewAction({
+  item,
+  history,
+  onSave,
+}: {
+  item: ReportReviewItem;
+  history: ReviewRecord[];
+  onSave: (record: ReviewRecord) => void;
+}) {
+  const { t } = useI18n();
+  const [raw, setRaw] = useState("");
+  const [classification, setClassification] = useState<EventType | "">("");
+  const [reason, setReason] = useState("");
+  const [evidence, setEvidence] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const cost = parseBRLInput(raw);
+  const after = item.kind === "acquisition_cost"
+    ? cost !== null && cost >= 0 ? formatBRL(cost) : ""
+    : classification ? t.eventType[classification] : "";
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!config.useMocks || !after || !reason.trim() || !evidence.trim() || !confirmed) return;
+    onSave({ before: t.report.reviewPending, after, reason: reason.trim(), evidence: evidence.trim(), createdAt: new Date().toISOString() });
+    setRaw("");
+    setClassification("");
+    setReason("");
+    setEvidence("");
+    setConfirmed(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-line px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="text-sm font-medium">{item.label}</span>
+        <Badge tone="warn">{item.kind === "acquisition_cost" ? t.report.cost : t.report.classification}</Badge>
+      </div>
+      {!config.useMocks && <p className="m-0 text-[13px] text-muted">{t.report.reviewBackendUnavailable}</p>}
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        {item.kind === "acquisition_cost" ? (
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-cost`}>
+            {t.report.costAmount}
+            <Input id={`${item.id}-cost`} inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} disabled={!config.useMocks} />
+          </label>
+        ) : (
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-class`}>
+            {t.report.classification}
+            <select
+              id={`${item.id}-class`}
+              value={classification}
+              onChange={(e) => setClassification(e.target.value as EventType | "")}
+              disabled={!config.useMocks}
+              className="h-11 w-full rounded-xl border border-line2 bg-bg px-3.5 text-sm text-ink disabled:opacity-60"
+            >
+              <option value="">{t.report.classifyPlaceholder}</option>
+              {(["swap", "perp", "funding"] as const).map((type) => <option key={type} value={type}>{t.eventType[type]}</option>)}
+            </select>
+          </label>
+        )}
+        <div className="grid grid-cols-2 gap-3 rounded-lg bg-bg px-3 py-2.5 text-xs">
+          <span className="text-muted">{t.report.reviewBefore}</span>
+          <span className="text-right">{t.report.reviewPending}</span>
+          <span className="text-muted">{t.report.reviewAfter}</span>
+          <span className="text-right">{after || "—"}</span>
+        </div>
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-reason`}>
+          {t.report.reviewReason}
+          <Input id={`${item.id}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} disabled={!config.useMocks} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-evidence`}>
+          {t.report.reviewEvidence}
+          <textarea
+            id={`${item.id}-evidence`}
+            value={evidence}
+            onChange={(e) => setEvidence(e.target.value)}
+            disabled={!config.useMocks}
+            rows={2}
+            className="w-full resize-y rounded-xl border border-line2 bg-bg px-3.5 py-3 text-sm text-ink outline-none focus:border-accent disabled:opacity-60"
+          />
+        </label>
+        {config.useMocks && (
+          <label className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
+            <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-1 accent-[var(--accent)]" />
+            {t.report.confirmReview}
+          </label>
+        )}
+        <Button type="submit" size="sm" disabled={!config.useMocks || !after || !reason.trim() || !evidence.trim() || !confirmed}>
+          {item.kind === "acquisition_cost" ? t.report.resolveCostAction : t.report.classifyAction}
+        </Button>
+      </form>
+      {history.map((record, index) => (
+        <div key={`${record.createdAt}-${index}`} role="status" className="border-t border-line pt-3 text-xs leading-relaxed text-muted">
+          <p className="m-0">{t.report.reviewSavedDemo} · {formatDateTime(record.createdAt)}</p>
+          <p className="m-0">{record.before} → {record.after}</p>
+          <p className="m-0">{record.reason} · {record.evidence}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReviewField({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div className={`flex min-w-0 justify-between gap-4 border-t border-line py-2.5 text-sm ${last ? "sm:col-span-2" : ""}`}>
+      <dt className="text-muted">{label}</dt>
+      <dd className="m-0 text-right font-mono break-words">{value}</dd>
+    </div>
+  );
+}
+
+function ReviewList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+      <h3 className="m-0 text-sm font-medium">{title}</h3>
+      <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-muted">
+        {items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}
+      </ul>
+    </div>
   );
 }
 

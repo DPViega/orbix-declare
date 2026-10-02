@@ -20,6 +20,7 @@ import type {
   Dashboard,
   DownloadLink,
   EventType,
+  ManualPriceReviewRequest,
   NonceResponse,
   PublicVerification,
   ReportDetail,
@@ -262,6 +263,7 @@ const MONTHS: {
 
 /** Preços manuais informados pelo usuário (id do evento → preço unitário em R$). */
 const manualPrices = new Map<string, number>();
+const eventReviews = new Map<string, TaxEvent["reviewHistory"]>();
 
 function monthInfo(key: string) {
   const m = MONTHS.find((x) => x.key === key);
@@ -288,7 +290,8 @@ function eventsFor(key: string): TaxEvent[] {
     const hash = key === "2026-09" ? b.hash : `${b.hash.slice(0, -4)}${(i * 7919 + y + mo).toString(36).slice(-4)}`;
     const date = day(y, mo, Math.max(1, dd));
     const source = b.brl === null ? (manual !== undefined ? "manual" : null) : "auto";
-    const wallet = wallets.find((w) => w.network === b.network);
+    const networkWallets = wallets.filter((w) => w.network === b.network);
+    const wallet = networkWallets.length ? networkWallets[i % networkWallets.length] : undefined;
     const cost = round2(b.cost * factor);
     // PTAX de venda do dia útil anterior (aqui, simplificado para o dia anterior).
     const ptaxDate = new Date(new Date(date).getTime() - 86_400_000).toISOString().slice(0, 10);
@@ -310,8 +313,13 @@ function eventsFor(key: string): TaxEvent[] {
       priceProvider: source === "auto" ? (b.network === "solana" ? "Birdeye" : "Hyperliquid") : null,
       ptax: b.ptax,
       ptaxDate,
+      priceObservedAt: value === null ? null : new Date(new Date(date).getTime() + 60_000).toISOString(),
+      ruleVersion: "demo-2026.10",
+      feesBrl: round2(value === null ? 0 : value * 0.001),
       costBrl: cost,
       gainBrl: value === null ? null : round2(value - cost),
+      pendingReasons: value === null ? [tr("Cotação histórica não encontrada.", "Historical quote not found.")] : [],
+      reviewHistory: eventReviews.get(id) ?? [],
     } satisfies TaxEvent;
   });
 }
@@ -352,12 +360,39 @@ function totals(rows: ReportRow[]) {
 async function buildReport(key: string): Promise<ReportDetail> {
   const info = monthInfo(key);
   const rows = rowsFor(key);
+  const monthEvents = eventsFor(key);
+  const datedEvents = monthEvents.map((event) => event.date).sort();
   const report: ReportDetail = {
     month: key,
     status: info.status,
     totals: totals(rows),
     rows,
     attestation: null,
+    review: {
+      engineVersion: "demo-2026.10",
+      coverage: {
+        state: "partial",
+        importedFrom: datedEvents[0]?.slice(0, 10) ?? null,
+        importedThrough: datedEvents.at(-1)?.slice(0, 10) ?? null,
+        importedEvents: monthEvents.length,
+      },
+      limitations: [tr("Dados simulados; cobertura das fontes não validada.", "Simulated data; source coverage is not validated.")],
+      pendingReasons: monthEvents.flatMap((event) => event.pendingReasons ?? []),
+      unsupportedOperations: [tr("Transferências de NFT", "NFT transfers")],
+      reviewItems: [
+        {
+          id: `cost_${key}`,
+          kind: "acquisition_cost",
+          label: tr("Custo de aquisição pendente · exemplo", "Acquisition cost pending · sample"),
+        },
+        {
+          id: `classification_${key}`,
+          kind: "classification",
+          label: tr("Transferência de NFT · exemplo", "NFT transfer · sample"),
+        },
+      ],
+      decriptoReady: false,
+    },
   };
   if (info.status === "final") {
     const hash = await sha256Hex(reportToCsv(report));
@@ -539,7 +574,7 @@ export const mockApi = {
     const step = (cond: boolean, running: boolean) => (cond ? "done" : running ? "running" : "pending") as "done" | "running" | "pending";
     return {
       state: done ? "done" : "running",
-      since: "2025-01-01",
+      since: "2026-03-09",
       read: sol + hl,
       estimated: 1896,
       wallets: [
@@ -626,6 +661,25 @@ export const mockApi = {
     manualPrices.set(eventId, unitPriceBrl);
     const month = eventId.split("_")[1];
     return eventsFor(month).find((e) => e.id === eventId)!;
+  },
+
+  async reviewManualPrice(eventId: string, request: ManualPriceReviewRequest): Promise<TaxEvent> {
+    await wait(500);
+    const month = eventId.split("_")[1];
+    const current = eventsFor(month).find((event) => event.id === eventId);
+    if (!current) throw new ApiError(tr("Evento não encontrado.", "Event not found."), 404, "event_not_found");
+    manualPrices.set(eventId, request.unitPriceBrl);
+    eventReviews.set(eventId, [
+      ...(eventReviews.get(eventId) ?? []),
+      {
+        reason: request.reason,
+        evidence: request.evidence,
+        previousPriceBrl: current.unitPriceBrl ?? null,
+        newPriceBrl: request.unitPriceBrl,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    return eventsFor(month).find((event) => event.id === eventId)!;
   },
 
   async reports(): Promise<ReportSummary[]> {

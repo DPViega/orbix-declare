@@ -102,7 +102,9 @@ export function SyncView() {
                 ? t.sync.textDone
                 : failed
                   ? t.sync.textFailed
-                  : t.sync.textRunning(formatDate(`${sync?.since ?? "2025-01-01"}T15:00:00Z`))}
+                  : sync?.since
+                    ? t.sync.textRunning(formatDate(`${sync.since}T15:00:00Z`))
+                    : t.sync.textRunningUnknown}
             </p>
           </div>
 

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon, SparkleIcon } from "@phosphor-icons/react";
 import { api, errorMessage, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
+import { config } from "@/lib/config";
+import { DemoNotice } from "@/components/demo-notice";
 import { useSession } from "@/lib/session";
 import { formatBRL, formatDate, formatInt, formatTime, monthLabel, monthSlash } from "@/lib/format";
 import { Badge, Card, cn, InlineError, KeyValue, Kicker } from "@/components/ui";
@@ -10,7 +12,13 @@ import { useI18n } from "@/lib/i18n";
 
 export default function AgentePage() {
   const { user, setUser } = useSession();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const copy = locale === "en"
+    ? { exhausted: "Monthly question limit reached. You can still review your conversation and sources.", retry: "Retry question", fresh: "New conversation", demo: "Responses and the March 2026 scenario are simulated. No live AI model is called." }
+    : { exhausted: "Limite mensal de perguntas atingido. Você ainda pode conferir a conversa e as fontes.", retry: "Tentar pergunta novamente", fresh: "Nova conversa", demo: "Respostas e cenário de março de 2026 são simulados. Nenhum modelo de IA é chamado ao vivo." };
+  const exhausted = user !== null && user.agentQuestionsLeft <= 0;
+  const inFlight = useRef(false);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [context, setContext] = useState<AgentContext | null>(null);
   // null = ainda sem resposta do agente: mostra as perguntas iniciais no idioma atual.
@@ -26,16 +34,18 @@ export default function AgentePage() {
   useEffect(() => {
     scroller.current?.scrollTo({
       top: scroller.current.scrollHeight,
-      behavior: "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
   }, [messages, pending]);
 
-  const send = async (text: string) => {
+  const send = async (text: string, retry = false) => {
     const message = text.trim();
-    if (!message || pending) return;
+    if (!message || inFlight.current || exhausted) return;
+    inFlight.current = true;
+    setFailedMessage(null);
     setError(null);
     setInput("");
-    setMessages((m) => [
+    if (!retry) setMessages((m) => [
       ...m,
       {
         id: `u_${Date.now()}`,
@@ -57,9 +67,11 @@ export default function AgentePage() {
       setSuggestions(reply.suggestions);
       if (user) setUser({ ...user, agentQuestionsLeft: reply.questionsLeft });
     } catch (err) {
+      setFailedMessage(message);
       setError(errorMessage(err));
       setInput(message);
     } finally {
+      inFlight.current = false;
       setPending(false);
       inputRef.current?.focus();
     }
@@ -67,8 +79,8 @@ export default function AgentePage() {
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <section className="flex min-h-0 flex-col">
-        <header className="flex h-[72px] shrink-0 items-center justify-between gap-3 border-b border-line px-5 sm:px-10 lg:h-[84px]">
+      <section className="flex min-h-0 min-w-0 flex-col">
+        <header className="flex min-h-[72px] flex-wrap shrink-0 items-center justify-between gap-3 py-3 border-b border-line px-5 sm:px-10 lg:h-[84px]">
           <h1 className="type-h1 m-0">{t.agent.title}</h1>
           {context && (
             <Badge tone="accent" icon={FileTextIcon}>
@@ -77,7 +89,14 @@ export default function AgentePage() {
           )}
         </header>
 
-        <div ref={scroller} className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-8 sm:px-10" aria-live="polite">
+        <div className="px-5 pt-4 sm:px-10"><DemoNotice text={copy.demo} /></div>
+        <div className="px-5 pt-3 sm:px-10">
+          <button type="button" disabled={pending} className="min-h-11 cursor-pointer text-sm text-accent-text disabled:opacity-50" onClick={() => {
+            setMessages([]); setContext(null); setConversationId(undefined); setSuggestions(null);
+            setError(null); setFailedMessage(null); setInput(""); inputRef.current?.focus();
+          }}>{copy.fresh}</button>
+        </div>
+        <div ref={scroller} className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-8 sm:px-10" role="log" aria-label={t.agent.title} aria-live="polite" aria-relevant="additions text">
           {messages.length === 0 && (
             <div className="flex max-w-[620px] gap-3.5">
               <AgentAvatar />
@@ -91,7 +110,7 @@ export default function AgentePage() {
             m.role === "user" ? (
               <div
                 key={m.id}
-                className="max-w-[min(420px,85%)] self-end rounded-[12px_12px_4px_12px] bg-accent px-[18px] py-3.5 text-[15px] text-on-accent"
+                className="max-w-[min(420px,85%)] self-end break-words rounded-[12px_12px_4px_12px] bg-accent px-[18px] py-3.5 text-[15px] text-on-accent"
               >
                 {m.text}
               </div>
@@ -121,7 +140,7 @@ export default function AgentePage() {
             </div>
           )}
 
-          {!pending && chips.length > 0 && (
+          {!pending && !exhausted && chips.length > 0 && (
             <div className="flex flex-wrap gap-2 sm:pl-12">
               {chips.map((s) => (
                 <button
@@ -145,6 +164,8 @@ export default function AgentePage() {
           className="flex flex-col gap-2 px-5 pt-5 pb-7 sm:px-10"
         >
           <InlineError>{error}</InlineError>
+          {failedMessage && !pending && !exhausted && <button type="button" className="min-h-11 self-start text-sm text-accent-text" onClick={() => void send(failedMessage, true)}>{copy.retry}</button>}
+          {exhausted && <p role="status" className="m-0 text-sm text-muted">{copy.exhausted}</p>}
           <div className="flex h-[54px] items-center gap-2.5 rounded-xl border border-line2 bg-panel pr-2 pl-[18px] transition-colors focus-within:border-accent">
             <label htmlFor="agent-input" className="sr-only">
               {t.agent.inputLabel}
@@ -162,7 +183,7 @@ export default function AgentePage() {
             <button
               type="submit"
               aria-label={t.agent.send}
-              disabled={pending || !input.trim()}
+              disabled={pending || exhausted || !input.trim()}
               className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-accent text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowUpIcon size={18} aria-hidden />
@@ -175,7 +196,7 @@ export default function AgentePage() {
         </form>
       </section>
 
-      <aside className="hidden flex-col gap-5 overflow-y-auto border-l border-line bg-panel px-7 py-8 lg:flex">
+      <aside aria-label={t.agent.cited} className="flex min-w-0 flex-col gap-5 overflow-y-auto border-t border-line bg-panel px-5 py-6 lg:border-t-0 lg:border-l lg:px-7 lg:py-8">
         <Kicker>{t.agent.cited}</Kicker>
         {context ? (
           <>
@@ -248,7 +269,7 @@ function Block({ block }: { block: AgentBlock }) {
           "inline-flex items-center gap-1.5 rounded-lg border border-line2 px-2.5 py-1.5 font-mono text-xs no-underline",
           c.kind === "tx" ? "text-accent-text" : "text-ink",
         );
-        return c.url ? (
+        return c.url && /^https?:\/\//i.test(c.url) && !(config.useMocks && c.kind === "tx") ? (
           <a key={i} href={c.url} target="_blank" rel="noopener noreferrer" className={cn(cls, "hover:border-soft/60")}>
             <Icon size={14} aria-hidden />
             {c.label}

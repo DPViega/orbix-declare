@@ -31,6 +31,7 @@ import { LoadFailure, StaleDataError } from "@/components/load-failure";
 
 type Filter = "all" | EventType;
 const FILTERS: Filter[] = ["all", "swap", "perp", "funding"];
+type NetworkFilter = "all" | "solana" | "hyperliquid";
 const NETWORK = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
 
 export function DashboardView() {
@@ -48,16 +49,25 @@ export function DashboardView() {
   const requested = params.get("mes") ?? undefined;
 
   const reports = useApi(() => api.reports(), []);
+  const wallets = useApi(() => api.listWallets(), []);
   const dash = useApi(() => api.dashboard(requested), [requested]);
   const month = dash.data?.month ?? requested;
   const events = useApi(() => api.events(month!), [month], !!month);
 
   const [filter, setFilter] = useState<Filter>("all");
+  const [networkFilter, setNetworkFilter] = useState<NetworkFilter>("all");
+  const [walletFilter, setWalletFilter] = useState("all");
   const [pricing, setPricing] = useState<TaxEvent | null>(null);
   const [detail, setDetail] = useState<TaxEvent | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
 
   const months = useMemo(() => (reports.data ?? []).map((r) => r.month), [reports.data]);
-  const visible = (events.data ?? []).filter((e) => filter === "all" || e.type === filter);
+  const visible = (events.data ?? []).filter(
+    (e) =>
+      (filter === "all" || e.type === filter) &&
+      (networkFilter === "all" || e.network === networkFilter) &&
+      (walletFilter === "all" || e.wallet?.address === walletFilter),
+  );
 
   const setMonth = (m: string) => {
     setFilter("all");
@@ -91,6 +101,7 @@ export function DashboardView() {
       />
 
       <DemoNotice text={t.demo.dashboard} />
+      {reviewNotice && <Card role="status" className="px-5 py-3 text-sm text-muted">{reviewNotice}</Card>}
       <StaleDataError error={d ? dash.error : null} onRetry={dash.reload} />
 
       {user && !user.onboarded && (
@@ -148,21 +159,49 @@ export function DashboardView() {
       <Panel className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-[18px]">
           <h2 className="type-h2 m-0">{t.dashboard.monthEvents}</h2>
-          <div role="group" aria-label={t.dashboard.filterByType} className="flex gap-1 rounded-xl border border-line bg-bg p-[3px]">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={filter === f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  "cursor-pointer rounded-[9px] px-3 py-1.5 text-[13px] transition-colors",
-                  filter === f ? "bg-chip font-medium text-chip-text" : "text-muted hover:text-ink",
-                )}
-              >
-                {f === "all" ? t.dashboard.filterAll : t.eventType[f]}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor="event-network-filter">{t.dashboard.filterByNetwork}</label>
+            <select
+              id="event-network-filter"
+              value={networkFilter}
+              onChange={(event) => setNetworkFilter(event.target.value as NetworkFilter)}
+              className="h-9 max-w-full rounded-lg border border-line2 bg-bg px-2.5 text-[13px] text-ink"
+            >
+              <option value="all">{t.dashboard.networkAll}</option>
+              <option value="solana">Solana</option>
+              <option value="hyperliquid">Hyperliquid</option>
+            </select>
+            <label className="sr-only" htmlFor="event-wallet-filter">{t.dashboard.filterByWallet}</label>
+            <select
+              id="event-wallet-filter"
+              value={walletFilter}
+              onChange={(event) => setWalletFilter(event.target.value)}
+              className="h-9 max-w-[220px] rounded-lg border border-line2 bg-bg px-2.5 text-[13px] text-ink"
+            >
+              <option value="all">{t.dashboard.walletAll}</option>
+              {(wallets.data ?? []).map((wallet) => (
+                <option key={wallet.id} value={wallet.address}>{wallet.label} · {shortAddress(wallet.address)}</option>
+              ))}
+            </select>
+            {walletFilter !== "all" && (events.data ?? []).some((event) => !event.wallet) && (
+              <span className="text-xs text-muted">{t.dashboard.walletFilterHint}</span>
+            )}
+            <div role="group" aria-label={t.dashboard.filterByType} className="flex gap-1 rounded-xl border border-line bg-bg p-[3px]">
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={filter === f}
+                  onClick={() => setFilter(f)}
+                  className={cn(
+                    "cursor-pointer rounded-[9px] px-3 py-1.5 text-[13px] transition-colors",
+                    filter === f ? "bg-chip font-medium text-chip-text" : "text-muted hover:text-ink",
+                  )}
+                >
+                  {f === "all" ? t.dashboard.filterAll : t.eventType[f]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -188,7 +227,9 @@ export function DashboardView() {
         ) : visible.length === 0 ? (
           <div className="flex flex-col items-start gap-3 p-8 text-sm text-muted">
             <TrayIcon size={26} className="text-accent-text" aria-hidden />
-            {filter === "all" ? t.dashboard.noEvents : t.dashboard.noEventsOfType}
+            {filter === "all" && networkFilter === "all" && walletFilter === "all"
+              ? t.dashboard.noEvents
+              : t.dashboard.noEventsOfFilter}
           </div>
         ) : (
           <Table
@@ -283,8 +324,9 @@ export function DashboardView() {
       <PriceDialog
         event={pricing}
         onClose={() => setPricing(null)}
-        onSaved={(updated) => {
+        onSaved={(updated, audited) => {
           setPricing(null);
+          setReviewNotice(audited ? null : t.priceDialog.priceOnlySaved);
           events.setData((list) => list?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
           void dash.reload();
         }}

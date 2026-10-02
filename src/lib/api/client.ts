@@ -107,7 +107,8 @@ async function send<T>(
 
   if (!res.ok) {
     // Formato de erro esperado do back-end: { error: { code, message } }
-    const message = payload?.error?.message ?? payload?.message ?? t.serverError(res.status);
+    const candidate = typeof payload?.error === "string" ? payload.error : payload?.error?.message ?? payload?.message;
+    const message = typeof candidate === "string" ? candidate : t.serverError(res.status);
     throw new ApiError(message, res.status, payload?.error?.code);
   }
 

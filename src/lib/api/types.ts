@@ -88,7 +88,7 @@ export interface SyncWalletProgress {
 
 export interface SyncStatus {
   state: "idle" | "running" | "done" | "error";
-  /** Início do histórico lido. Ex.: 2025-01-01 */
+  /** Início do período efetivamente lido (AAAA-MM-DD). */
   since: string;
   read: number;
   estimated: number | null;
@@ -148,13 +148,36 @@ export interface TaxEvent {
   /** PTAX de venda (USD→BRL) usada na conversão e a data de referência (AAAA-MM-DD). */
   ptax?: number | null;
   ptaxDate?: string | null;
+  /** Instante da cotação e versão da regra aplicada, quando fornecidos pelo motor. */
+  priceObservedAt?: string | null;
+  ruleVersion?: string | null;
+  /** Taxas totais do evento em reais. */
+  feesBrl?: number | null;
   /** Custo de aquisição e ganho de capital do evento, em R$. */
   costBrl?: number | null;
   gainBrl?: number | null;
+  /** Motivos reportados pelo motor para manter o evento pendente. */
+  pendingReasons?: string[];
+  /** Revisões auditáveis persistidas pelo back-end. */
+  reviewHistory?: EventReview[];
 }
 
 export interface ManualPriceRequest {
   unitPriceBrl: number;
+}
+
+export interface ManualPriceReviewRequest extends ManualPriceRequest {
+  reason: string;
+  evidence: string;
+  confirmed: true;
+}
+
+export interface EventReview {
+  reason: string;
+  evidence: string;
+  previousPriceBrl: number | null;
+  newPriceBrl: number;
+  createdAt: string;
 }
 
 /* ---------- Relatórios ---------- */
@@ -196,6 +219,30 @@ export interface ReportDetail {
   totals: { disposedBrl: number; costBrl: number; gainBrl: number; taxBrl: number };
   rows: ReportRow[];
   attestation: Attestation | null;
+  /** Metadados de cobertura e validação do motor; ausente em APIs ainda não integradas. */
+  review?: ReportReview;
+}
+
+export interface ReportReview {
+  engineVersion: string | null;
+  coverage: {
+    state: "complete" | "partial" | "unknown";
+    importedFrom: string | null;
+    importedThrough: string | null;
+    importedEvents: number | null;
+  };
+  limitations: string[];
+  pendingReasons: string[];
+  unsupportedOperations: string[];
+  reviewItems?: ReportReviewItem[];
+  /** true somente após validação explícita pelo motor e gerador DeCripto. */
+  decriptoReady: boolean;
+}
+
+export interface ReportReviewItem {
+  id: string;
+  kind: "acquisition_cost" | "classification";
+  label: string;
 }
 
 /** URL temporária (presigned) para baixar um arquivo gerado pelo back-end. */

@@ -138,7 +138,7 @@ export function EventDialog({
                 <span className="text-warn">{d.sourceNone}</span>
               )}
             </Field>
-            <Field label={d.ptax} last>
+            <Field label={d.ptax}>
               <span className="font-mono text-[13px]">
                 {typeof event.ptax === "number"
                   ? event.ptaxDate
@@ -147,7 +147,32 @@ export function EventDialog({
                   : na}
               </span>
             </Field>
+            <Field label={d.quoteTime}>
+              <span className="font-mono text-[13px]">
+                {event.priceObservedAt ? formatDateTime(event.priceObservedAt) : na}
+              </span>
+            </Field>
+            <Field label={d.ruleVersion}>
+              <span className="font-mono text-[13px]">{event.ruleVersion || na}</span>
+            </Field>
+            <Field label={d.fees} last>
+              <span className="font-mono text-[13px]">{brl(event.feesBrl)}</span>
+            </Field>
           </Section>
+
+          {!!event.reviewHistory?.length && (
+            <Section title={d.reviewHistory}>
+              {event.reviewHistory.map((review, index) => (
+                <Field key={`${review.createdAt}-${index}`} label={formatDateTime(review.createdAt)} last={index === event.reviewHistory!.length - 1}>
+                  <span className="flex min-w-0 flex-col items-end gap-1 break-words">
+                    <span>{brl(review.previousPriceBrl)} → {formatBRL(review.newPriceBrl)}</span>
+                    <span className="text-muted">{review.reason}</span>
+                    <span className="text-muted">{review.evidence}</span>
+                  </span>
+                </Field>
+              ))}
+            </Section>
+          )}
 
           <Pending event={event} onSetPrice={onSetPrice} />
         </div>
@@ -175,7 +200,7 @@ function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEv
         </p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {missingPrice && (
+          {missingPrice && !event.pendingReasons?.length && (
             <li className="flex flex-col items-start gap-3 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn">
               <span className="flex items-start gap-2">
                 <WarningIcon size={18} className="mt-px shrink-0" aria-hidden />
@@ -186,12 +211,17 @@ function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEv
               </Button>
             </li>
           )}
-          {missingCost && (
+          {missingCost && !event.pendingReasons?.length && (
             <li className="flex items-start gap-2 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn">
               <InfoIcon size={18} className="mt-px shrink-0" aria-hidden />
               {d.pendingCost}
             </li>
           )}
+        </ul>
+      )}
+      {!!event.pendingReasons?.length && (
+        <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
+          {event.pendingReasons.map((reason) => <li key={reason}>{reason}</li>)}
         </ul>
       )}
     </section>
