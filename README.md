@@ -12,14 +12,15 @@
 
 <p align="center">
   Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Solana Wallet Adapter<br>
-  Projeto da <b>Orbix Lab</b> para o <b>Crypto World's Fair Hackathon</b> (Colosseum, 2026)
+  Projeto da <b>Orbix Lab</b> para o <b>Crypto World's Fair Hackathon</b> (Colosseum, 2026)<br>
+  Back-end: <a href="https://github.com/ERIKFABIANO/orbix-core"><b>orbix-core</b></a>
 </p>
 
 ---
 
 Este repositório contém **apenas o front-end** do Orbix Declare. Todo o processamento (leitura on-chain,
-cotações, motor fiscal, agente de IA, registro do hash na Solana, arquivos) é feito pelo back-end, em
-outro repositório. O front conversa com ele por uma API HTTP documentada em
+cotações, motor fiscal, agente de IA, registro do hash na Solana, arquivos) é feito pelo back-end, no
+repositório [**orbix-core**](https://github.com/ERIKFABIANO/orbix-core). O front conversa com ele por uma API HTTP documentada em
 [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
 
 Sem back-end, o app roda em **modo demonstração**, com os mesmos dados dos mockups, e permite navegar por todas as telas.
@@ -217,6 +218,7 @@ Se alguém pedir para fazer uma dessas coisas do back-end aqui, a resposta é n�
 
 - [`docs/BRAND_GUIDE.md`](docs/BRAND_GUIDE.md): paleta, tipografia, cores da marca e comportamento visual do login.
 
+- [**orbix-core**](https://github.com/ERIKFABIANO/orbix-core): repositório do back-end (API, ingestão on-chain, motor fiscal, agente de IA e registro na Solana).
 - [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md): todas as rotas que o front chama, com exemplos de JSON, autenticação, CORS e erros. **Comece por aqui se você é do back-end.**
 - [`docs/RELATORIO_DESENVOLVIMENTO.md`](docs/RELATORIO_DESENVOLVIMENTO.md): como o front foi construído, decisões, verificação feita, limitações conhecidas e próximos passos.
 - [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md): mapa da arquitetura, fluxos (login, sincronização, verificação) e onde mexer para cada tipo de mudança.
