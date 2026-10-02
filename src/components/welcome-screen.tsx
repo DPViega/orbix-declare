@@ -22,12 +22,11 @@ const STARS = Array.from({ length: 180 }, (_, index) => {
 export const WELCOME_KEY = "orbix.welcome";
 
 /**
- * Decide se as boas-vindas devem tocar: só na primeira vez neste navegador (localStorage) e nunca com
- * redução de movimento. Marca como vista ao decidir tocar. Fora disso, o painel abre direto.
+ * Decide se as boas-vindas devem tocar: só na primeira vez neste navegador (localStorage). Com redução
+ * de movimento toca a versão calma (logo parada, ~1,5 s). Marca como vista ao decidir tocar.
  */
 export function shouldPlayWelcome(): boolean {
   try {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
     if (window.localStorage.getItem(WELCOME_KEY) === "seen") return false;
     window.localStorage.setItem(WELCOME_KEY, "seen");
   } catch {
@@ -61,8 +60,8 @@ export function WelcomeScreen() {
     const timers = [
       setTimeout(() => setPhase("arrival"), 0),
       setTimeout(() => setPhase("hold"), reduced ? 100 : 1200),
-      setTimeout(() => setPhase("exit"), reduced ? 600 : 1600),
-      setTimeout(() => router.replace("/painel"), reduced ? 900 : 2600),
+      setTimeout(() => setPhase("exit"), reduced ? 1200 : 1600),
+      setTimeout(() => router.replace("/painel"), reduced ? 1500 : 2600),
     ];
     return () => timers.forEach(clearTimeout);
   }, [settled, reduced, router]);

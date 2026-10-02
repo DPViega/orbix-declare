@@ -15,7 +15,8 @@ import { OrbixSignature } from "@/components/orbix-signature";
  * - Clique, Esc, Enter ou espaço pulam a abertura.
  * - Logo 3D (splash-logo.tsx, public/od-logo.glb) no centro das órbitas: o download do modelo conta
  *   como etapa real (com teto de 3 s), dá uma volta no "Tudo pronto" e encolhe na saída.
- * - Com prefers-reduced-motion a abertura não aparece.
+ * - Com prefers-reduced-motion aparece a versão calma: órbitas, cometa e logo parados; a barra continua.
+ *   (Não pular: no Windows, "efeitos de animação" desligados também ligam essa preferência.)
  */
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -101,9 +102,8 @@ function useAlreadySeen() {
 export function SplashGate() {
   const pathname = usePathname();
   const seen = useAlreadySeen();
-  const reduced = useReducedMotion();
   const [done, setDone] = useState(false);
-  if (done || seen || reduced || pathname.startsWith("/v/")) return null;
+  if (done || seen || pathname.startsWith("/v/")) return null;
   return <SplashScreen onDone={() => setDone(true)} />;
 }
 
