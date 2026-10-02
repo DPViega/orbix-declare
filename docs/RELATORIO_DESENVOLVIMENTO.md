@@ -242,3 +242,9 @@ Itens 1 a 4 do plano de fechamento (os que avançam sem back-end).
   - com a carteira sincronizada, o polling para sozinho.
 - API fora do ar: carteiras e painel mostram a falha com "Tentar de novo" e "Sair".
 - Modo demonstração: aviso na sincronização e rótulo de isenção vindo do campo novo.
+
+### 9.4 Abertura com duração fixa — 02/10/2026
+
+Pedido da equipe: a abertura estava rápida demais. Agora ela aparece a cada carregamento do site (inclusive ao recarregar), com duração mínima de **5 s na primeira visita neste navegador** (`localStorage["orbix.splash"]`) e **2,5 s nas seguintes**, já contando o fade. As etapas da barra se distribuem ao longo desse tempo. Se o carregamento real demorar mais, ela espera o carregamento. Clique, Esc, Enter ou espaço continuam pulando, e `/v/*` continua sem abertura. O script do `<head>` que escondia a abertura por aba saiu.
+
+Medido no Edge headless: ~5,0 s visível na primeira visita, ~2,7 s ao recarregar (inclui ~0,2 s de hidratação) e ~1,3 s pulando com Esc.

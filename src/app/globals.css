@@ -343,11 +343,6 @@ html:has(.splash) .login-typed-steps::before {
 
 /* ---------- Tela de abertura (components/splash-screen.tsx) ---------- */
 
-/* Já vista nesta aba (ou redução de movimento): o script em app/layout.tsx marca o <html> antes da hidratação. */
-[data-splash="seen"] .splash {
-  display: none;
-}
-
 
 .splash-twinkle {
   animation: splash-twinkle 3.6s ease-in-out infinite;

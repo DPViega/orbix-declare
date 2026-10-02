@@ -5,13 +5,12 @@ import { OrbixSignature } from "@/components/orbix-signature";
 /**
  * Tela de abertura (recriação em SVG/CSS de docs/Orbix Loading.mp4).
  *
- * Aparece na primeira abertura de cada aba (~2,5 s), por cima do app, enquanto as fontes e a sessão
- * carregam; depois some com fade e revela a página (normalmente o login). A barra acompanha etapas
- * reais, com um tempo mínimo curto por etapa para a animação não "piscar".
+ * Aparece a cada carregamento do site, por cima do app, enquanto as fontes e a sessão carregam;
+ * depois some com fade e revela a página. Dura pelo menos 5 s na primeira visita neste navegador
+ * (localStorage["orbix.splash"]) e 2,5 s nas seguintes. A barra acompanha etapas reais, distribuídas
+ * ao longo desse tempo mínimo.
  *
  * - Não aparece em /v/* (verificação pública deve abrir direto).
- * - sessionStorage["orbix.splash"] evita repetir ao recarregar na mesma aba; o script em
- *   app/layout.tsx esconde a abertura antes da hidratação nesses casos (e com redução de movimento).
  * - Clique, Esc, Enter ou espaço pulam a abertura.
  * - Logo 3D (splash-logo.tsx, public/od-logo.glb) no centro das órbitas: o download do modelo conta
  *   como etapa real (com teto de 3 s), dá uma volta no "Tudo pronto" e encolhe na saída.
@@ -26,6 +25,26 @@ import { SplashLogo, type LogoPhase } from "@/components/splash-logo";
 
 
 export const SPLASH_KEY = "orbix.splash";
+/** Duração mínima da abertura: primeira visita neste navegador e visitas seguintes. */
+const FIRST_MS = 5000;
+const REPEAT_MS = 2500;
+/** Sequência final: do "sessão conhecida" até começar o fade, e o fade em si. */
+const FINALE_MS = 1450;
+const FADE_MS = 650;
+
+function isFirstVisit() {
+  try {
+    return window.localStorage.getItem(SPLASH_KEY) !== "seen";
+  } catch {
+    return false;
+  }
+}
+
+type Timing = { start: number; min: number };
+/** Início e duração mínima, definidos na primeira leitura no cliente (no servidor não há localStorage). */
+function timingOf(ref: { current: Timing | null }): Timing {
+  return (ref.current ??= { start: Date.now(), min: isFirstVisit() ? FIRST_MS : REPEAT_MS });
+}
 
 /** Etapas da barra; os textos vêm do dicionário (t.splash). */
 const STEPS = [
@@ -83,27 +102,10 @@ function useReducedMotion() {
   );
 }
 
-const noopSubscribe = () => () => {};
-/** true quando a abertura já foi vista nesta aba (lido só no cliente). */
-function useAlreadySeen() {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => {
-      try {
-        return window.sessionStorage.getItem(SPLASH_KEY) === "seen";
-      } catch {
-        return false;
-      }
-    },
-    () => false,
-  );
-}
-
 export function SplashGate() {
   const pathname = usePathname();
-  const seen = useAlreadySeen();
   const [done, setDone] = useState(false);
-  if (done || seen || pathname.startsWith("/v/")) return null;
+  if (done || pathname.startsWith("/v/")) return null;
   return <SplashScreen onDone={() => setDone(true)} />;
 }
 
@@ -116,16 +118,18 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   const [leaving, setLeaving] = useState(false);
   const [logoSettled, setLogoSettled] = useState(false);
   const sky = useMemo(() => stars(150, 7), []);
+  const timing = useRef<Timing | null>(null);
 
-  // Etapas: cada uma espera um evento real + um tempo mínimo, para a barra andar de forma legível.
+  // Etapas: cada uma espera um evento real + uma fração do tempo mínimo, para a barra andar de forma legível.
   useEffect(() => {
     let alive = true;
+    const { min } = timingOf(timing);
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
     (async () => {
-      await wait(150);
+      await wait(min * 0.1);
       if (!alive) return;
       setStep(1); // conexão: a página hidratou
-      await Promise.all([document.fonts?.ready ?? Promise.resolve(), wait(350)]);
+      await Promise.all([document.fonts?.ready ?? Promise.resolve(), wait(min * 0.2)]);
       if (!alive) return;
       setStep(2); // ambiente: fontes prontas
     })();
@@ -148,27 +152,30 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     onDoneRef.current = onDone;
   });
 
-  // Encerra uma única vez: marca como vista nesta aba, faz o fade e desmonta.
+  // Encerra uma única vez: marca como vista neste navegador, faz o fade e desmonta.
   const left = useRef(false);
   const leave = useCallback(() => {
     if (left.current) return;
     left.current = true;
     setLeaving(true);
     try {
-      window.sessionStorage.setItem(SPLASH_KEY, "seen");
+      window.localStorage.setItem(SPLASH_KEY, "seen");
     } catch {
       /* storage bloqueado: a abertura só não fica lembrada */
     }
-    setTimeout(() => onDoneRef.current(), 650);
+    setTimeout(() => onDoneRef.current(), FADE_MS);
   }, []);
 
   useEffect(() => {
     if (!envReady || !logoSettled || status === "loading") return;
+    // Se tudo carregou antes do tempo mínimo, a sequência final espera para terminar nele.
+    const { start, min } = timingOf(timing);
+    const lead = Math.max(0, start + min - FINALE_MS - FADE_MS - Date.now());
     const timers = [
-      setTimeout(() => setStep(3), 250), // sessão conhecida
-      setTimeout(() => setStep(4), 500), // "Tudo pronto": a logo dá uma volta (800 ms)
-      setTimeout(() => setExiting(true), 1300), // logo encolhe
-      setTimeout(() => leave(), 1450), // a logo já está pela metade: o resto some em fade
+      setTimeout(() => setStep(3), lead + 250), // sessão conhecida
+      setTimeout(() => setStep(4), lead + 500), // "Tudo pronto": a logo dá uma volta (800 ms)
+      setTimeout(() => setExiting(true), lead + 1300), // logo encolhe
+      setTimeout(() => leave(), lead + FINALE_MS), // a logo já está pela metade: o resto some em fade
     ];
     return () => timers.forEach(clearTimeout);
   }, [envReady, logoSettled, status, leave]);

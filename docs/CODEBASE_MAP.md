@@ -16,7 +16,7 @@ total_tokens: 58432
 | `components/typewriter-text.tsx` | Revelação progressiva de texto, espera pela splash e redução de movimento |
 | `components/login-planet.tsx` | Planeta GLB de 112px exclusivo do login; Three.js sob demanda, rotação lenta e fallback |
 | `components/orbix-signature.tsx` | Assinatura traduzida com ponto dourado e `lab` lilás `#B3A0F4` |
-| `components/splash-screen.tsx`, `components/splash-logo.tsx` | Abertura (~2,5 s) na primeira carga de cada aba (`sessionStorage["orbix.splash"]` + script no `<head>` do layout), etapas de progresso, logo OD em 3D; pula com clique/Esc; com redução de movimento, versão calma (logo parada) |
+| `components/splash-screen.tsx`, `components/splash-logo.tsx` | Abertura a cada carregamento: no mínimo 5 s na primeira visita do navegador (`localStorage["orbix.splash"]`) e 2,5 s nas seguintes, etapas de progresso, logo OD em 3D; pula com clique/Esc; com redução de movimento, versão calma (logo parada) |
 | `components/welcome-screen.tsx`, `welcome-logo.tsx`, `welcome-screen.module.css` | Boas-vindas (~2,6 s) depois da sincronização, só ao clicar em "Ir para o painel" e só na primeira vez neste navegador (`localStorage["orbix.welcome"]`, via `shouldPlayWelcome()`); pula com clique/Esc; com redução de movimento, versão calma (logo parada). O canvas 3D cobre a tela inteira; a caixa `.model` só define onde a logo fica em repouso. Na saída a logo acelera até a câmera e atravessa a tela, sem corte nas bordas |
 | `lib/i18n/`, `components/language-switch.tsx` | Dicionários PT/EN, contexto, escolha de idioma no servidor/cliente e seletor |
 | `app/globals.css` | Tokens de marca, escala `type-display`/`type-h1`/`type-h2`/`type-h3`, estrelas e divisor do login |
