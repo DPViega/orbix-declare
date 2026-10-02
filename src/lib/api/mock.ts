@@ -390,12 +390,17 @@ export const mockApi = {
   async getNonce(address: string): Promise<NonceResponse> {
     await wait(200);
     const nonce = Math.random().toString(36).slice(2, 12);
-    const issuedAt = new Date().toISOString();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 5 * 60_000).toISOString();
+    // Mensagem Sign-In With Solana. A Phantom confere o domínio da 1ª linha com a origem da página e
+    // recusa se forem diferentes; por isso domínio e URI vêm do endereço real. Os rótulos ficam em
+    // inglês (formato padrão que a carteira interpreta); só a frase explicativa acompanha o idioma.
+    const { host, origin } = window.location;
     return {
       nonce,
-      expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+      expiresAt,
       message: [
-        tr("orbixdeclare.com quer que você entre com sua conta Solana:", "orbixdeclare.com wants you to sign in with your Solana account:"),
+        `${host} wants you to sign in with your Solana account:`,
         address,
         "",
         tr(
@@ -403,10 +408,12 @@ export const mockApi = {
           "Sign in to Orbix Declare. This signature sends no transactions and moves no funds.",
         ),
         "",
-        "URI: https://orbixdeclare.com",
-        `${tr("Versão", "Version")}: 1`,
+        `URI: ${origin}`,
+        "Version: 1",
+        "Chain ID: mainnet",
         `Nonce: ${nonce}`,
-        `${tr("Emitido em", "Issued At")}: ${issuedAt}`,
+        `Issued At: ${now.toISOString()}`,
+        `Expiration Time: ${expiresAt}`,
       ].join("\n"),
     };
   },

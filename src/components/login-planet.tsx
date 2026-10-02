@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 export function LoginPlanet() {
@@ -95,11 +94,10 @@ export function LoginPlanet() {
 
   return (
     <div aria-hidden="true" className="relative size-[92px] shrink-0">
-      {!ready && (
-        <div className="absolute inset-2 flex items-center justify-center rounded-xl bg-brand-paper">
-          <Image src="/brand/orbix-declare-logo.png" alt="" width={43} height={30} />
-        </div>
-      )}
+      {/* Enquanto o modelo carrega (ou se o WebGL falhar): brilho lilás no lugar do planeta, sem a logo antiga. */}
+      <div
+        className={`absolute inset-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#c9bcf7_0%,#8b6ae8_45%,transparent_72%)] blur-[2px] transition-opacity duration-700 ${ready ? "opacity-0" : "animate-pulse opacity-50"}`}
+      />
       <div ref={hostRef} className={`size-full transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`} />
     </div>
   );

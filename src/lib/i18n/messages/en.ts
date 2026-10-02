@@ -102,6 +102,9 @@ export const en: Messages = {
     windowClosed: "The wallet window was closed before finishing.",
     noAddress: "We couldn't read the wallet address.",
     cannotSign: (name) => `${name} can't sign messages. Use Phantom or Solflare.`,
+    connectFailed: (detail) =>
+      `The wallet didn't connect${detail ? ` (${detail})` : ""}. Unlock the extension and try again; in Brave, check that Brave Wallet isn't taking over Solana.`,
+    signFailed: (detail) => `The wallet didn't sign the message${detail ? ` (${detail})` : ""}. Try again.`,
   },
 
   api: {

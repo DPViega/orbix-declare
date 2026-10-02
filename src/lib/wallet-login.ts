@@ -23,16 +23,25 @@ import { messagesFor } from "@/lib/i18n/messages";
 
 export type LoginPhase = "idle" | "connecting" | "signing" | "verifying";
 
+/**
+ * Traduz o erro da carteira. Os erros do Wallet Adapter (WalletConnectionError, WalletSignMessageError)
+ * embrulham o erro original da extensão em `.error`; "cancelado" só quando ele diz que a pessoa recusou
+ * (código 4001 ou texto de recusa). Qualquer outra falha mostra o motivo real, e o erro completo vai
+ * para o console para diagnóstico.
+ */
 function friendly(err: unknown): string {
-  const name = (err as { name?: string })?.name ?? "";
-  const msg = errorMessage(err);
+  const e = err as { name?: string; message?: string; error?: { code?: number; message?: string } };
+  const name = e?.name ?? "";
+  const inner = e?.error;
+  const detail = (inner?.message || e?.message || "").trim();
   const t = messagesFor(getLocale()).walletErrors;
-  if (/reject|denied|cancel/i.test(msg) || name === "WalletSignMessageError" || name === "WalletConnectionError") {
-    return t.cancelled;
-  }
+  console.error("[wallet-login]", err, inner ?? "");
+  if (inner?.code === 4001 || /reject|denied|cancel|declin/i.test(`${detail} ${errorMessage(err)}`)) return t.cancelled;
   if (name === "WalletNotReadyError") return t.notReady;
   if (name === "WalletWindowClosedError") return t.windowClosed;
-  return msg;
+  if (name === "WalletConnectionError") return t.connectFailed(detail);
+  if (name === "WalletSignMessageError") return t.signFailed(detail);
+  return errorMessage(err);
 }
 
 export function useWalletLogin() {

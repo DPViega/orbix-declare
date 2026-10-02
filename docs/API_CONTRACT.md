@@ -44,7 +44,9 @@ Front                                   Back-end
   │ Authorization: Bearer <token>           │
 ```
 
-- **O back-end monta a mensagem.** O front assina exatamente o texto recebido em `message`. Sugestão de formato no padrão SIWS: domínio, endereço, frase, URI, versão, nonce e data de emissão (veja o exemplo em `mock.ts → getNonce`).
+- **O back-end monta a mensagem.** O front assina exatamente o texto recebido em `message`, no formato **Sign-In With Solana** (veja `mock.ts → getNonce`).
+- **⚠️ O domínio da 1ª linha precisa ser o domínio do front que pede a assinatura** (ex.: o domínio da Vercel, ou `localhost:3000` em desenvolvimento). A Phantom compara com a origem da página e recusa com *"the domain in the sign-in message does not match the requesting app's origin"*. Use o header `Origin` da requisição, validado contra uma lista de origens permitidas, nunca um domínio fixo. `URI:` também deve ser essa origem.
+- **Rótulos em inglês**, como no padrão: `wants you to sign in with your Solana account:`, `URI`, `Version`, `Chain ID`, `Nonce`, `Issued At`, `Expiration Time`. Só a frase explicativa (3ª linha) pode seguir o `Accept-Language`.
 - A assinatura chega em **base58** (`bs58.encode(Uint8Array)`).
 - **Token:** o front guarda em `localStorage` e envia em `Authorization: Bearer`. O formato é livre: JWT próprio ou access token do Supabase Auth, por exemplo.
   - Para usar cookie `httpOnly`, o que é mais seguro contra XSS, o front precisa de uma pequena mudança: `credentials: "include"` em `src/lib/api/client.ts` e não guardar mais o token. Combine antes.
@@ -52,8 +54,8 @@ Front                                   Back-end
 
 ### `GET /api/auth/nonce?address=<pubkey>`
 ```json
-{ "message": "orbixdeclare.com quer que você entre com sua conta Solana:\n7xKp…\n\n…\nNonce: k3j9x0\nEmitido em: 2026-09-30T17:30:00Z",
-  "nonce": "k3j9x0", "expiresAt": "2026-09-30T17:35:00Z" }
+{ "message": "<dominio-do-front> wants you to sign in with your Solana account:\n7xKp…\n\nEntrar no Orbix Declare. Esta assinatura não envia transações nem move fundos.\n\nURI: https://<dominio-do-front>\nVersion: 1\nChain ID: mainnet\nNonce: k3j9x0ab12\nIssued At: 2026-09-30T17:30:00Z\nExpiration Time: 2026-09-30T17:35:00Z",
+  "nonce": "k3j9x0ab12", "expiresAt": "2026-09-30T17:35:00Z" }
 ```
 
 ### `POST /api/auth/verify`

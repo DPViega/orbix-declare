@@ -153,7 +153,7 @@ As verificações abaixo registram a implementação inicial, antes da atualiza�
 - Tela de abertura a cada carregamento completo, com progresso e logo 3D `public/od-logo.glb`, carregada com Three.js sob demanda.
 - Painel esquerdo do login com degradê radial roxo, três camadas de estrelas animadas e transição suave para o fundo do formulário. O teste de degradê horizontal foi revertido.
 - Textos do painel aparecem por digitação sequencial. A implementação revela texto contínuo, preservando o espaço do conteúdo; a linha divisória aparece após a digitação. A sequência aguarda a abertura e respeita redução de movimento.
-- Novo planeta `public/voxel-planet-orbits.glb` apenas na marca do painel esquerdo, em 112 × 112 px e rotação de 40 segundos por volta. A logo original serve de fallback durante o carregamento ou em falha do WebGL.
+- Novo planeta `public/voxel-planet-orbits.glb` apenas na marca do painel esquerdo, em 112 × 112 px e rotação de 40 segundos por volta. Durante o carregamento (ou em falha do WebGL) aparece um brilho lilás no lugar do planeta; a logo PNG antiga deixou de ser usada como fallback porque piscava ao recarregar.
 - Paleta centralizada, Outfit com pesos até 900 e escala responsiva compartilhada para títulos; DM Sans no corpo e JetBrains Mono nos dados.
 - “Orbix” dourado nos títulos da marca. Assinatura `orbix. lab` com ponto `#D4A843` e `lab` em lilás `#B3A0F4` (ver 9.1).
 - Referências em vídeo/modelo adicionadas em `docs`; os arquivos públicos são usados pelo navegador. Detalhes visuais em [`BRAND_GUIDE.md`](BRAND_GUIDE.md).

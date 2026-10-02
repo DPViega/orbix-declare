@@ -101,6 +101,9 @@ export const pt = {
     windowClosed: "A janela da carteira foi fechada antes de terminar.",
     noAddress: "Não conseguimos ler o endereço da carteira.",
     cannotSign: (name: string) => `A ${name} não permite assinar mensagens. Use a Phantom ou a Solflare.`,
+    connectFailed: (detail: string) =>
+      `A carteira não conectou${detail ? ` (${detail})` : ""}. Desbloqueie a extensão e tente de novo; no Brave, confira se a Brave Wallet não está assumindo a Solana.`,
+    signFailed: (detail: string) => `A carteira não assinou a mensagem${detail ? ` (${detail})` : ""}. Tente de novo.`,
   },
 
   api: {
