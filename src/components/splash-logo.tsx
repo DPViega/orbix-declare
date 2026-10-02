@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "react";
 export type LogoPhase = "idle" | "spin" | "exit";
 
 const MODEL_URL = "/od-logo.glb";
-const SPIN_MS = 1250;
+const SPIN_MS = 800;
 const EXIT_MS = 520;
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);

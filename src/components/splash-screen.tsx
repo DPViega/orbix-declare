@@ -5,23 +5,26 @@ import { OrbixSignature } from "@/components/orbix-signature";
 /**
  * Tela de abertura (recriação em SVG/CSS de docs/Orbix Loading.mp4).
  *
- * Aparece a cada abertura ou recarga, por cima do app, enquanto as fontes e a sessão carregam;
- * depois some com fade e revela a página (normalmente o login). A barra acompanha etapas reais,
- * com um tempo mínimo por etapa para a animação não "piscar".
+ * Aparece na primeira abertura de cada aba (~2,5 s), por cima do app, enquanto as fontes e a sessão
+ * carregam; depois some com fade e revela a página (normalmente o login). A barra acompanha etapas
+ * reais, com um tempo mínimo curto por etapa para a animação não "piscar".
  *
  * - Não aparece em /v/* (verificação pública deve abrir direto).
- * - O estado do gate evita repetir durante a navega??o interna, sem persistir entre recargas.
+ * - sessionStorage["orbix.splash"] evita repetir ao recarregar na mesma aba; o script em
+ *   app/layout.tsx esconde a abertura antes da hidratação nesses casos (e com redução de movimento).
+ * - Clique, Esc, Enter ou espaço pulam a abertura.
  * - Logo 3D (splash-logo.tsx, public/od-logo.glb) no centro das órbitas: o download do modelo conta
  *   como etapa real (com teto de 3 s), dá uma volta no "Tudo pronto" e encolhe na saída.
- * - Com prefers-reduced-motion: órbitas, cometa e logo ficam parados; a barra continua informando o progresso.
+ * - Com prefers-reduced-motion a abertura não aparece.
  */
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSession } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { SplashLogo, type LogoPhase } from "@/components/splash-logo";
 
 
+export const SPLASH_KEY = "orbix.splash";
 
 /** Etapas da barra; os textos vêm do dicionário (t.splash). */
 const STEPS = [
@@ -79,10 +82,28 @@ function useReducedMotion() {
   );
 }
 
+const noopSubscribe = () => () => {};
+/** true quando a abertura já foi vista nesta aba (lido só no cliente). */
+function useAlreadySeen() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => {
+      try {
+        return window.sessionStorage.getItem(SPLASH_KEY) === "seen";
+      } catch {
+        return false;
+      }
+    },
+    () => false,
+  );
+}
+
 export function SplashGate() {
   const pathname = usePathname();
+  const seen = useAlreadySeen();
+  const reduced = useReducedMotion();
   const [done, setDone] = useState(false);
-  if (done || pathname.startsWith("/v/")) return null;
+  if (done || seen || reduced || pathname.startsWith("/v/")) return null;
   return <SplashScreen onDone={() => setDone(true)} />;
 }
 
@@ -101,10 +122,10 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     let alive = true;
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
     (async () => {
-      await wait(350);
+      await wait(150);
       if (!alive) return;
       setStep(1); // conexão: a página hidratou
-      await Promise.all([document.fonts?.ready ?? Promise.resolve(), wait(900)]);
+      await Promise.all([document.fonts?.ready ?? Promise.resolve(), wait(350)]);
       if (!alive) return;
       setStep(2); // ambiente: fontes prontas
     })();
@@ -113,9 +134,9 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     };
   }, []);
 
-  // A logo 3D não pode segurar a abertura para sempre: depois de 3 s segue sem ela.
+  // A logo 3D não pode segurar a abertura: depois de 1,5 s segue sem ela.
   useEffect(() => {
-    const t = setTimeout(() => setLogoSettled(true), 3000);
+    const t = setTimeout(() => setLogoSettled(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
@@ -127,20 +148,39 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     onDoneRef.current = onDone;
   });
 
+  // Encerra uma única vez: marca como vista nesta aba, faz o fade e desmonta.
+  const left = useRef(false);
+  const leave = useCallback(() => {
+    if (left.current) return;
+    left.current = true;
+    setLeaving(true);
+    try {
+      window.sessionStorage.setItem(SPLASH_KEY, "seen");
+    } catch {
+      /* storage bloqueado: a abertura só não fica lembrada */
+    }
+    setTimeout(() => onDoneRef.current(), 650);
+  }, []);
+
   useEffect(() => {
     if (!envReady || !logoSettled || status === "loading") return;
     const timers = [
-      setTimeout(() => setStep(3), 900), // sessão conhecida
-      setTimeout(() => setStep(4), 1400), // "Tudo pronto": a logo dá uma volta
-      setTimeout(() => setExiting(true), 2650), // logo encolhe
-      setTimeout(() => {
-        setLeaving(true);
-
-      }, 3050), // a logo já está pela metade: o resto some em fade
-      setTimeout(() => onDoneRef.current(), 3700),
+      setTimeout(() => setStep(3), 250), // sessão conhecida
+      setTimeout(() => setStep(4), 500), // "Tudo pronto": a logo dá uma volta (800 ms)
+      setTimeout(() => setExiting(true), 1300), // logo encolhe
+      setTimeout(() => leave(), 1450), // a logo já está pela metade: o resto some em fade
     ];
     return () => timers.forEach(clearTimeout);
-  }, [envReady, logoSettled, status]);
+  }, [envReady, logoSettled, status, leave]);
+
+  // Pular: clique ou Esc/Enter/espaço encerram a abertura na hora.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") leave();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [leave]);
 
   const { pct, key } = STEPS[step];
   const label = key ? t.splash[key] : "";
@@ -151,6 +191,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       className={`splash fixed inset-0 z-[100] overflow-hidden bg-brand-night text-brand-paper transition-opacity duration-[650ms] ease-out ${leaving ? "pointer-events-none opacity-0" : "opacity-100"}`}
       role="status"
       aria-live="polite"
+      onClick={leave}
       aria-label={label ? t.splash.progress(label, pct) : t.splash.loading}
     >
       {/* Nebulosas */}

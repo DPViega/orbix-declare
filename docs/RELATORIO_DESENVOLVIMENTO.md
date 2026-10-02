@@ -192,3 +192,20 @@ As verificações abaixo registram a implementação inicial, antes da atualiza�
 - Edge headless, 1440 × 900 e 390 × 844: login (PT e EN) → modo demo → sincronização até "Tudo pronto." → clique em "Ir para o painel" → boas-vindas → `/painel`, sem erros na página. Quadros capturados durante o voo final mostram a logo crescendo até a borda da tela sem corte.
 - Ainda pendente: ver o instante final do voo em velocidade real (o navegador de teste renderiza poucos quadros por segundo) e o login com carteira real.
 - Os vídeos de referência (`docs/Orbix Welcome.mp4`, `docs/brave_8hOx6V1USS.mp4`) ficam só na máquina local e não vão para o repositório, seguindo a limpeza de binários em `docs/`.
+
+### 9.2 Telas de transição mais curtas — 01/10/2026
+
+Objetivo: quem volta ao app quer ver o painel, não a animação; na demo, o produto precisa parecer rápido.
+
+| | Antes | Agora |
+|---|---|---|
+| Abertura | a cada carregamento, ~5 s | primeira carga de cada aba, ~2,5 s; não repete ao recarregar |
+| Boas-vindas | toda vez, 6,5 s | só a primeira vez neste navegador, ~2,6 s; depois o botão abre o painel direto |
+| Pular | não dava | clique, Esc, Enter ou espaço |
+| Redução de movimento | abertura com a barra; boas-vindas curtas | as duas não aparecem |
+
+- A abertura continua esperando o que é real (hidratação, fontes, sessão), com tempos mínimos menores; a logo 3D deixou de segurar a tela por até 3 s (agora 1,5 s) e a volta dela caiu de 1,25 s para 0,8 s.
+- As boas-vindas encurtaram chegada (1,2 s), pausa e saída (1 s, ainda atravessando a tela).
+- Um script no `<head>` (`app/layout.tsx`) esconde a abertura antes da hidratação quando ela já foi vista ou com redução de movimento, para não piscar.
+- As duas telas não foram juntadas porque acontecem em momentos diferentes (ao abrir o site e depois da primeira sincronização), separadas por ações da pessoa.
+- Medido no Edge headless: abertura some em ~2,9 s (inclui o carregamento da página); Esc pula em ~0,7 s; boas-vindas levam ~2,9 s até `/painel` na primeira vez e ~50 ms nas seguintes; clique pula em ~60 ms; recarregar não mostra a abertura; com redução de movimento ela não aparece. Sem erros na página. `npm run check` sem erros.

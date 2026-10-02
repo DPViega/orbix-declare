@@ -120,16 +120,16 @@ export function WelcomeLogo({ frame: frameRef, phase, reduced, onReady }: {
           const { phase: current, reduced: still } = state.current;
           if (current !== "loading" && arrivalStart === undefined) arrivalStart = now;
           const elapsed = arrivalStart === undefined ? 0 : (now - arrivalStart) / 1000;
-          const arrival = still ? 1 : 1 - (1 - Math.min(1, elapsed / 2)) ** 4;
+          const arrival = still ? 1 : 1 - (1 - Math.min(1, elapsed / 1.2)) ** 4;
           if (current === "exit" && exitStart === undefined) exitStart = now;
           // Saída: acelera (ease-in cúbico) até passar da câmera, mirando o centro da tela.
-          const exit = still || exitStart === undefined ? 0 : Math.min(1, (now - exitStart) / 1500) ** 3;
+          const exit = still || exitStart === undefined ? 0 : Math.min(1, (now - exitStart) / 1000) ** 3;
           pivot.scale.setScalar(still ? 1 : 0.14 + arrival * 0.86);
           pivot.position.z = -(1 - arrival) * distance * 1.8 + exit * (distance + size.z);
           pivot.position.x = rest.x * (1 - exit);
           pivot.position.y = rest.y * (1 - exit) + (still ? 0 : Math.sin(elapsed * 1.1) * size.y * 0.018 * (1 - exit));
           pivot.rotation.set(still ? 0 : (1 - arrival) * 0.1, still ? 0 : -(1 - arrival) * 0.25 + Math.sin(elapsed * 0.7) * 0.025, 0);
-          gold.intensity = still ? 0 : Math.max(0, 1 - Math.abs(elapsed - 1.8) / 0.45) * 1.4;
+          gold.intensity = still ? 0 : Math.max(0, 1 - Math.abs(elapsed - 1.05) / 0.35) * 1.4;
           if (!document.hidden) renderer.render(scene, camera);
           raf = requestAnimationFrame(frame);
         };

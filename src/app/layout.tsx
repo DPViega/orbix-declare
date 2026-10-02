@@ -42,6 +42,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getRequestLocale();
   return (
     <html lang={intlLocale(locale)} suppressHydrationWarning className={`${outfit.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+      <head>
+        {/*
+          Esconde a abertura antes da hidratação quando ela já foi vista nesta aba ou quando o sistema
+          pede redução de movimento, para não piscar (ver components/splash-screen.tsx).
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(sessionStorage.getItem("orbix.splash")==="seen"||matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.dataset.splash="seen"}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-dvh">
         <Providers locale={locale}>{children}</Providers>
       </body>

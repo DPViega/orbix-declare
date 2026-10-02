@@ -85,10 +85,10 @@ Todas as telas seguem os mockups em [`docs/`](docs/), nos temas claro e escuro. 
 
 | # | Tela do mockup | Rota | Acesso |
 |---|---|---|---|
-| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | abertura ou recarga, por cima de qualquer rota exceto `/v/*` | — |
+| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | primeira abertura de cada aba (~2,5 s; não repete ao recarregar; pula com clique/Esc; não aparece com redução de movimento), exceto `/v/*` | — |
 | 01 | Login | `/login` | público |
 | 02 | Sincronização | `/sincronizacao` | logado |
-| 02b | Boas-vindas (logo 3D `public/orbix-declare.glb`; referência `docs/Orbix Welcome.mp4`, fora do repositório) | depois de "Tudo pronto.", ao clicar em **Ir para o painel**; termina abrindo `/painel` | logado |
+| 02b | Boas-vindas (logo 3D `public/orbix-declare.glb`; referência `docs/Orbix Welcome.mp4`, fora do repositório) | depois de "Tudo pronto.", ao clicar em **Ir para o painel** (~2,6 s, só a primeira vez neste navegador; pula com clique/Esc; não aparece com redução de movimento); termina abrindo `/painel` | logado |
 | 03 | Carteiras | `/carteiras` | logado |
 | 04 | Painel mensal | `/painel?mes=AAAA-MM` | logado |
 | 05 | Histórico de relatórios | `/relatorios` | logado |

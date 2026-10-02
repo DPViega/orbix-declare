@@ -19,7 +19,24 @@ const STARS = Array.from({ length: 180 }, (_, index) => {
   return { x, y, radius: 0.45 + (index % 4) * 0.2, opacity: 0.15 + (index % 6) * 0.08 };
 });
 
-/** Plays once after a successful sync; this is a transition, not sync progress. */
+export const WELCOME_KEY = "orbix.welcome";
+
+/**
+ * Decide se as boas-vindas devem tocar: só na primeira vez neste navegador (localStorage) e nunca com
+ * redução de movimento. Marca como vista ao decidir tocar. Fora disso, o painel abre direto.
+ */
+export function shouldPlayWelcome(): boolean {
+  try {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    if (window.localStorage.getItem(WELCOME_KEY) === "seen") return false;
+    window.localStorage.setItem(WELCOME_KEY, "seen");
+  } catch {
+    /* storage bloqueado: toca a animação, só não fica lembrada */
+  }
+  return true;
+}
+
+/** Transição curta (~2,6 s) depois da sincronização; clique ou Esc/Enter/espaço pulam direto ao painel. */
 export function WelcomeScreen() {
   const router = useRouter();
   const { t } = useI18n();
@@ -34,8 +51,8 @@ export function WelcomeScreen() {
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
     router.prefetch("/painel");
-    // Broken/slow assets must never block access to the dashboard.
-    const timeout = setTimeout(() => setSettled(true), 3000);
+    // Modelo lento ou com erro nunca segura o acesso ao painel.
+    const timeout = setTimeout(() => setSettled(true), 1500);
     return () => clearTimeout(timeout);
   }, [router]);
 
@@ -43,15 +60,24 @@ export function WelcomeScreen() {
     if (!settled) return;
     const timers = [
       setTimeout(() => setPhase("arrival"), 0),
-      setTimeout(() => setPhase("hold"), reduced ? 100 : 2000),
-      setTimeout(() => setPhase("exit"), reduced ? 600 : 5000),
-      setTimeout(() => router.replace("/painel"), reduced ? 900 : 6500),
+      setTimeout(() => setPhase("hold"), reduced ? 100 : 1200),
+      setTimeout(() => setPhase("exit"), reduced ? 600 : 1600),
+      setTimeout(() => router.replace("/painel"), reduced ? 900 : 2600),
     ];
     return () => timers.forEach(clearTimeout);
   }, [settled, reduced, router]);
 
+  // Pular: Esc/Enter/espaço (o clique está no <main>).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") router.replace("/painel");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
+
   return (
-    <main className={styles.welcome} data-phase={phase} data-loaded={loaded} aria-busy="true">
+    <main className={styles.welcome} data-phase={phase} data-loaded={loaded} aria-busy="true" onClick={() => router.replace("/painel")}>
       <svg className={styles.sky} viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         {STARS.map((star, index) => <g key={index} opacity={star.opacity}>
           <circle cx={star.x} cy={star.y} r={star.radius} fill="#e5dfff" />

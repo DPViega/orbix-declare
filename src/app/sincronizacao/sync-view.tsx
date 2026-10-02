@@ -17,7 +17,7 @@ import { formatDate, formatInt, shortAddress } from "@/lib/format";
 import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
-import { WelcomeScreen } from "@/components/welcome-screen";
+import { shouldPlayWelcome, WelcomeScreen } from "@/components/welcome-screen";
 
 const POLL_MS = 1500;
 const NETWORK_LABEL = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
@@ -173,7 +173,7 @@ export function SyncView() {
           </Card>
           {!done && !failed && <p className="m-0 text-[13px] leading-relaxed text-muted">{t.sync.canClose}</p>}
           {done ? (
-            <Button iconRight={ArrowRightIcon} onClick={() => setWelcoming(true)} className="self-start">
+            <Button iconRight={ArrowRightIcon} onClick={() => (shouldPlayWelcome() ? setWelcoming(true) : router.replace("/painel"))} className="self-start">
               {t.common.goToDashboard}
             </Button>
           ) : (
