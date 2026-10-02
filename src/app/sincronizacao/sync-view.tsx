@@ -17,7 +17,7 @@ import { formatDate, formatInt, shortAddress } from "@/lib/format";
 import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
-import { shouldPlayWelcome, WelcomeScreen } from "@/components/welcome-screen";
+import { welcomeDuration, WelcomeScreen } from "@/components/welcome-screen";
 import { DemoNotice } from "@/components/demo-notice";
 
 const POLL_MS = 1500;
@@ -30,7 +30,8 @@ export function SyncView() {
   const [sync, setSync] = useState<SyncStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Boas-vindas só depois que a pessoa clica em "Ir para o painel" com a leitura concluída.
-  const [welcoming, setWelcoming] = useState(false);
+  // Duração das boas-vindas (ms), ou null enquanto a pessoa não clicou.
+  const [welcoming, setWelcoming] = useState<number | null>(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export function SyncView() {
   const done = sync?.state === "done";
   const failed = sync?.state === "error";
 
-  if (welcoming) return <WelcomeScreen />;
+  if (welcoming !== null) return <WelcomeScreen duration={welcoming} />;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-ink">
@@ -178,7 +179,7 @@ export function SyncView() {
           </Card>
           {!done && !failed && <p className="m-0 text-[13px] leading-relaxed text-muted">{t.sync.canClose}</p>}
           {done ? (
-            <Button iconRight={ArrowRightIcon} onClick={() => (shouldPlayWelcome() ? setWelcoming(true) : router.replace("/painel"))} className="self-start">
+            <Button iconRight={ArrowRightIcon} onClick={() => setWelcoming(welcomeDuration())} className="self-start">
               {t.common.goToDashboard}
             </Button>
           ) : (

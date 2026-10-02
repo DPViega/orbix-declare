@@ -25,14 +25,14 @@
 .status p { margin: 16px -40px 0; font-size: 14px; }
 .track { height: 1px; background: rgb(201 188 247 / 0.16); }
 .track span { display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: #b3a0f4; box-shadow: 0 0 12px 2px rgb(139 106 232 / 0.4); }
-.welcome:not([data-phase="loading"]) .track span { animation: fill 2.6s linear forwards; }
-.welcome:not([data-phase="loading"]) .ring { animation: orbit-draw 1.2s ease-out both; }
+.welcome:not([data-phase="loading"]) .track span { animation: fill var(--welcome-fill, 2.6s) linear forwards; }
+.welcome:not([data-phase="loading"]) .ring { animation: orbit-draw var(--welcome-arrival, 1.2s) ease-out both; }
 .welcome[data-phase="loading"] .orbit { opacity: 0; }
 .welcome[data-phase="exit"] .heading, .welcome[data-phase="exit"] .status, .welcome[data-phase="exit"] .orbit { opacity: 0; transition: opacity 450ms ease-out; }
-.welcome[data-phase="exit"] .sky { animation: warp 1s cubic-bezier(0.55, 0, 1, 0.45) both; }
-.welcome[data-phase="exit"] .ray { animation: streak 1s ease-in both; }
-.welcome[data-phase="exit"] .canvas { animation: depart 1s linear both; }
-.welcome[data-phase="exit"] .fallback { animation: depart 1s ease-in both; }
+.welcome[data-phase="exit"] .sky { animation: warp var(--welcome-exit, 1s) cubic-bezier(0.55, 0, 1, 0.45) both; }
+.welcome[data-phase="exit"] .ray { animation: streak var(--welcome-exit, 1s) ease-in both; }
+.welcome[data-phase="exit"] .canvas { animation: depart var(--welcome-exit, 1s) linear both; }
+.welcome[data-phase="exit"] .fallback { animation: depart var(--welcome-exit, 1s) ease-in both; }
 @keyframes fill { to { transform: scaleX(1); } }
 @keyframes orbit-draw { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes warp { to { transform: scale(1.65); opacity: 0; } }

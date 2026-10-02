@@ -11,15 +11,18 @@ export type WelcomePhase = "loading" | "arrival" | "hold" | "exit";
  * para a logo caber nessa caixa, e na saída ela acelera até a câmera e atravessa a tela, crescendo
  * além das bordas sem ser cortada.
  */
-export function WelcomeLogo({ frame: frameRef, phase, reduced, onReady }: {
+export function WelcomeLogo({ frame: frameRef, phase, reduced, onReady, arrivalSec = 1.2, exitSec = 1 }: {
   frame: RefObject<HTMLElement | null>;
   phase: WelcomePhase;
   reduced: boolean;
   onReady: (loaded: boolean) => void;
+  /** Duração da chegada e da saída (voo pela tela), em segundos. */
+  arrivalSec?: number;
+  exitSec?: number;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const state = useRef({ phase, reduced, onReady });
-  useEffect(() => { state.current = { phase, reduced, onReady }; });
+  const state = useRef({ phase, reduced, onReady, arrivalSec, exitSec });
+  useEffect(() => { state.current = { phase, reduced, onReady, arrivalSec, exitSec }; });
 
   useEffect(() => {
     const host = hostRef.current;
@@ -117,19 +120,19 @@ export function WelcomeLogo({ frame: frameRef, phase, reduced, onReady }: {
         let arrivalStart: number | undefined;
         let exitStart: number | undefined;
         const frame = (now: number) => {
-          const { phase: current, reduced: still } = state.current;
+          const { phase: current, reduced: still, arrivalSec: inSec, exitSec: outSec } = state.current;
           if (current !== "loading" && arrivalStart === undefined) arrivalStart = now;
           const elapsed = arrivalStart === undefined ? 0 : (now - arrivalStart) / 1000;
-          const arrival = still ? 1 : 1 - (1 - Math.min(1, elapsed / 1.2)) ** 4;
+          const arrival = still ? 1 : 1 - (1 - Math.min(1, elapsed / inSec)) ** 4;
           if (current === "exit" && exitStart === undefined) exitStart = now;
           // Saída: acelera (ease-in cúbico) até passar da câmera, mirando o centro da tela.
-          const exit = still || exitStart === undefined ? 0 : Math.min(1, (now - exitStart) / 1000) ** 3;
+          const exit = still || exitStart === undefined ? 0 : Math.min(1, (now - exitStart) / (outSec * 1000)) ** 3;
           pivot.scale.setScalar(still ? 1 : 0.14 + arrival * 0.86);
           pivot.position.z = -(1 - arrival) * distance * 1.8 + exit * (distance + size.z);
           pivot.position.x = rest.x * (1 - exit);
           pivot.position.y = rest.y * (1 - exit) + (still ? 0 : Math.sin(elapsed * 1.1) * size.y * 0.018 * (1 - exit));
           pivot.rotation.set(still ? 0 : (1 - arrival) * 0.1, still ? 0 : -(1 - arrival) * 0.25 + Math.sin(elapsed * 0.7) * 0.025, 0);
-          gold.intensity = still ? 0 : Math.max(0, 1 - Math.abs(elapsed - 1.05) / 0.35) * 1.4;
+          gold.intensity = still ? 0 : Math.max(0, 1 - Math.abs(elapsed - inSec * 0.875) / (inSec * 0.3)) * 1.4;
           if (!document.hidden) renderer.render(scene, camera);
           raf = requestAnimationFrame(frame);
         };

@@ -21,26 +21,41 @@ const STARS = Array.from({ length: 180 }, (_, index) => {
 
 export const WELCOME_KEY = "orbix.welcome";
 
+/** Linha do tempo das boas-vindas, em ms desde que a tela abre. */
+interface WelcomeTiming {
+  total: number;
+  arrivalAt: number;
+  holdAt: number;
+  exitAt: number;
+  /** Duração das animações de chegada e de saída da logo. */
+  arrival: number;
+  exit: number;
+}
+/** Primeira vez neste navegador: 4 s, com a chegada completa. */
+const FIRST: WelcomeTiming = { total: 4000, arrivalAt: 300, holdAt: 1500, exitAt: 3000, arrival: 1200, exit: 1000 };
+/** Vezes seguintes: 1,8 s, mesma sequência comprimida. */
+const REPEAT: WelcomeTiming = { total: 1800, arrivalAt: 50, holdAt: 650, exitAt: 1100, arrival: 600, exit: 700 };
+
 /**
- * Decide se as boas-vindas devem tocar: só na primeira vez neste navegador (localStorage). Com redução
- * de movimento toca a versão calma (logo parada, ~1,5 s). Marca como vista ao decidir tocar.
+ * Duração das boas-vindas: 4 s na primeira vez neste navegador (localStorage) e 1,8 s nas seguintes.
+ * Marca como vista ao decidir. Com redução de movimento toca a versão calma, com a mesma duração.
  */
-export function shouldPlayWelcome(): boolean {
+export function welcomeDuration(): number {
   try {
-    if (window.localStorage.getItem(WELCOME_KEY) === "seen") return false;
+    if (window.localStorage.getItem(WELCOME_KEY) === "seen") return REPEAT.total;
     window.localStorage.setItem(WELCOME_KEY, "seen");
   } catch {
-    /* storage bloqueado: toca a animação, só não fica lembrada */
+    /* storage bloqueado: toca a versão completa, só não fica lembrada */
   }
-  return true;
+  return FIRST.total;
 }
 
-/** Transição curta (~2,6 s) depois da sincronização; clique ou Esc/Enter/espaço pulam direto ao painel. */
-export function WelcomeScreen() {
+/** Transição depois da sincronização (ver welcomeDuration); clique ou Esc/Enter/espaço pulam direto ao painel. */
+export function WelcomeScreen({ duration = FIRST.total }: { duration?: number }) {
+  const timing = duration === REPEAT.total ? REPEAT : FIRST;
   const router = useRouter();
   const { t } = useI18n();
   const reduced = useSyncExternalStore(subscribeMotion, () => window.matchMedia("(prefers-reduced-motion: reduce)").matches, () => false);
-  const [settled, setSettled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [phase, setPhase] = useState<WelcomePhase>("loading");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -50,21 +65,20 @@ export function WelcomeScreen() {
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
     router.prefetch("/painel");
-    // Modelo lento ou com erro nunca segura o acesso ao painel.
-    const timeout = setTimeout(() => setSettled(true), 1500);
-    return () => clearTimeout(timeout);
   }, [router]);
 
+  // A linha do tempo corre desde a abertura da tela: um modelo lento nunca segura o acesso ao painel
+  // (a logo entra assim que carregar; até lá aparece o texto de reserva).
   useEffect(() => {
-    if (!settled) return;
+    const { total, arrivalAt, holdAt, exitAt } = timing;
     const timers = [
-      setTimeout(() => setPhase("arrival"), 0),
-      setTimeout(() => setPhase("hold"), reduced ? 100 : 1200),
-      setTimeout(() => setPhase("exit"), reduced ? 1200 : 1600),
-      setTimeout(() => router.replace("/painel"), reduced ? 1500 : 2600),
+      setTimeout(() => setPhase("arrival"), reduced ? 0 : arrivalAt),
+      setTimeout(() => setPhase("hold"), reduced ? 100 : holdAt),
+      setTimeout(() => setPhase("exit"), reduced ? total - 300 : exitAt),
+      setTimeout(() => router.replace("/painel"), total),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [settled, reduced, router]);
+  }, [timing, reduced, router]);
 
   // Pular: Esc/Enter/espaço (o clique está no <main>).
   useEffect(() => {
@@ -76,7 +90,20 @@ export function WelcomeScreen() {
   }, [router]);
 
   return (
-    <main className={styles.welcome} data-phase={phase} data-loaded={loaded} aria-busy="true" onClick={() => router.replace("/painel")}>
+    <main
+      className={styles.welcome}
+      data-phase={phase}
+      data-loaded={loaded}
+      aria-busy="true"
+      onClick={() => router.replace("/painel")}
+      style={
+        {
+          "--welcome-fill": `${timing.total - timing.arrivalAt}ms`,
+          "--welcome-arrival": `${timing.arrival}ms`,
+          "--welcome-exit": `${timing.exit}ms`,
+        } as React.CSSProperties
+      }
+    >
       <svg className={styles.sky} viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         {STARS.map((star, index) => <g key={index} opacity={star.opacity}>
           <circle cx={star.x} cy={star.y} r={star.radius} fill="#e5dfff" />
@@ -107,7 +134,14 @@ export function WelcomeScreen() {
         </div>
       </section>
       <div className={styles.canvas}>
-        <WelcomeLogo frame={frame} phase={phase} reduced={reduced} onReady={(success) => { setLoaded(success); setSettled(true); }} />
+        <WelcomeLogo
+          frame={frame}
+          phase={phase}
+          reduced={reduced}
+          arrivalSec={timing.arrival / 1000}
+          exitSec={timing.exit / 1000}
+          onReady={setLoaded}
+        />
       </div>
     </main>
   );

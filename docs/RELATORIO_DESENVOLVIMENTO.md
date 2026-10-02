@@ -248,3 +248,15 @@ Itens 1 a 4 do plano de fechamento (os que avançam sem back-end).
 Pedido da equipe: a abertura estava rápida demais. Agora ela aparece a cada carregamento do site (inclusive ao recarregar), com duração mínima de **5 s na primeira visita neste navegador** (`localStorage["orbix.splash"]`) e **2,5 s nas seguintes**, já contando o fade. As etapas da barra se distribuem ao longo desse tempo. Se o carregamento real demorar mais, ela espera o carregamento. Clique, Esc, Enter ou espaço continuam pulando, e `/v/*` continua sem abertura. O script do `<head>` que escondia a abertura por aba saiu.
 
 Medido no Edge headless: ~5,0 s visível na primeira visita, ~2,7 s ao recarregar (inclui ~0,2 s de hidratação) e ~1,3 s pulando com Esc.
+
+### 9.5 Boas-vindas com duração fixa — 02/10/2026
+
+Pedido da equipe: a transição para o painel segue a mesma lógica da abertura. Agora ela toca toda vez que a pessoa clica em "Ir para o painel", com **4 s na primeira vez neste navegador** e **1,8 s nas seguintes**:
+
+- Antes, a partir da segunda vez, o botão ia direto ao painel.
+- A sequência (chegada da logo, pausa e voo pela tela) é a mesma nas duas durações, comprimida na segunda.
+- A linha do tempo conta desde a abertura da tela. Um modelo 3D lento não atrasa o painel: o texto de reserva aparece até a logo carregar.
+- `WelcomeLogo` recebe a duração da chegada e da saída, e o CSS usa variáveis (`--welcome-fill`, `--welcome-arrival`, `--welcome-exit`).
+- Clique, Esc, Enter ou espaço continuam pulando.
+
+Medido no Edge headless, do clique até `/painel`: 4,09 s na primeira vez e 1,86 s nas seguintes, sem erros. `npm run check` sem erros.
