@@ -8,7 +8,7 @@
  * Para integrar com o back-end real basta configurar NEXT_PUBLIC_API_URL; nenhuma tela muda.
  */
 import { config } from "@/lib/config";
-import { http } from "./client";
+import { http, SLOW_TIMEOUT_MS } from "./client";
 import { mockApi } from "./mock";
 import type {
   AddWalletRequest,
@@ -42,7 +42,7 @@ const httpApi = {
   listWallets: () => http<Wallet[]>("GET", "/api/wallets"),
   addWallet: (req: AddWalletRequest) => http<Wallet>("POST", "/api/wallets", req),
   removeWallet: (id: string) => http<void>("DELETE", `/api/wallets/${enc(id)}`),
-  syncWallet: (id: string) => http<Wallet>("POST", `/api/wallets/${enc(id)}/sync`),
+  syncWallet: (id: string) => http<Wallet>("POST", `/api/wallets/${enc(id)}/sync`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Ingestão (o back-end dispara /api/ingest/solana e /api/ingest/hyperliquid internamente)
   startSync: () => http<SyncStatus>("POST", "/api/ingest"),
@@ -58,13 +58,13 @@ const httpApi = {
   reports: () => http<ReportSummary[]>("GET", "/api/reports"),
   report: (month: string) => http<ReportDetail>("GET", `/api/report/${enc(month)}`),
   reportCsv: (month: string) => http<DownloadLink>("GET", `/api/report/${enc(month)}/csv`),
-  generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`),
+  generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Verificação pública (sem login)
   verifyPublic: (publicId: string) => http<PublicVerification>("GET", `/api/verify/${enc(publicId)}`),
 
   // Agente IA (o back-end chama o Claude; a chave nunca fica no front)
-  agent: (req: AgentRequest) => http<AgentReply>("POST", "/api/agent", req),
+  agent: (req: AgentRequest) => http<AgentReply>("POST", "/api/agent", req, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // LGPD — exclusão definitiva
   deleteAccount: () => http<void>("DELETE", "/api/me"),

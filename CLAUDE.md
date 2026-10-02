@@ -7,6 +7,8 @@ Front-end only do Orbix Declare (impostos cripto em reais para carteiras Solana 
 **Stack**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Solana Wallet Adapter, Phosphor Icons, next-themes.
 **Structure**: `src/app` (rotas; `(app)/` = área logada), `src/components` (UI e shell), `src/lib` (api, sessão, login com carteira, formatação, CSV/hash).
 
+Interface em PT e EN: nenhum texto fixo em componente; use `t` de `useI18n()` (`src/lib/i18n`) e adicione a chave em `messages/pt.ts` e `messages/en.ts`.
+
 Visual = mockups em `docs/*.html` (tokens em `src/app/globals.css`). Contrato com o back-end: `docs/API_CONTRACT.md`. Antes de entregar: `npm run check`.
 
 For detailed architecture, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).

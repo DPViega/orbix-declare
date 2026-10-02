@@ -141,7 +141,7 @@ export function PageHeader({
       <div className="flex min-w-0 flex-col gap-2">
         {kicker && <Kicker>{kicker}</Kicker>}
         <div className="flex flex-wrap items-center gap-3.5">
-          <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em] text-balance md:text-[32px]">{title}</h1>
+          <h1 className="type-h1 text-balance">{title}</h1>
           {badge}
         </div>
       </div>
@@ -252,7 +252,7 @@ export function Brand({ size = 28, className }: { size?: number; className?: str
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <LogoMark size={size} />
-      <span className="font-display text-xl font-semibold tracking-[-0.02em]">Orbix Declare</span>
+      <span className="font-display text-xl font-semibold tracking-[-0.02em]"><span className="text-gold">Orbix</span>{" "}Declare</span>
     </div>
   );
 }
@@ -296,7 +296,7 @@ export function StateBlock({
   return (
     <div className={cn("flex flex-col gap-[18px] rounded-xl border border-line bg-panel p-7 md:p-9", className)}>
       <StateIcon icon={icon} tone={tone} />
-      <h2 className="m-0 font-display text-2xl font-medium tracking-[-0.01em]">{title}</h2>
+      <h2 className="type-h2 m-0">{title}</h2>
       {children && <div className="max-w-[62ch] text-sm leading-[1.65] text-muted">{children}</div>}
       {actions && <div className="mt-2 flex flex-wrap gap-2.5">{actions}</div>}
     </div>

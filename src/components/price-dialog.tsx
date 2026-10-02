@@ -5,8 +5,7 @@ import { WarningIcon, XIcon } from "@phosphor-icons/react";
 import { api, errorMessage, type TaxEvent } from "@/lib/api";
 import { formatBRL, formatDate, formatQty, parseBRLInput, shortAddress } from "@/lib/format";
 import { Button, Card, InlineError, Input, StateIcon } from "@/components/ui";
-
-const TYPE_LABEL = { swap: "Swap", perp: "Perp", funding: "Funding" } as const;
+import { useI18n } from "@/lib/i18n";
 
 /**
  * "Preço não encontrado" — o usuário informa o preço unitário em R$ de um evento sem cotação.
@@ -17,6 +16,7 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
   const [raw, setRaw] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const d = ref.current;
@@ -35,7 +35,7 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
     e.preventDefault();
     if (!event) return;
     if (price === null || price <= 0) {
-      setError("Informe um preço maior que zero, por exemplo 3,08.");
+      setError(t.priceDialog.invalid);
       return;
     }
     setSaving(true);
@@ -55,53 +55,59 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
       ref={ref}
       onClose={onClose}
       aria-labelledby="price-title"
-      className="m-auto w-[min(480px,calc(100vw-32px))] rounded-xl border border-line bg-panel p-0 text-ink shadow-frame"
+      className="m-auto max-h-[calc(100dvh-32px)] w-[min(480px,calc(100vw-32px))] overflow-y-auto rounded-xl border border-line bg-panel p-0 text-ink shadow-frame"
     >
       {event && (
         <form onSubmit={save} className="flex flex-col gap-[18px] p-7 sm:p-9">
           <div className="flex items-start justify-between">
             <StateIcon icon={WarningIcon} tone="warn" />
-            <button type="button" aria-label="Fechar" onClick={onClose} className="flex size-9 cursor-pointer items-center justify-center rounded-xl text-muted hover:text-ink">
+            <button
+              type="button"
+              aria-label={t.common.close}
+              onClick={onClose}
+              className="flex size-9 cursor-pointer items-center justify-center rounded-xl text-muted hover:text-ink"
+            >
               <XIcon size={18} aria-hidden />
             </button>
           </div>
-          <h2 id="price-title" className="m-0 font-display text-2xl font-medium tracking-[-0.01em]">
-            Preço não encontrado
+          <h2 id="price-title" className="type-h2 m-0">
+            {t.priceDialog.title}
           </h2>
           <Card className="flex flex-col gap-1.5 px-4 py-3.5 font-mono text-[12.5px]">
             <span>
-              {formatDate(event.date)} · {TYPE_LABEL[event.type]} {event.asset}
+              {formatDate(event.date)} · {t.eventType[event.type]} {event.asset}
             </span>
             <span className="text-muted">
               {formatQty(event.quantity)} {event.quantityAsset} · tx {shortAddress(event.txHash)}
             </span>
           </Card>
-          <p className="m-0 text-sm leading-relaxed text-muted">Nenhuma fonte tinha cotação para este horário. Informe o preço manualmente.</p>
+          <p className="m-0 text-sm leading-relaxed text-muted">{t.priceDialog.text}</p>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="unit-price" className="text-[13px] font-medium">
-              Preço unitário em R$
+              {t.priceDialog.label}
             </label>
             <Input
               id="unit-price"
               inputMode="decimal"
               autoComplete="off"
-              placeholder="R$ 0,00"
+              placeholder={t.priceDialog.placeholder}
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
               invalid={!!error}
               autoFocus
             />
             <span className="text-xs text-faint">
-              {total !== null ? `Total: ${formatBRL(total)} · ` : ""}fica marcado como manual no relatório
+              {total !== null ? t.priceDialog.total(formatBRL(total)) : ""}
+              {t.priceDialog.markedManual}
             </span>
           </div>
           <InlineError>{error}</InlineError>
           <div className="mt-2 flex flex-wrap gap-2.5">
             <Button type="submit" loading={saving}>
-              Salvar preço
+              {t.priceDialog.save}
             </Button>
             <Button type="button" variant="ghost" onClick={onClose}>
-              Ignorar por enquanto
+              {t.priceDialog.skip}
             </Button>
           </div>
         </form>

@@ -6,6 +6,8 @@ import { WalletReadyState, type MessageSignerWalletAdapter } from "@solana/walle
 import bs58 from "bs58";
 import { api, errorMessage } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/locale";
+import { messagesFor } from "@/lib/i18n/messages";
 
 /**
  * Login com carteira Solana (Sign-In With Solana).
@@ -24,11 +26,12 @@ export type LoginPhase = "idle" | "connecting" | "signing" | "verifying";
 function friendly(err: unknown): string {
   const name = (err as { name?: string })?.name ?? "";
   const msg = errorMessage(err);
+  const t = messagesFor(getLocale()).walletErrors;
   if (/reject|denied|cancel/i.test(msg) || name === "WalletSignMessageError" || name === "WalletConnectionError") {
-    return "Você cancelou na carteira. Tente de novo quando quiser.";
+    return t.cancelled;
   }
-  if (name === "WalletNotReadyError") return "A carteira não está pronta. Abra a extensão e tente de novo.";
-  if (name === "WalletWindowClosedError") return "A janela da carteira foi fechada antes de terminar.";
+  if (name === "WalletNotReadyError") return t.notReady;
+  if (name === "WalletWindowClosedError") return t.windowClosed;
   return msg;
 }
 
@@ -45,9 +48,7 @@ export function useWalletLogin() {
     return () => clearTimeout(t);
   }, []);
 
-  const installed = wallets.filter(
-    (w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable,
-  );
+  const installed = wallets.filter((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
 
   const loginWith = useCallback(
     async (wallet: AdapterWallet) => {
@@ -58,10 +59,10 @@ export function useWalletLogin() {
         select(adapter.name);
         if (!adapter.connected) await adapter.connect();
         const address = adapter.publicKey?.toBase58();
-        if (!address) throw new Error("Não conseguimos ler o endereço da carteira.");
+        if (!address) throw new Error(messagesFor(getLocale()).walletErrors.noAddress);
 
         if (!("signMessage" in adapter) || typeof adapter.signMessage !== "function") {
-          throw new Error(`A ${adapter.name} não permite assinar mensagens. Use a Phantom ou a Solflare.`);
+          throw new Error(messagesFor(getLocale()).walletErrors.cannotSign(adapter.name));
         }
 
         const { message } = await api.getNonce(address);
@@ -69,7 +70,11 @@ export function useWalletLogin() {
         const signature = await (adapter as MessageSignerWalletAdapter).signMessage(new TextEncoder().encode(message));
 
         setPhase("verifying");
-        const session = await api.verify({ address, message, signature: bs58.encode(signature) });
+        const session = await api.verify({
+          address,
+          message,
+          signature: bs58.encode(signature),
+        });
         signIn(session);
         return session;
       } catch (err) {
@@ -87,5 +92,13 @@ export function useWalletLogin() {
     [select, signIn, disconnect],
   );
 
-  return { wallets: installed, detected, phase, error, setError, loginWith, busy: phase !== "idle" };
+  return {
+    wallets: installed,
+    detected,
+    phase,
+    error,
+    setError,
+    loginWith,
+    busy: phase !== "idle",
+  };
 }

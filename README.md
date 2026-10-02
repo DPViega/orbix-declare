@@ -12,14 +12,15 @@
 
 <p align="center">
   Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Solana Wallet Adapter<br>
-  Projeto da <b>Orbix Lab</b> para o <b>Crypto World's Fair Hackathon</b> (Colosseum, 2026)
+  Projeto da <b>Orbix Lab</b> para o <b>Crypto World's Fair Hackathon</b> (Colosseum, 2026)<br>
+  Back-end: <a href="https://github.com/ERIKFABIANO/orbix-core"><b>orbix-core</b></a>
 </p>
 
 ---
 
 Este repositório contém **apenas o front-end** do Orbix Declare. Todo o processamento (leitura on-chain,
-cotações, motor fiscal, agente de IA, registro do hash na Solana, arquivos) é feito pelo back-end, em
-outro repositório. O front conversa com ele por uma API HTTP documentada em
+cotações, motor fiscal, agente de IA, registro do hash na Solana, arquivos) é feito pelo back-end, no
+repositório [**orbix-core**](https://github.com/ERIKFABIANO/orbix-core). O front conversa com ele por uma API HTTP documentada em
 [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
 
 Sem back-end, o app roda em **modo demonstração**, com os mesmos dados dos mockups, e permite navegar por todas as telas.
@@ -30,6 +31,7 @@ Sem back-end, o app roda em **modo demonstração**, com os mesmos dados dos moc
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 - [Telas e rotas](#telas-e-rotas)
 - [Como o front fala com o back-end](#como-o-front-fala-com-o-back-end)
+- [Idiomas (PT / EN)](#idiomas-pt--en)
 - [Estrutura de pastas](#estrutura-de-pastas)
 - [Scripts](#scripts)
 - [Deploy](#deploy)
@@ -83,8 +85,10 @@ Todas as telas seguem os mockups em [`docs/`](docs/), nos temas claro e escuro. 
 
 | # | Tela do mockup | Rota | Acesso |
 |---|---|---|---|
+| 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | primeira abertura de cada aba (~2,5 s; não repete ao recarregar; pula com clique/Esc; não aparece com redução de movimento), exceto `/v/*` | — |
 | 01 | Login | `/login` | público |
 | 02 | Sincronização | `/sincronizacao` | logado |
+| 02b | Boas-vindas (logo 3D `public/orbix-declare.glb`; referência `docs/Orbix Welcome.mp4`, fora do repositório) | depois de "Tudo pronto.", ao clicar em **Ir para o painel** (~2,6 s, só a primeira vez neste navegador; pula com clique/Esc; não aparece com redução de movimento); termina abrindo `/painel` | logado |
 | 03 | Carteiras | `/carteiras` | logado |
 | 04 | Painel mensal | `/painel?mes=AAAA-MM` | logado |
 | 05 | Histórico de relatórios | `/relatorios` | logado |
@@ -115,7 +119,24 @@ Tela  ──►  api.*  (src/lib/api/index.ts)
 - **Uma única porta de entrada.** Nenhuma tela chama `fetch` direto; todas usam `api.*`. Para integrar, basta configurar `NEXT_PUBLIC_API_URL`, sem mudar nenhuma tela.
 - **Contrato tipado.** Os formatos de request e response estão em [`src/lib/api/types.ts`](src/lib/api/types.ts) e as rotas em [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
 - **Login com carteira (Sign-In With Solana).** O front pede um nonce, a carteira assina a mensagem e o back-end valida a assinatura e devolve um token. O front nunca decide se o login é válido. Ver [`src/lib/wallet-login.ts`](src/lib/wallet-login.ts).
-- **Erros.** O back-end responde `{ "error": { "code", "message" } }` com a mensagem em português, e o front mostra essa mensagem ao usuário. Um `401` encerra a sessão e leva ao login.
+- **Erros.** O back-end responde `{ "error": { "code", "message" } }` com a mensagem no idioma pedido, e o front mostra essa mensagem ao usuário. Um `401` encerra a sessão e leva ao login.
+- **Idioma.** Toda requisição leva `Accept-Language` (`pt-BR` ou `en-US`); os textos que vêm do back-end devem respeitar esse header (detalhes em [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md)).
+
+## Idiomas (PT / EN)
+
+A interface inteira existe em **português** e **inglês**. O seletor PT | EN fica no login, na barra lateral, em Configurações, na tela de sincronização e na página pública de verificação.
+
+| Peça | Arquivo |
+|---|---|
+| Textos (fonte da verdade em português) | [`src/lib/i18n/messages/pt.ts`](src/lib/i18n/messages/pt.ts) |
+| Textos em inglês (mesmas chaves; o TypeScript acusa qualquer texto faltando) | [`src/lib/i18n/messages/en.ts`](src/lib/i18n/messages/en.ts) |
+| Hook `useI18n()` → `{ t, locale, setLocale }` | [`src/lib/i18n/index.tsx`](src/lib/i18n/index.tsx) |
+| Idioma no servidor (títulos da aba, `<html lang>`) | [`src/lib/i18n/server.ts`](src/lib/i18n/server.ts) |
+
+- **Como o idioma é escolhido:** cookie `orbix.locale` (gravado pelo seletor); sem cookie, inglês (padrão). O servidor já renderiza no idioma certo, sem piscar.
+- **Números e datas** seguem o idioma (`R$ 28.940,13` / `R$28,940.13`, `30/09/2026` / `Sep 30, 2026`), mas os valores continuam **em reais** e no **fuso de Brasília**: é o que vale para o fisco.
+- **Ficam em português nos dois idiomas:** o CSV oficial do relatório (vai para a Receita) e os nomes próprios do fisco (DeCripto, PTAX, DARF, LGPD), com uma explicação curta no texto em inglês.
+- **Novo texto na interface:** adicione a chave em `pt.ts` e em `en.ts` e use `t.secao.chave` no componente.
 
 ## Estrutura de pastas
 
@@ -195,6 +216,9 @@ Se alguém pedir para fazer uma dessas coisas do back-end aqui, a resposta é n�
 
 ## Documentação adicional
 
+- [`docs/BRAND_GUIDE.md`](docs/BRAND_GUIDE.md): paleta, tipografia, cores da marca e comportamento visual do login.
+
+- [**orbix-core**](https://github.com/ERIKFABIANO/orbix-core): repositório do back-end (API, ingestão on-chain, motor fiscal, agente de IA e registro na Solana).
 - [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md): todas as rotas que o front chama, com exemplos de JSON, autenticação, CORS e erros. **Comece por aqui se você é do back-end.**
 - [`docs/RELATORIO_DESENVOLVIMENTO.md`](docs/RELATORIO_DESENVOLVIMENTO.md): como o front foi construído, decisões, verificação feita, limitações conhecidas e próximos passos.
 - [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md): mapa da arquitetura, fluxos (login, sincronização, verificação) e onde mexer para cada tipo de mudança.
@@ -214,6 +238,7 @@ escrito pela equipe durante o período do evento (14/09–12/10/2026). Partimos 
 | @solana/web3.js | 1.99 | MIT | tipos e chave pública Solana |
 | @phosphor-icons/react | 2.1 | MIT | ícones |
 | next-themes | 0.4 | MIT | tema claro/escuro |
+| three | 0.186 | MIT | logo 3D da abertura, planeta do login e logo da tela de boas-vindas (carregado sob demanda) |
 | bs58 | 6.0 | MIT | codificar a assinatura |
 | Fontes Outfit, DM Sans, JetBrains Mono | — | SIL OFL 1.1 | via `next/font/google` |
 

@@ -127,6 +127,25 @@ export interface TaxEvent {
   priceSource: "auto" | "manual" | null;
   txHash: string;
   explorerUrl: string;
+
+  /*
+   * Detalhes para revisar o evento (opcionais: o back-end pode omitir ou mandar null;
+   * o front mostra "Indisponível" no lugar).
+   */
+  /** Carteira de origem do evento. */
+  wallet?: { address: string; label: string | null } | null;
+  /** Protocolo ou corretora. Ex.: "Jupiter", "Hyperliquid". */
+  protocol?: string | null;
+  /** Preço unitário usado, em R$. null quando não há preço. */
+  unitPriceBrl?: number | null;
+  /** Fonte da cotação automática. Ex.: "Birdeye", "Hyperliquid". null se manual ou sem preço. */
+  priceProvider?: string | null;
+  /** PTAX de venda (USD→BRL) usada na conversão e a data de referência (AAAA-MM-DD). */
+  ptax?: number | null;
+  ptaxDate?: string | null;
+  /** Custo de aquisição e ganho de capital do evento, em R$. */
+  costBrl?: number | null;
+  gainBrl?: number | null;
 }
 
 export interface ManualPriceRequest {

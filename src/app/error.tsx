@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { WarningIcon } from "@phosphor-icons/react";
 import { Button, StateBlock } from "@/components/ui";
+import { useI18n } from "@/lib/i18n";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const { t } = useI18n();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -14,12 +16,12 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <StateBlock
         icon={WarningIcon}
         tone="danger"
-        title="Algo deu errado nesta tela"
+        title={t.error.title}
         className="w-full max-w-[520px]"
-        actions={<Button onClick={reset}>Tentar de novo</Button>}
+        actions={<Button onClick={reset}>{t.common.retry}</Button>}
       >
-        Seus dados não foram alterados. Tente de novo; se o erro continuar, recarregue a página.
-        {error.digest && <span className="mt-2 block font-mono text-xs text-faint">Código: {error.digest}</span>}
+        {t.error.text}
+        {error.digest && <span className="mt-2 block font-mono text-xs text-faint">{t.error.code(error.digest)}</span>}
       </StateBlock>
     </div>
   );

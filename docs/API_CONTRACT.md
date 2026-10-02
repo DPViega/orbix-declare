@@ -17,7 +17,8 @@ Este documento é para quem desenvolve o **back-end**. Ele descreve cada rota qu
 | Datas | ISO 8601 em UTC (`"2026-09-28T15:00:00.000Z"`). O front exibe no fuso `America/Sao_Paulo`. |
 | Mês | string `"AAAA-MM"` (`"2026-09"`) em rotas e campos |
 | Endereços e hashes | string completa. O front encurta para exibir (`7xKp…3fQa`). |
-| Textos para o usuário | em **português do Brasil** (mensagens de erro inclusive) |
+| Idioma | O front envia `Accept-Language: pt-BR` ou `Accept-Language: en-US` em **toda** requisição (o usuário escolhe PT ou EN na interface). |
+| Textos para o usuário | No idioma do `Accept-Language` (padrão: português do Brasil). Vale para `error.message`, `SyncStatus.steps[].label`, `SyncWalletProgress.detail` e `error`, `Wallet.label` padrão, `PublicVerification.description` e as respostas do agente (`blocks`, `suggestions`, `sourceTx.title`). Valores, datas e códigos continuam neutros (números, ISO 8601, `code` em inglês). |
 
 ## Autenticação (Sign-In With Solana)
 
@@ -137,6 +138,14 @@ Sem `month`, devolva o mês mais recente com dados.
    "txHash": "4Zq8…", "explorerUrl": "https://explorer.solana.com/tx/4Zq8…" }]
 ```
 `type`: `"swap" | "perp" | "funding"`. Quando **nenhuma fonte de preço** foi encontrada: `valueBrl: null` e `priceSource: null`. O front mostra "Sem preço" e abre o formulário de preço manual.
+
+Campos **opcionais** para a revisão do evento (modal "Detalhes do evento" no painel). Pode omitir ou mandar `null`; o front mostra "Indisponível":
+```json
+{ "wallet": { "address": "7xKX…9sQp", "label": "Principal" }, "protocol": "Jupiter",
+  "unitPriceBrl": 910.0, "priceProvider": "Birdeye", "ptax": 5.4128, "ptaxDate": "2026-09-27",
+  "costBrl": 9412.6, "gainBrl": 1871.4 }
+```
+`unitPriceBrl` é o preço unitário usado (automático ou manual). `priceProvider` é a fonte da cotação automática (`null` quando manual ou sem preço). `ptax`/`ptaxDate`: PTAX de venda usada e o dia de referência. `costBrl`/`gainBrl`: custo de aquisição e ganho de capital do evento.
 
 ### `PUT /api/events/:id/price` → `TaxEvent`
 Request: `{ "unitPriceBrl": 3.08 }`. Devolve o evento atualizado, com `priceSource: "manual"` e `valueBrl` recalculado. O relatório deve marcar essa linha como manual (`manualPrice: true`).
