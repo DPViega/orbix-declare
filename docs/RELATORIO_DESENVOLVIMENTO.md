@@ -155,7 +155,7 @@ As verificações abaixo registram a implementação inicial, antes da atualiza�
 - Textos do painel aparecem por digitação sequencial. A implementação revela texto contínuo, preservando o espaço do conteúdo; a linha divisória aparece após a digitação. A sequência aguarda a abertura e respeita redução de movimento.
 - Novo planeta `public/voxel-planet-orbits.glb` apenas na marca do painel esquerdo, em 112 × 112 px e rotação de 40 segundos por volta. A logo original serve de fallback durante o carregamento ou em falha do WebGL.
 - Paleta centralizada, Outfit com pesos até 900 e escala responsiva compartilhada para títulos; DM Sans no corpo e JetBrains Mono nos dados.
-- “Orbix” dourado nos títulos da marca. Exceção: “Entrar no Orbix Declare” usa a cor padrão. Assinatura `orbix. lab` com ponto `#D4A843` e `lab` em `#1F0D5C`.
+- “Orbix” dourado nos títulos da marca. Assinatura `orbix. lab` com ponto `#D4A843` e `lab` em lilás `#B3A0F4` (ver 9.1).
 - Referências em vídeo/modelo adicionadas em `docs`; os arquivos públicos são usados pelo navegador. Detalhes visuais em [`BRAND_GUIDE.md`](BRAND_GUIDE.md).
 
 ### Validação e pendências desta revisão
@@ -163,4 +163,32 @@ As verificações abaixo registram a implementação inicial, antes da atualiza�
 - `npm run typecheck` e `npm run lint`: concluídos sem erros em 01/10/2026 ao preparar esta documentação.
 - Build de produção e navegação visual completa não foram repetidos nesta revisão. A validação histórica da seção 5 não cobre o estado visual atual.
 - Pendente conferir desktop/mobile, temas claro/escuro, PT/EN, digitação após a abertura, fallback WebGL e login com carteira real.
-- O tom escuro solicitado para `lab` pode ter pouco contraste sobre fundos escuros; a escolha visual foi mantida conforme a referência aprovada.
+- O contraste do `lab` foi resolvido na revisão 9.1 (lilás `#B3A0F4`).
+
+### 9.1 Boas-vindas, login e ajustes — 01/10/2026 (noite)
+
+**Tela de boas-vindas** ([`welcome-screen.tsx`](../src/components/welcome-screen.tsx), [`welcome-logo.tsx`](../src/components/welcome-logo.tsx))
+
+- Aparece **depois** da sincronização: a tela de conexão mostra "Tudo pronto." normalmente e as boas-vindas só começam quando a pessoa clica em **Ir para o painel**. Ao terminar, abre `/painel`. (Uma versão anterior trocava a tela de sincronização pelas boas-vindas assim que a leitura acabava; foi corrigido.)
+- Enquanto a leitura ainda roda, o botão secundário "Ir para o painel" vai direto ao painel, sem a animação.
+- O canvas 3D agora cobre a tela inteira. A caixa da logo (`.model`) virou só a referência de posição e tamanho: a câmera é calculada para a logo caber nela em repouso. Isso eliminou o retângulo que cortava a logo durante o zoom.
+- Saída: o "OD Orbix Declare" acelera até a câmera (ease-in cúbico, 1,5 s), mirando o centro da tela, cresce além das bordas e atravessa a tela; o fade só acontece nos últimos 12%. As estrelas viram riscos de velocidade ao mesmo tempo.
+- Modelo: `public/orbix-declare.glb` (~5,8 MB, carregado com Three.js sob demanda). Se o WebGL falhar ou o modelo demorar mais de 3 s, aparece o texto "Orbix Declare" e o fluxo segue para o painel.
+
+**Login**
+
+- Título trocado de "Entrar no Orbix Declare" (repetia o que o botão já diz) para a promessa do produto: **"Uma assinatura. Seu imposto pronto."**, com a segunda frase em lilás. EN: "One signature. Your taxes, done."
+- Subtítulo: "Entre com sua carteira Solana. Sem senha, sem cadastro, sem mover nenhum fundo."
+
+**Outros ajustes**
+
+- `lab` da assinatura em lilás `#B3A0F4` (sidebar, painel do login e abertura).
+- Ícones de carregamento (`.animate-spin-slow`) continuam girando, mais devagar (2,4 s), quando o sistema pede redução de movimento. Antes ficavam parados e pareciam travados (caso do Windows com "efeitos de animação" desligados).
+- Lint: `prefer-const` em `welcome-logo.tsx` corrigido sem mudar comportamento.
+
+**Validação desta revisão**
+
+- `npm run check` (typecheck, lint e build): sem erros.
+- Edge headless, 1440 × 900 e 390 × 844: login (PT e EN) → modo demo → sincronização até "Tudo pronto." → clique em "Ir para o painel" → boas-vindas → `/painel`, sem erros na página. Quadros capturados durante o voo final mostram a logo crescendo até a borda da tela sem corte.
+- Ainda pendente: ver o instante final do voo em velocidade real (o navegador de teste renderiza poucos quadros por segundo) e o login com carteira real.
+- Os vídeos de referência (`docs/Orbix Welcome.mp4`, `docs/brave_8hOx6V1USS.mp4`) ficam só na máquina local e não vão para o repositório, seguindo a limpeza de binários em `docs/`.

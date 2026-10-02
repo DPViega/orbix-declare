@@ -15,12 +15,13 @@ total_tokens: 58432
 | `components/star-field.tsx` | Três camadas de estrelas com posições determinísticas e animação CSS no login |
 | `components/typewriter-text.tsx` | Revelação progressiva de texto, espera pela splash e redução de movimento |
 | `components/login-planet.tsx` | Planeta GLB de 112px exclusivo do login; Three.js sob demanda, rotação lenta e fallback |
-| `components/orbix-signature.tsx` | Assinatura traduzida com ponto dourado e `lab` roxo escuro |
+| `components/orbix-signature.tsx` | Assinatura traduzida com ponto dourado e `lab` lilás `#B3A0F4` |
 | `components/splash-screen.tsx`, `components/splash-logo.tsx` | Abertura a cada carregamento completo, etapas de progresso e logo OD em 3D |
+| `components/welcome-screen.tsx`, `welcome-logo.tsx`, `welcome-screen.module.css` | Boas-vindas depois da sincronização (só ao clicar em "Ir para o painel"). O canvas 3D cobre a tela inteira; a caixa `.model` só define onde a logo fica em repouso. Na saída a logo acelera até a câmera e atravessa a tela, sem corte nas bordas |
 | `lib/i18n/`, `components/language-switch.tsx` | Dicionários PT/EN, contexto, escolha de idioma no servidor/cliente e seletor |
 | `app/globals.css` | Tokens de marca, escala `type-display`/`type-h1`/`type-h2`/`type-h3`, estrelas e divisor do login |
 
-Assets servidos: `public/od-logo.glb` e `public/voxel-planet-orbits.glb`. Referências de vídeo/modelo ficam em `docs/`. O guia visual atual é [`BRAND_GUIDE.md`](BRAND_GUIDE.md); os mockups HTML e prints antigos foram removidos da árvore de trabalho.
+Assets servidos: `public/od-logo.glb` (abertura), `public/voxel-planet-orbits.glb` (login) e `public/orbix-declare.glb` (boas-vindas, ~5,8 MB). Referências de vídeo/modelo ficam em `docs/`. O guia visual atual é [`BRAND_GUIDE.md`](BRAND_GUIDE.md); os mockups HTML e prints antigos foram removidos da árvore de trabalho.
 
 > Gerado pelo Cartographer. Último mapeamento: 2026-10-01T00:49:59Z.
 > Front-end do Orbix Declare (Next.js 16 + React 19 + TypeScript + Tailwind 4). O back-end fica em outro repositório.
@@ -85,7 +86,7 @@ src/
     ├── session.tsx, wallet-login.ts, use-api.ts
     ├── report-file.ts, format.ts, config.ts
     ├── i18n/{index.tsx, locale.ts, server.ts, messages/{pt,en}.ts}   idiomas PT/EN
-docs/  API_CONTRACT.md · RELATORIO_DESENVOLVIMENTO.md · CODEBASE_MAP.md · mockups (*.html) · od-logo.glb
+docs/  API_CONTRACT.md · RELATORIO_DESENVOLVIMENTO.md · CODEBASE_MAP.md · BRAND_GUIDE.md (vídeos de referência *.mp4 ficam só local)
 ```
 
 ## Módulos

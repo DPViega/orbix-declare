@@ -41,6 +41,11 @@ export const pt = {
 
   eventType: { swap: "Swap", perp: "Perp", funding: "Funding" },
 
+  welcome: {
+    title: "Bem-vindo ao",
+    opening: "Abrindo seu painel",
+  },
+
   splash: {
     connecting: "Estabelecendo conexão segura",
     preparing: "Preparando seu ambiente",
@@ -68,8 +73,8 @@ export const pt = {
     pitch:
       "Um agente de IA lê suas carteiras Solana e Hyperliquid, converte cada evento pela PTAX e prepara a DeCripto do mês para a Receita Federal.",
     steps: ["Conecte a carteira com uma assinatura", "O agente lê swaps, perps e funding", "Revise e gere a DeCripto em R$"],
-    title: "Entrar no Orbix Declare",
-    subtitle: "Use sua carteira Solana como login. Sem senha, sem cadastro.",
+    title: "Uma assinatura. Seu imposto pronto.",
+    subtitle: "Entre com sua carteira Solana. Sem senha, sem cadastro, sem mover nenhum fundo.",
     searching: "Procurando carteiras…",
     continueWith: (name: string) => `Continuar com ${name}`,
     phase: {

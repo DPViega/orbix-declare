@@ -17,6 +17,7 @@ import { formatDate, formatInt, shortAddress } from "@/lib/format";
 import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
+import { WelcomeScreen } from "@/components/welcome-screen";
 
 const POLL_MS = 1500;
 const NETWORK_LABEL = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
@@ -27,6 +28,8 @@ export function SyncView() {
   const { t } = useI18n();
   const [sync, setSync] = useState<SyncStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Boas-vindas só depois que a pessoa clica em "Ir para o painel" com a leitura concluída.
+  const [welcoming, setWelcoming] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
@@ -73,6 +76,8 @@ export function SyncView() {
   const pct = sync?.estimated ? Math.min(100, Math.round((sync.read / sync.estimated) * 100)) : null;
   const done = sync?.state === "done";
   const failed = sync?.state === "error";
+
+  if (welcoming) return <WelcomeScreen />;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-ink">
@@ -168,7 +173,7 @@ export function SyncView() {
           </Card>
           {!done && !failed && <p className="m-0 text-[13px] leading-relaxed text-muted">{t.sync.canClose}</p>}
           {done ? (
-            <Button iconRight={ArrowRightIcon} onClick={() => router.replace("/painel")} className="self-start">
+            <Button iconRight={ArrowRightIcon} onClick={() => setWelcoming(true)} className="self-start">
               {t.common.goToDashboard}
             </Button>
           ) : (

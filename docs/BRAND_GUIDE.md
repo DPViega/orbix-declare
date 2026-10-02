@@ -35,8 +35,8 @@ Display, H1 e H2 reduzem de tamanho em telas estreitas. A classe visual pode dif
 
 ## Aplicação da marca e login
 
-- “Orbix” em dourado `#D4A843` nos títulos da marca; “Declare” mantém sua cor de contexto. O título de ação “Entrar no Orbix Declare” permanece inteiramente na cor padrão do texto.
-- `OrbixSignature` preserva o prefixo traduzido, usa ponto dourado `#D4A843` e `lab` em roxo escuro `#1F0D5C`, conforme escolha explícita do usuário.
+- “Orbix” em dourado `#D4A843` nos títulos da marca; “Declare” mantém sua cor de contexto. O título do login é a promessa do produto, em duas frases: “Uma assinatura.” na cor padrão e “Seu imposto pronto.” em lilás (`text-accent-text`), como o “Declare” da marca (EN: “One signature. Your taxes, done.”).
+- `OrbixSignature` preserva o prefixo traduzido, usa ponto dourado `#D4A843` e `lab` em lilás `#B3A0F4` (o roxo escuro `#1F0D5C` anterior sumia no fundo escuro do painel e da abertura).
 - Login: céu estrelado sobre degradê radial lilás/roxo, com faixa suave na borda direita que termina na cor do fundo do formulário.
 - Planeta voxel de 112px apenas no painel esquerdo, com uma volta a cada 40 segundos. A abertura mantém seu próprio modelo OD.
 - Digitação sequencial do título, descrição e passos; divisor revelado após o último texto. Preferência de redução de movimento apresenta o texto sem animação.

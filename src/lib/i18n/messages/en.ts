@@ -43,6 +43,11 @@ export const en: Messages = {
 
   eventType: { swap: "Swap", perp: "Perp", funding: "Funding" },
 
+  welcome: {
+    title: "Welcome to",
+    opening: "Opening your dashboard",
+  },
+
   splash: {
     connecting: "Establishing a secure connection",
     preparing: "Preparing your workspace",
@@ -70,8 +75,8 @@ export const en: Messages = {
     pitch:
       "An AI agent reads your Solana and Hyperliquid wallets, converts every event at the PTAX rate and prepares the month's DeCripto for Brazil's Federal Revenue.",
     steps: ["Connect your wallet with one signature", "The agent reads swaps, perps and funding", "Review and generate the DeCripto in R$"],
-    title: "Sign in to Orbix Declare",
-    subtitle: "Use your Solana wallet to sign in. No password, no sign-up.",
+    title: "One signature. Your taxes, done.",
+    subtitle: "Sign in with your Solana wallet. No password, no sign-up, no funds moved.",
     searching: "Looking for wallets…",
     continueWith: (name) => `Continue with ${name}`,
     phase: {

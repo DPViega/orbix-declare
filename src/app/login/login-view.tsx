@@ -147,7 +147,14 @@ export function LoginView() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <h1 className="type-h1 m-0">{t.login.title}</h1>
+            <h1 className="type-h1 m-0">
+              {/* Primeira frase em branco; a promessa (segunda frase) em lilás, como o "Declare" da marca. */}
+              {t.login.title.split(/(?<=\.)\s/).map((part, i) => (
+                <span key={i} className={i > 0 ? "block text-accent-text" : "block"}>
+                  {part}
+                </span>
+              ))}
+            </h1>
             <p className="m-0 text-[15px] leading-relaxed text-muted">{t.login.subtitle}</p>
           </div>
 

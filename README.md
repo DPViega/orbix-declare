@@ -87,6 +87,7 @@ Todas as telas seguem os mockups em [`docs/`](docs/), nos temas claro e escuro. 
 | 00 | Abertura (recriação de `docs/Orbix Loading.mp4` e `docs/brave_1pMbtqUtLW.mp4`, com a logo 3D `public/od-logo.glb` em three.js) | abertura ou recarga, por cima de qualquer rota exceto `/v/*` | — |
 | 01 | Login | `/login` | público |
 | 02 | Sincronização | `/sincronizacao` | logado |
+| 02b | Boas-vindas (logo 3D `public/orbix-declare.glb`; referência `docs/Orbix Welcome.mp4`, fora do repositório) | depois de "Tudo pronto.", ao clicar em **Ir para o painel**; termina abrindo `/painel` | logado |
 | 03 | Carteiras | `/carteiras` | logado |
 | 04 | Painel mensal | `/painel?mes=AAAA-MM` | logado |
 | 05 | Histórico de relatórios | `/relatorios` | logado |
@@ -235,7 +236,7 @@ escrito pela equipe durante o período do evento (14/09–12/10/2026). Partimos 
 | @solana/web3.js | 1.99 | MIT | tipos e chave pública Solana |
 | @phosphor-icons/react | 2.1 | MIT | ícones |
 | next-themes | 0.4 | MIT | tema claro/escuro |
-| three | 0.186 | MIT | logo 3D da abertura e planeta do login (carregado sob demanda) |
+| three | 0.186 | MIT | logo 3D da abertura, planeta do login e logo da tela de boas-vindas (carregado sob demanda) |
 | bs58 | 6.0 | MIT | codificar a assinatura |
 | Fontes Outfit, DM Sans, JetBrains Mono | — | SIL OFL 1.1 | via `next/font/google` |
 

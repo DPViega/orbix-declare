@@ -1,0 +1,58 @@
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  color: #d2c9ec;
+  background: radial-gradient(ellipse at 39% 23%, #282a53 0%, transparent 49%), radial-gradient(ellipse at 80% 83%, #302843 0%, transparent 42%), #10121f;
+}
+
+.sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ray { opacity: 0; }
+.composition { position: absolute; top: 50%; left: 50%; width: min(100%, 1100px); transform: translate(-50%, -50%); text-align: center; }
+.heading { margin: 0 0 10px; padding: 0 20px; font-size: clamp(12px, 1.15vw, 16px); font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; outline: none; }
+.stage { position: relative; width: 100%; height: clamp(160px, 20vw, 280px); }
+.orbit { position: absolute; inset: -20% 0; width: 100%; height: 140%; opacity: 0.65; }
+.ring { fill: none; stroke: #8f8cc7; stroke-width: 0.8; stroke-opacity: 0.26; stroke-dasharray: 1; }
+/* .model só marca onde a logo fica em repouso; o canvas cobre a tela inteira para o voo final não ser cortado. */
+.model { position: absolute; inset: -22% 12%; pointer-events: none; }
+.canvas { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 350ms ease-out; }
+.canvas :global(.welcome-logo), .canvas canvas { display: block; width: 100%; height: 100%; }
+.welcome[data-loaded="true"] .canvas { opacity: 1; }
+.fallback { position: absolute; inset: 0; display: grid; place-content: center; font-family: var(--font-outfit), sans-serif; font-size: clamp(32px, 6vw, 70px); font-weight: 600; line-height: 1.05; color: #f7f5ff; }
+.fallback span { color: #d4a843; }
+.status { position: relative; width: min(240px, 48vw); margin: 10px auto 0; }
+.status p { margin: 16px -40px 0; font-size: 14px; }
+.track { height: 1px; background: rgb(201 188 247 / 0.16); }
+.track span { display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: #b3a0f4; box-shadow: 0 0 12px 2px rgb(139 106 232 / 0.4); }
+.welcome:not([data-phase="loading"]) .track span { animation: fill 5s linear forwards; }
+.welcome:not([data-phase="loading"]) .ring { animation: orbit-draw 2s ease-out both; }
+.welcome[data-phase="loading"] .orbit { opacity: 0; }
+.welcome[data-phase="exit"] .heading, .welcome[data-phase="exit"] .status, .welcome[data-phase="exit"] .orbit { opacity: 0; transition: opacity 450ms ease-out; }
+.welcome[data-phase="exit"] .sky { animation: warp 1.5s cubic-bezier(0.55, 0, 1, 0.45) both; }
+.welcome[data-phase="exit"] .ray { animation: streak 1.5s ease-in both; }
+.welcome[data-phase="exit"] .canvas { animation: depart 1.5s linear both; }
+.welcome[data-phase="exit"] .fallback { animation: depart 1.5s ease-in both; }
+@keyframes fill { to { transform: scaleX(1); } }
+@keyframes orbit-draw { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes warp { to { transform: scale(1.65); opacity: 0; } }
+@keyframes streak { 20%, 75% { opacity: 1; } 100% { opacity: 0; } }
+/* Some só no último instante, quando a logo já está atravessando a tela. */
+@keyframes depart { 88% { opacity: 1; } 100% { opacity: 0; } }
+@media (max-width: 600px) {
+  .heading { margin-bottom: 20px; }
+  .model { inset: -10% 4%; }
+  .orbit { left: -12%; width: 124%; }
+  .status { margin-top: 22px; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .stage { height: 140px; }
+  .heading { margin-bottom: 0; }
+  .status { margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome .sky, .welcome .canvas, .welcome .fallback { animation: none; }
+  .welcome .ray { display: none; }
+  .welcome .ring { animation: none; stroke-dashoffset: 0; }
+  .welcome .track span { animation: none; transform: scaleX(1); }
+}
