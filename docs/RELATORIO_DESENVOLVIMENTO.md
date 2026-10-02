@@ -209,3 +209,36 @@ Objetivo: quem volta ao app quer ver o painel, não a animação; na demo, o pro
 - Um script no `<head>` (`app/layout.tsx`) esconde a abertura antes da hidratação quando ela já foi vista nesta aba, para não piscar.
 - As duas telas não foram juntadas porque acontecem em momentos diferentes (ao abrir o site e depois da primeira sincronização), separadas por ações da pessoa.
 - Medido no Edge headless: abertura some em ~2,9 s (inclui o carregamento da página); Esc pula em ~0,7 s; boas-vindas levam ~2,9 s até `/painel` na primeira vez e ~50 ms nas seguintes; clique pula em ~60 ms; recarregar não mostra a abertura; com redução de movimento aparece a versão calma. Sem erros na página. `npm run check` sem erros.
+
+### 9.3 Robustez e afirmações honestas — 02/10/2026
+
+Itens 1 a 4 do plano de fechamento (os que avançam sem back-end).
+
+1. **Atualização das carteiras** (`app/(app)/carteiras/page.tsx`). Antes, um `setInterval` de 4 s chamava `reload` mesmo com a consulta anterior no ar; como o `useApi` descarta respostas antigas, uma API lenta (mais de 4 s) nunca chegava a atualizar a lista. Agora a próxima consulta só é agendada 4 s depois que a anterior responde, o acompanhamento para após 30 consultas ou no primeiro erro, e "Verificar agora" ou "Tentar de novo" retomam. O botão de sincronizar fica bloqueado enquanto a carteira está `pending` ou `syncing` no servidor.
+2. **Quantidades** (`lib/format.ts`). `formatQty` mostrava 2 casas (0,000123 SOL virava "0,00"). Agora mostra de 2 a 4 casas a partir de 1, e 4 dígitos significativos abaixo de 1. O valor completo (`formatQtyFull`, até 15 dígitos significativos) aparece ao passar o mouse nas tabelas e por extenso nos diálogos de evento e de preço. O CSV continua com 8 casas fixas.
+3. **Falha e vazio.** Novo `components/load-failure.tsx`:
+   - `LoadFailure`: falha sem dados, com o erro, uma explicação e três saídas (tentar de novo, ação da tela, sair da conta).
+   - `StaleDataError`: erro ao atualizar dados já carregados, sem esconder o que está na tela.
+
+   Aplicado em carteiras, painel (KPIs e eventos), lista de relatórios e relatório do mês. Uma lista de carteiras vazia mostra uma mensagem no lugar do skeleton eterno, inclusive no cartão da carteira de login.
+4. **Afirmações da interface.**
+   - Sincronização: aviso de demonstração ("leitura simulada").
+   - Textos mais modestos:
+     - "todo o histórico" virou "histórico disponível";
+     - "cotamos cada evento" virou "cotamos os eventos com preço disponível";
+     - "Tudo cotado" virou "Nenhum evento sem preço";
+     - "Seu imposto pronto" virou "Seu imposto em ordem";
+     - "Tudo pronto." virou "Leitura concluída.";
+     - "cada evento" (pitch e meta) virou "os eventos".
+   - Isenção: o painel não deduz mais isenção comparando volume com limite. O rótulo vem de `Dashboard.exemptionStatus` (`exempt`, `taxable` ou `null`), que o motor fiscal preenche (ver `docs/API_CONTRACT.md`). Sem o campo, mostra "Isenção ainda não confirmada pelo motor fiscal". O mock simula o campo.
+
+**Validação.**
+- `npm run check` sem erros nem avisos.
+- Teste com um back-end falso local respondendo em 6 s:
+  - nunca mais de uma consulta no ar;
+  - com erro, o aviso aparece, a tabela continua visível e o polling para;
+  - "Tentar de novo" retoma;
+  - o aviso de limite aparece depois de 30 consultas e "Verificar agora" retoma;
+  - com a carteira sincronizada, o polling para sozinho.
+- API fora do ar: carteiras e painel mostram a falha com "Tentar de novo" e "Sair".
+- Modo demonstração: aviso na sincronização e rótulo de isenção vindo do campo novo.

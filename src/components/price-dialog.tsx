@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WarningIcon, XIcon } from "@phosphor-icons/react";
 import { api, errorMessage, type TaxEvent } from "@/lib/api";
-import { formatBRL, formatDate, formatQty, parseBRLInput, shortAddress } from "@/lib/format";
+import { formatBRL, formatDate, formatQtyFull, parseBRLInput, shortAddress } from "@/lib/format";
 import { Button, Card, InlineError, Input, StateIcon } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
@@ -78,7 +78,7 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
               {formatDate(event.date)} · {t.eventType[event.type]} {event.asset}
             </span>
             <span className="text-muted">
-              {formatQty(event.quantity)} {event.quantityAsset} · tx {shortAddress(event.txHash)}
+              {formatQtyFull(event.quantity)} {event.quantityAsset} · tx {shortAddress(event.txHash)}
             </span>
           </Card>
           <p className="m-0 text-sm leading-relaxed text-muted">{t.priceDialog.text}</p>

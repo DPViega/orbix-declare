@@ -109,6 +109,11 @@ export interface Dashboard {
   estimatedTaxBrl: number;
   /** Limite mensal de isenção (R$ 35.000,00 hoje). Vem do back-end para não fixar regra no front. */
   exemptionLimitBrl: number;
+  /**
+   * Situação de isenção do mês decidida pelo motor fiscal, com a regra validada aplicada.
+   * null ou ausente enquanto o motor não concluiu: o front nunca deduz isenção só comparando volume e limite.
+   */
+  exemptionStatus?: "exempt" | "taxable" | null;
   missingPrices: number;
 }
 

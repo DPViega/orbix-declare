@@ -128,9 +128,10 @@ Sem `month`, devolva o mês mais recente com dados.
 ```json
 { "month": "2026-09", "updatedAt": "2026-09-30T17:35:00Z",
   "volumeBrl": 28940.13, "disposals": 6, "capitalGainBrl": 4182.36, "gainChangePct": 12.4,
-  "estimatedTaxBrl": 0, "exemptionLimitBrl": 35000, "missingPrices": 1 }
+  "estimatedTaxBrl": 0, "exemptionLimitBrl": 35000, "exemptionStatus": "exempt", "missingPrices": 1 }
 ```
 `exemptionLimitBrl` vem do back-end para que a regra fiscal não fique fixa no front.
+`exemptionStatus` (`"exempt"`, `"taxable"` ou `null`) é a conclusão do motor fiscal com a regra validada. O front só mostra "Isento" ou "Acima do limite" quando este campo vem preenchido; com `null` ou ausente, mostra "Isenção ainda não confirmada pelo motor fiscal". A barra do limite continua comparando volume e limite apenas como referência visual.
 
 ### `GET /api/events?month=AAAA-MM` → `TaxEvent[]`
 ```json

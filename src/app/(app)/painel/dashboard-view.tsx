@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightIcon, ArrowsClockwiseIcon, FileTextIcon, TrayIcon, WarningIcon } from "@phosphor-icons/react";
+import { ArrowRightIcon, FileTextIcon, TrayIcon, WarningIcon } from "@phosphor-icons/react";
 import { api, type EventType, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { useSession } from "@/lib/session";
@@ -15,17 +15,19 @@ import {
   formatDateTime,
   formatPct,
   formatQty,
+  formatQtyFull,
   monthName,
   previousMonthKey,
   shortAddress,
 } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { Button, ButtonLink, Card, Chip, cn, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, cn, Kicker, PageHeader, Panel, Skeleton } from "@/components/ui";
 import { MonthPicker } from "@/components/month-picker";
 import { DemoNotice } from "@/components/demo-notice";
 import { PriceDialog } from "@/components/price-dialog";
 import { EventDialog } from "@/components/event-dialog";
 import { Table, Td } from "@/components/table";
+import { LoadFailure, StaleDataError } from "@/components/load-failure";
 
 type Filter = "all" | EventType;
 const FILTERS: Filter[] = ["all", "swap", "perp", "funding"];
@@ -68,18 +70,7 @@ export function DashboardView() {
     return (
       <>
         <PageHeader title={t.dashboard.title} />
-        <StateBlock
-          icon={WarningIcon}
-          tone="danger"
-          title={t.dashboard.loadError}
-          actions={
-            <Button icon={ArrowsClockwiseIcon} onClick={dash.reload}>
-              {t.common.retry}
-            </Button>
-          }
-        >
-          {dash.error}
-        </StateBlock>
+        <LoadFailure title={t.dashboard.loadError} error={dash.error} onRetry={dash.reload} />
       </>
     );
   }
@@ -100,6 +91,7 @@ export function DashboardView() {
       />
 
       <DemoNotice text={t.demo.dashboard} />
+      <StaleDataError error={d ? dash.error : null} onRetry={dash.reload} />
 
       {user && !user.onboarded && (
         <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-sm">
@@ -129,7 +121,12 @@ export function DashboardView() {
               label={t.dashboard.estimatedTax}
               value={formatBRL(d.estimatedTaxBrl)}
               note={
-                d.volumeBrl <= d.exemptionLimitBrl ? t.dashboard.exemptBelow(formatBRLShort(d.exemptionLimitBrl)) : t.dashboard.aboveLimit
+                // Isenção é conclusão do motor fiscal (regra validada); o front não deduz comparando volume e limite.
+                d.exemptionStatus === "exempt"
+                  ? t.dashboard.exemptBelow(formatBRLShort(d.exemptionLimitBrl))
+                  : d.exemptionStatus === "taxable"
+                    ? t.dashboard.aboveLimit
+                    : t.dashboard.exemptionUnconfirmed
               }
             />
             <Kpi
@@ -169,13 +166,19 @@ export function DashboardView() {
           </div>
         </div>
 
+        {events.data && events.error && (
+          <div className="px-6 pt-4">
+            <StaleDataError error={events.error} onRetry={events.reload} />
+          </div>
+        )}
+
         {events.loading && !events.data ? (
           <div className="flex flex-col gap-3 p-6">
             {[0, 1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-6" />
             ))}
           </div>
-        ) : events.error ? (
+        ) : events.error && !events.data ? (
           <div className="flex flex-wrap items-center gap-3 p-6 text-sm text-danger">
             {events.error}
             <Button size="sm" variant="secondary" onClick={events.reload}>
@@ -219,7 +222,9 @@ export function DashboardView() {
                   </button>
                 </Td>
                 <Td align="right" className="font-mono text-[13px]">
-                  {formatQty(e.quantity)} {e.quantityAsset}
+                  <span title={`${formatQtyFull(e.quantity)} ${e.quantityAsset}`}>
+                    {formatQty(e.quantity)} {e.quantityAsset}
+                  </span>
                 </Td>
                 <Td align="right">
                   {e.valueBrl === null ? (

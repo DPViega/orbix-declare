@@ -32,6 +32,7 @@ import {
 } from "@/components/ui";
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
+import { LoadFailure, StaleDataError } from "@/components/load-failure";
 
 const NETWORK = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
 const ADDRESS: Record<Network, RegExp> = {
@@ -39,8 +40,14 @@ const ADDRESS: Record<Network, RegExp> = {
   // Base58: 32 a 44 caracteres, sem 0, O, I e l.
   solana: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
 };
-/** Enquanto o back-end ainda está importando alguma carteira, a lista é atualizada sozinha. */
+/**
+ * Enquanto o back-end ainda está importando alguma carteira, a lista é atualizada sozinha.
+ * Cada consulta só é agendada depois que a anterior responde (nunca há duas no ar), e o
+ * acompanhamento para após MAX_POLLS tentativas ou num erro; a pessoa retoma com "Verificar agora".
+ */
 const POLL_MS = 4000;
+const MAX_POLLS = 30;
+const isImporting = (w: Wallet) => w.status === "pending" || w.status === "syncing";
 
 export default function CarteirasPage() {
   const { t } = useI18n();
@@ -51,17 +58,30 @@ export default function CarteirasPage() {
   const [addError, setAddError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
   const [rowError, setRowError] = useState<string | null>(null);
+  const [polls, setPolls] = useState(0);
 
   const wallets = list.data ?? [];
   const loginWallet = wallets.find((w) => w.isLogin);
   const emptyWallet = wallets.find((w) => w.status === "empty" && w.lastSyncAt);
-  const importing = wallets.some((w) => (w.status === "pending" || w.status === "syncing") && !syncing[w.id]);
+  const importing = wallets.some((w) => isImporting(w) && !syncing[w.id]);
+  const pollStopped = importing && polls >= MAX_POLLS;
 
+  const { loading: listLoading, error: listError, reload: reloadList } = list;
   useEffect(() => {
-    if (!importing) return;
-    const id = setInterval(list.reload, POLL_MS);
-    return () => clearInterval(id);
-  }, [importing, list.reload]);
+    // Só agenda a próxima consulta quando a anterior terminou; em erro, para e mostra o aviso.
+    if (!importing || listLoading || listError || polls >= MAX_POLLS) return;
+    const id = setTimeout(() => {
+      setPolls((n) => n + 1);
+      reloadList();
+    }, POLL_MS);
+    return () => clearTimeout(id);
+  }, [importing, listLoading, listError, polls, reloadList]);
+
+  /** Recomeça o acompanhamento automático (depois de um erro, do limite ou de uma nova carteira). */
+  const resumePolling = () => {
+    setPolls(0);
+    list.reload();
+  };
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +96,7 @@ export default function CarteirasPage() {
       const w = await api.addWallet({ network, address: value });
       list.setData((prev) => [...(prev ?? []), w]);
       setAddress("");
+      setPolls(0);
       void sync(w);
     } catch (err) {
       setAddError(errorMessage(err));
@@ -85,11 +106,14 @@ export default function CarteirasPage() {
   };
 
   const sync = async (w: Wallet) => {
+    // O back-end ainda está importando esta carteira: não dispara outra importação por cima.
+    if (syncing[w.id] || isImporting(w)) return;
     setSyncing((s) => ({ ...s, [w.id]: true }));
     setRowError(null);
     try {
       const updated = await api.syncWallet(w.id);
       list.setData((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
+      setPolls(0);
     } catch (err) {
       setRowError(`${shortAddress(w.address)}: ${errorMessage(err)}`);
     } finally {
@@ -99,7 +123,10 @@ export default function CarteirasPage() {
 
   return (
     <>
-      <PageHeader kicker={list.data ? t.wallets.kicker(wallets.length) : t.common.loading} title={t.wallets.title} />
+      <PageHeader
+        kicker={list.data ? t.wallets.kicker(wallets.length) : list.error ? undefined : t.common.loading}
+        title={t.wallets.title}
+      />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {loginWallet ? (
@@ -129,7 +156,7 @@ export default function CarteirasPage() {
               </span>
             </div>
           </Card>
-        ) : list.error ? null : (
+        ) : list.data || list.error ? null : (
           <Skeleton className="h-[196px] rounded-xl" />
         )}
 
@@ -205,16 +232,23 @@ export default function CarteirasPage() {
       )}
 
       <InlineError>{rowError}</InlineError>
+      <StaleDataError error={list.data ? list.error : null} onRetry={resumePolling} />
+      {pollStopped && !list.error && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warn-bg px-4 py-2.5 text-[13px] leading-normal text-ink"
+        >
+          <span>{t.wallets.pollStopped}</span>
+          <Button size="sm" variant="secondary" icon={ArrowsClockwiseIcon} loading={list.loading} onClick={resumePolling}>
+            {t.wallets.checkNow}
+          </Button>
+        </div>
+      )}
 
-      <Panel className="overflow-hidden">
-        {list.error ? (
-          <div className="flex flex-wrap items-center gap-3 p-6 text-sm text-danger">
-            {list.error}
-            <Button size="sm" variant="secondary" onClick={list.reload}>
-              {t.common.retry}
-            </Button>
-          </div>
-        ) : (
+      {list.error && !list.data ? (
+        <LoadFailure title={t.wallets.loadError} error={list.error} onRetry={resumePolling} />
+      ) : (
+        <Panel className="overflow-hidden">
           <Table
             caption={t.wallets.tableCaption}
             minWidth={860}
@@ -227,42 +261,50 @@ export default function CarteirasPage() {
               { label: "", width: "72px" },
             ]}
           >
-            {list.loading && !list.data
-              ? [0, 1, 2].map((i) => (
-                  <tr key={i}>
-                    <Td colSpan={6}>
-                      <Skeleton className="h-6" />
-                    </Td>
-                  </tr>
-                ))
-              : wallets.map((w) => (
-                  <tr key={w.id}>
-                    <Td className="py-4">
-                      <Chip>{NETWORK[w.network]}</Chip>
-                    </Td>
-                    <Td className="font-mono text-[13px]">
-                      <span title={w.address}>{shortAddress(w.address)}</span>
-                    </Td>
-                    <Td>{w.label}</Td>
-                    <Td className="font-mono text-[13px] text-muted">{w.lastSyncAt ? formatDateTime(w.lastSyncAt) : "—"}</Td>
-                    <Td>
-                      <WalletStatus w={w} syncing={!!syncing[w.id]} />
-                    </Td>
-                    <Td align="right">
-                      <IconButton
-                        icon={ArrowsClockwiseIcon}
-                        label={t.wallets.syncWallet(shortAddress(w.address))}
-                        spinning={!!syncing[w.id]}
-                        disabled={!!syncing[w.id]}
-                        onClick={() => sync(w)}
-                        className="ml-auto"
-                      />
-                    </Td>
-                  </tr>
-                ))}
+            {list.loading && !list.data ? (
+              [0, 1, 2].map((i) => (
+                <tr key={i}>
+                  <Td colSpan={6}>
+                    <Skeleton className="h-6" />
+                  </Td>
+                </tr>
+              ))
+            ) : wallets.length === 0 ? (
+              <tr>
+                <Td colSpan={6} className="py-8 text-sm text-muted">
+                  {t.wallets.noWallets}
+                </Td>
+              </tr>
+            ) : (
+              wallets.map((w) => (
+                <tr key={w.id}>
+                  <Td className="py-4">
+                    <Chip>{NETWORK[w.network]}</Chip>
+                  </Td>
+                  <Td className="font-mono text-[13px]">
+                    <span title={w.address}>{shortAddress(w.address)}</span>
+                  </Td>
+                  <Td>{w.label}</Td>
+                  <Td className="font-mono text-[13px] text-muted">{w.lastSyncAt ? formatDateTime(w.lastSyncAt) : "—"}</Td>
+                  <Td>
+                    <WalletStatus w={w} syncing={!!syncing[w.id]} />
+                  </Td>
+                  <Td align="right">
+                    <IconButton
+                      icon={ArrowsClockwiseIcon}
+                      label={isImporting(w) ? t.wallets.importBusy : t.wallets.syncWallet(shortAddress(w.address))}
+                      spinning={!!syncing[w.id]}
+                      disabled={!!syncing[w.id] || isImporting(w)}
+                      onClick={() => sync(w)}
+                      className="ml-auto"
+                    />
+                  </Td>
+                </tr>
+              ))
+            )}
           </Table>
-        )}
-      </Panel>
+        </Panel>
+      )}
     </>
   );
 }

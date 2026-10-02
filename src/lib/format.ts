@@ -29,7 +29,18 @@ export const formatBRLShort = (v: number) =>
     .replace(/\u00a0/g, " ");
 /** "28.940,13" — valor sem símbolo, usado nas tabelas do relatório */
 export const formatMoney = (v: number) => nf("dec2", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-export const formatQty = formatMoney;
+/**
+ * Quantidade de cripto: "12,50" · "0,5" · "0,000123" · "0".
+ * A partir de 1 mostra de 2 a 4 casas; abaixo de 1 mantém 4 dígitos significativos, para 0,000123 SOL não virar "0,00".
+ */
+export function formatQty(v: number): string {
+  if (v === 0) return nf("int", { maximumFractionDigits: 0 }).format(0);
+  return Math.abs(v) >= 1
+    ? nf("qty", { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(v)
+    : nf("qtySmall", { maximumSignificantDigits: 4 }).format(v);
+}
+/** Quantidade completa, sem arredondar (até 15 dígitos significativos, o limite seguro de um double). Para title e detalhes. */
+export const formatQtyFull = (v: number) => nf("qtyFull", { maximumSignificantDigits: 15 }).format(v);
 export const formatPtax = (v: number) => nf("dec4", { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(v);
 export const formatInt = (v: number) => nf("int", { maximumFractionDigits: 0 }).format(v);
 export const formatPct = (v: number) =>

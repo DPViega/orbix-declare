@@ -6,7 +6,7 @@
 export const pt = {
   meta: {
     description:
-      "Seus impostos cripto, calculados em reais. Um agente de IA lê suas carteiras Solana e Hyperliquid, converte cada evento pela PTAX e prepara a DeCripto do mês.",
+      "Seus impostos cripto, calculados em reais. Um agente de IA lê suas carteiras Solana e Hyperliquid, converte os eventos pela PTAX e prepara a DeCripto do mês.",
     login: "Entrar",
     dashboard: "Painel",
     sync: "Sincronização",
@@ -31,6 +31,8 @@ export const pt = {
     total: "Total",
     queued: "Aguardando",
     failed: "Falhou",
+    staleData: (error: string) => `Não conseguimos atualizar. Mostrando os últimos dados carregados. ${error}`,
+    loadFailedHint: "Nada foi perdido. Se o servidor continuar fora do ar, tente de novo em alguns minutos ou saia e entre de novo mais tarde.",
   },
 
   language: {
@@ -72,9 +74,9 @@ export const pt = {
   login: {
     headline: "Seus impostos cripto, calculados em reais.",
     pitch:
-      "Um agente de IA lê suas carteiras Solana e Hyperliquid, converte cada evento pela PTAX e prepara a DeCripto do mês para a Receita Federal.",
+      "Um agente de IA lê suas carteiras Solana e Hyperliquid, converte os eventos pela PTAX e prepara a DeCripto do mês para a Receita Federal.",
     steps: ["Conecte a carteira com uma assinatura", "O agente lê swaps, perps e funding", "Revise e gere a DeCripto em R$"],
-    title: "Uma assinatura. Seu imposto pronto.",
+    title: "Uma assinatura. Seu imposto em ordem.",
     subtitle: "Entre com sua carteira Solana. Sem senha, sem cadastro, sem mover nenhum fundo.",
     searching: "Procurando carteiras…",
     continueWith: (name: string) => `Continuar com ${name}`,
@@ -117,12 +119,12 @@ export const pt = {
 
   sync: {
     kicker: (wallets: number | null) => `Sincronização · ${wallets === null ? "carregando" : `${wallets} carteiras`}`,
-    titleDone: "Tudo pronto.",
+    titleDone: "Leitura concluída.",
     titleFailed: "A leitura parou no meio.",
     titleRunning: "Lendo suas transações…",
-    textDone: "Lemos todo o histórico e cotamos cada evento. Seu painel do mês já está montado.",
+    textDone: "Lemos o histórico que as fontes retornaram e cotamos os eventos com preço disponível. Revise no painel o que ficou pendente.",
     textFailed: "Uma das fontes falhou. O que já foi lido está salvo; tente de novo para continuar de onde parou.",
-    textRunning: (since: string) => `Estamos buscando todo o histórico desde ${since}. Isso leva de 1 a 3 minutos na primeira vez.`,
+    textRunning: (since: string) => `Estamos buscando o histórico disponível desde ${since}. Isso leva de 1 a 3 minutos na primeira vez.`,
     txRead: "transações lidas",
     estimate: (estimated: string, pct: number) => `de ~${estimated} estimadas · ${pct}%`,
     estimating: "calculando estimativa…",
@@ -154,9 +156,10 @@ export const pt = {
     estimatedTax: "Imposto estimado",
     exemptBelow: (limit: string) => `Isento: abaixo de ${limit}`,
     aboveLimit: "Acima do limite de isenção",
+    exemptionUnconfirmed: "Isenção ainda não confirmada pelo motor fiscal",
     missingPrices: "Eventos sem preço",
     reviewFirst: "Revise antes de gerar",
-    allPriced: "Tudo cotado",
+    allPriced: "Nenhum evento sem preço",
     monthEvents: "Eventos do mês",
     filterByType: "Filtrar por tipo",
     filterAll: "Todos",
@@ -216,6 +219,11 @@ export const pt = {
     synced: "Concluído",
     failed: "Falhou",
     failedHint: "Use o botão de sincronizar para tentar de novo.",
+    loadError: "Não conseguimos carregar suas carteiras",
+    noWallets: "Nenhuma carteira conectada ainda. Adicione um endereço acima para começar.",
+    pollStopped: "A importação está demorando mais que o normal. Paramos de atualizar sozinhos; confira de novo quando quiser.",
+    checkNow: "Verificar agora",
+    importBusy: "Importação em andamento. Aguarde terminar para sincronizar de novo.",
   },
 
   reports: {
@@ -398,6 +406,7 @@ export const pt = {
   demo: {
     title: "Dados de demonstração.",
     text: "Os valores desta tela são simulados para apresentar o produto e não vêm de nenhuma carteira real.",
+    sync: "Esta leitura é simulada: nenhuma transação real está sendo consultada e o progresso é encenado.",
     dashboard: "Eventos, cotações e impostos deste painel são simulados para apresentar o produto e não vêm de nenhuma carteira real.",
     report: "Este relatório usa dados simulados. O hash e a transação abaixo são fictícios e não existem na Solana.",
     verify: "Esta verificação é um exemplo. O hash e a transação são fictícios e não foram gravados na Solana.",

@@ -1,20 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowRightIcon,
-  ArrowsClockwiseIcon,
-  CalendarCheckIcon,
-  FileTextIcon,
-  PencilSimpleIcon,
-  SealCheckIcon,
-} from "@phosphor-icons/react";
+import { ArrowRightIcon, CalendarCheckIcon, FileTextIcon, PencilSimpleIcon, SealCheckIcon } from "@phosphor-icons/react";
 import { api } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { formatBRL, formatDate, monthLabel, monthName, parseMonthKey } from "@/lib/format";
-import { Badge, Button, Card, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
+import { Badge, Card, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
+import { LoadFailure, StaleDataError } from "@/components/load-failure";
 
 /** Prazo da DeCripto: último dia útil do mês seguinte ao das operações. */
 function decriptoDeadline(monthKey: string): Date {
@@ -46,15 +40,10 @@ export default function RelatoriosPage() {
         </Card>
       )}
 
-      {error ? (
-        <StateBlock
-          icon={ArrowsClockwiseIcon}
-          tone="danger"
-          title={t.reports.loadError}
-          actions={<Button onClick={reload}>{t.common.retry}</Button>}
-        >
-          {error}
-        </StateBlock>
+      <StaleDataError error={data ? error : null} onRetry={reload} />
+
+      {error && !data ? (
+        <LoadFailure title={t.reports.loadError} error={error} onRetry={reload} />
       ) : data && data.length === 0 ? (
         <StateBlock icon={FileTextIcon} title={t.reports.emptyTitle}>
           {t.reports.emptyText}

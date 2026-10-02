@@ -8,7 +8,7 @@ import type { Messages } from "./pt";
 export const en: Messages = {
   meta: {
     description:
-      "Your crypto taxes, calculated in Brazilian reais. An AI agent reads your Solana and Hyperliquid wallets, converts every event at the PTAX rate and prepares the month's DeCripto.",
+      "Your crypto taxes, calculated in Brazilian reais. An AI agent reads your Solana and Hyperliquid wallets, converts the events at the PTAX rate and prepares the month's DeCripto.",
     login: "Sign in",
     dashboard: "Dashboard",
     sync: "Sync",
@@ -33,6 +33,8 @@ export const en: Messages = {
     total: "Total",
     queued: "Waiting",
     failed: "Failed",
+    staleData: (error) => `We couldn't refresh. Showing the last data loaded. ${error}`,
+    loadFailedHint: "Nothing was lost. If the server stays down, try again in a few minutes or sign out and come back later.",
   },
 
   language: {
@@ -74,9 +76,9 @@ export const en: Messages = {
   login: {
     headline: "Your crypto taxes, calculated in reais.",
     pitch:
-      "An AI agent reads your Solana and Hyperliquid wallets, converts every event at the PTAX rate and prepares the month's DeCripto for Brazil's Federal Revenue.",
+      "An AI agent reads your Solana and Hyperliquid wallets, converts the events at the PTAX rate and prepares the month's DeCripto for Brazil's Federal Revenue.",
     steps: ["Connect your wallet with one signature", "The agent reads swaps, perps and funding", "Review and generate the DeCripto in R$"],
-    title: "One signature. Your taxes, done.",
+    title: "One signature. Your taxes in order.",
     subtitle: "Sign in with your Solana wallet. No password, no sign-up, no funds moved.",
     searching: "Looking for wallets…",
     continueWith: (name) => `Continue with ${name}`,
@@ -118,12 +120,12 @@ export const en: Messages = {
 
   sync: {
     kicker: (wallets) => `Sync · ${wallets === null ? "loading" : `${wallets} wallets`}`,
-    titleDone: "All set.",
+    titleDone: "Reading complete.",
     titleFailed: "Reading stopped halfway.",
     titleRunning: "Reading your transactions…",
-    textDone: "We read your full history and priced every event. This month's dashboard is ready.",
+    textDone: "We read the history the sources returned and priced the events that had a price available. Review anything pending on the dashboard.",
     textFailed: "One of the sources failed. Everything read so far is saved; try again to resume where it stopped.",
-    textRunning: (since) => `We're fetching your full history since ${since}. The first time takes 1 to 3 minutes.`,
+    textRunning: (since) => `We're fetching the available history since ${since}. The first time takes 1 to 3 minutes.`,
     txRead: "transactions read",
     estimate: (estimated, pct) => `of ~${estimated} estimated · ${pct}%`,
     estimating: "estimating…",
@@ -155,9 +157,10 @@ export const en: Messages = {
     estimatedTax: "Estimated tax",
     exemptBelow: (limit) => `Exempt: below ${limit}`,
     aboveLimit: "Above the exemption limit",
+    exemptionUnconfirmed: "Exemption not yet confirmed by the tax engine",
     missingPrices: "Events without price",
     reviewFirst: "Review before generating",
-    allPriced: "Everything priced",
+    allPriced: "No events missing a price",
     monthEvents: "This month's events",
     filterByType: "Filter by type",
     filterAll: "All",
@@ -217,6 +220,11 @@ export const en: Messages = {
     synced: "Done",
     failed: "Failed",
     failedHint: "Use the sync button to try again.",
+    loadError: "We couldn't load your wallets",
+    noWallets: "No wallets connected yet. Add an address above to get started.",
+    pollStopped: "The import is taking longer than usual. We stopped refreshing automatically; check again whenever you like.",
+    checkNow: "Check now",
+    importBusy: "Import in progress. Wait for it to finish before syncing again.",
   },
 
   reports: {
@@ -401,6 +409,7 @@ export const en: Messages = {
   demo: {
     title: "Demo data.",
     text: "The values on this screen are simulated to showcase the product and don't come from any real wallet.",
+    sync: "This sync is simulated: no real transactions are being fetched and the progress is staged.",
     dashboard: "Events, prices and taxes on this dashboard are simulated to showcase the product and don't come from any real wallet.",
     report: "This report uses simulated data. The hash and transaction below are fictitious and don't exist on Solana.",
     verify: "This verification is an example. The hash and transaction are fictitious and were not recorded on Solana.",

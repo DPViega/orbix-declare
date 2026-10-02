@@ -579,7 +579,7 @@ export const mockApi = {
         },
         {
           key: "prices",
-          label: tr("Cotando cada evento pela PTAX", "Pricing every event at the PTAX rate"),
+          label: tr("Cotando os eventos pela PTAX", "Pricing the events at the PTAX rate"),
           state: step(t >= 0.95, hlT >= 1 && t < 0.95),
         },
         {
@@ -610,6 +610,8 @@ export const mockApi = {
       gainChangePct: key === "2026-09" ? 12.4 : prevGain ? round2(((t.gainBrl - prevGain) / prevGain) * 100) : null,
       estimatedTaxBrl: t.taxBrl,
       exemptionLimitBrl: 35000,
+      // Simula a resposta do motor fiscal; no back-end real ela vem da regra validada, não desta comparação.
+      exemptionStatus: t.disposedBrl <= 35000 ? "exempt" : "taxable",
       missingPrices: events.filter((e) => e.valueBrl === null).length,
     };
   },

@@ -26,6 +26,7 @@ import {
   formatMoney,
   formatPtax,
   formatQty,
+  formatQtyFull,
   formatTime,
   monthLabel,
   monthLong,
@@ -37,6 +38,7 @@ import { Badge, Button, ButtonLink, Card, InlineError, Kicker, PageHeader, Panel
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
 import { DemoNotice } from "@/components/demo-notice";
+import { LoadFailure } from "@/components/load-failure";
 
 export default function RelatorioPage() {
   const { mes } = useParams<{ mes: string }>();
@@ -54,24 +56,41 @@ function MonthReport({ mes }: { mes: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (!valid || (error && !data)) {
+  if (valid && error && !data) {
+    return (
+      <>
+        <PageHeader kicker={t.reports.title} title={t.report.notFound} />
+        <LoadFailure
+          title={t.report.cantOpen}
+          error={error}
+          onRetry={reload}
+          extraAction={
+            <ButtonLink href="/relatorios" variant="secondary" icon={ArrowLeftIcon}>
+              {t.report.back}
+            </ButtonLink>
+          }
+        />
+      </>
+    );
+  }
+
+  if (!valid) {
     return (
       <>
         <PageHeader kicker={t.reports.title} title={t.report.notFound} />
         <StateBlock
           icon={WarningIcon}
           tone="danger"
-          title={valid ? t.report.cantOpen : t.report.invalidMonth}
+          title={t.report.invalidMonth}
           actions={
             <>
-              {valid && <Button onClick={reload}>{t.common.retry}</Button>}
               <ButtonLink href="/relatorios" variant="secondary" icon={ArrowLeftIcon}>
                 {t.report.back}
               </ButtonLink>
             </>
           }
         >
-          {valid ? error : t.report.invalidMonthText}
+          {t.report.invalidMonthText}
         </StateBlock>
       </>
     );
@@ -138,7 +157,13 @@ function MonthReport({ mes }: { mes: string }) {
         }
         actions={
           <>
-            <Button variant="secondary" icon={DownloadSimpleIcon} onClick={downloadCsv} loading={busy === "csv"} disabled={!ready || busy !== null}>
+            <Button
+              variant="secondary"
+              icon={DownloadSimpleIcon}
+              onClick={downloadCsv}
+              loading={busy === "csv"}
+              disabled={!ready || busy !== null}
+            >
               {t.report.downloadCsv}
             </Button>
             <Button
@@ -258,7 +283,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
             )}
           </Td>
           <Td align="right" className={mono}>
-            {formatQty(r.quantity)}
+            <span title={formatQtyFull(r.quantity)}>{formatQty(r.quantity)}</span>
           </Td>
           <Td align="right" className={`${mono} text-muted`}>
             {formatPtax(r.ptax)}

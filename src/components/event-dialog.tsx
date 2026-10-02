@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { ArrowSquareOutIcon, CheckCircleIcon, InfoIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
 import type { TaxEvent } from "@/lib/api";
 import { config } from "@/lib/config";
-import { formatBRL, formatDate, formatDateTime, formatPtax, formatQty, shortAddress } from "@/lib/format";
+import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
@@ -104,7 +104,7 @@ export function EventDialog({
           <Section title={d.values}>
             <Field label={d.quantity}>
               <span className="font-mono text-[13px]">
-                {formatQty(event.quantity)} {event.quantityAsset}
+                {formatQtyFull(event.quantity)} {event.quantityAsset}
               </span>
             </Field>
             <Field label={d.unitPrice}>

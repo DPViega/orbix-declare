@@ -18,6 +18,7 @@ import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMa
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
 import { shouldPlayWelcome, WelcomeScreen } from "@/components/welcome-screen";
+import { DemoNotice } from "@/components/demo-notice";
 
 const POLL_MS = 1500;
 const NETWORK_LABEL = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
@@ -104,6 +105,8 @@ export function SyncView() {
                   : t.sync.textRunning(formatDate(`${sync?.since ?? "2025-01-01"}T15:00:00Z`))}
             </p>
           </div>
+
+          <DemoNotice text={t.demo.sync} />
 
           <div className="flex flex-wrap items-baseline gap-4">
             {sync ? (
