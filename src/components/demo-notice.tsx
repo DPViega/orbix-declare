@@ -1,14 +1,18 @@
 "use client";
 
 import { FlaskIcon } from "@phosphor-icons/react";
+import { isDemoSession } from "@/lib/api";
 import { config } from "@/lib/config";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/components/ui";
 
-/** Aviso de dados simulados. Só aparece no modo demonstração (sem NEXT_PUBLIC_API_URL). */
+/**
+ * Aviso de dados simulados. Aparece no modo demonstração (sem NEXT_PUBLIC_API_URL) e também
+ * para quem entrou pelo botão "Entrar no modo demonstração" com a API real configurada.
+ */
 export function DemoNotice({ text, className }: { text?: string; className?: string }) {
   const { t } = useI18n();
-  if (!config.useMocks) return null;
+  if (!config.useMocks && !isDemoSession()) return null;
   return (
     <div
       role="note"

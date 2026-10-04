@@ -28,6 +28,16 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+/**
+ * true quando a sessão atual veio do botão "Entrar no modo demonstração" (src/lib/api/mock.ts
+ * assina o token com o prefixo "demo."). Usado para rotear essa sessão sempre para o mockApi,
+ * mesmo com NEXT_PUBLIC_API_URL apontando para o back-end real — é o que deixa o botão de
+ * demonstração disponível para quem for avaliar o projeto sem precisar de carteira nem de conta.
+ */
+export function isDemoSession(): boolean {
+  return authToken?.startsWith("demo.") ?? false;
+}
+
 export function setUnauthorizedHandler(fn: (() => void) | null) {
   onUnauthorized = fn;
 }

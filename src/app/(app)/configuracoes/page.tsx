@@ -7,7 +7,7 @@ import { ArrowRightIcon, DesktopIcon, MoonIcon, SunIcon, TrashIcon, WarningOctag
 import { api, errorMessage } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { useSession } from "@/lib/session";
-import { shortAddress } from "@/lib/format";
+import { identityLabel, shortAddress } from "@/lib/format";
 import { Button, Card, Chip, cn, InlineError, Input, Kicker, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
@@ -81,6 +81,24 @@ export default function ConfiguracoesPage() {
           </Button>
         )}
       </Card>
+
+      {user && (
+        <section className="flex flex-col gap-3">
+          <h2 className="type-h2 m-0">{t.settings.account}</h2>
+          <Card className="flex flex-col gap-2 px-6 py-5">
+            <span className="font-mono text-sm" title={user.address ?? undefined}>
+              {identityLabel(user)}
+            </span>
+            {!!user.loginMethods?.length && (
+              <div className="flex flex-wrap gap-1.5">
+                {user.loginMethods.map((m) => (
+                  <Chip key={m}>{t.settings.loginMethod[m]}</Chip>
+                ))}
+              </div>
+            )}
+          </Card>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="type-h2 m-0">{t.settings.appearance}</h2>

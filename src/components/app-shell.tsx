@@ -17,7 +17,8 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { useSession } from "@/lib/session";
-import { shortAddress } from "@/lib/format";
+import { identityLabel } from "@/lib/format";
+import { isDemoSession } from "@/lib/api";
 import { config } from "@/lib/config";
 import { cn, LogoMark } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -102,12 +103,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         />
         <div className="flex flex-col gap-2.5 rounded-xl border border-brand-line bg-brand-surface p-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-mono text-[13px] text-brand-paper" title={user?.address}>
-              {user ? shortAddress(user.address) : "—"}
+            <span className="font-mono text-[13px] text-brand-paper" title={user?.address ?? undefined}>
+              {user ? identityLabel(user) : "—"}
             </span>
-            <span className="rounded-md bg-brand-deep px-[7px] py-[3px] font-mono text-[10px] tracking-[0.06em] text-brand-lilac uppercase">
-              Solana
-            </span>
+            {user?.address && (
+              <span className="rounded-md bg-brand-deep px-[7px] py-[3px] font-mono text-[10px] tracking-[0.06em] text-brand-lilac uppercase">
+                Solana
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -123,7 +126,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <LanguageSwitch tone="brand" />
-          {config.useMocks && (
+          {(config.useMocks || isDemoSession()) && (
             <span className="px-1 font-mono text-[10px] tracking-[0.06em] text-brand-dim uppercase">{t.common.demoMode}</span>
           )}
         </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeftIcon,
   ArrowSquareOutIcon,
@@ -15,7 +15,7 @@ import {
   SealCheckIcon,
   WarningIcon,
 } from "@phosphor-icons/react";
-import { api, errorMessage, type EventType, type ReportDetail, type ReportReviewItem } from "@/lib/api";
+import { api, errorMessage, isDemoSession, type EventType, type ReportDetail, type ReportReviewItem } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { config, explorerTxUrl, publicVerifyUrl } from "@/lib/config";
 import {
@@ -51,12 +51,21 @@ export default function RelatorioPage() {
 function MonthReport({ mes }: { mes: string }) {
   const { t } = useI18n();
   const valid = !!parseMonthKey(mes);
-  const { data, error, loading, reload } = useApi(() => api.report(mes), [mes], valid);
+  const { data, error, loading, reload, setData } = useApi(() => api.report(mes), [mes], valid);
   // Exportar só com o relatório deste mês carregado e atualizado.
   const ready = !!data && !loading;
-  const [busy, setBusy] = useState<"csv" | "decripto" | null>(null);
+  const [busy, setBusy] = useState<"csv" | "decripto" | "finalize" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
+
+  // Relatório final, atestação ainda não confirmou na Solana: recarrega até ela aparecer.
+  const pendingAttestation = data?.status === "final" && data.attestation === null;
+  useEffect(() => {
+    if (!pendingAttestation) return;
+    const id = setInterval(reload, 5000);
+    return () => clearInterval(id);
+  }, [pendingAttestation, reload]);
 
   if (valid && error && !data) {
     return (
@@ -103,7 +112,7 @@ function MonthReport({ mes }: { mes: string }) {
     setBusy("csv");
     setActionError(null);
     try {
-      if (config.useMocks) {
+      if (config.useMocks || isDemoSession()) {
         downloadText(`orbix-declare-${mes}.csv`, reportToCsv(data));
       } else {
         const link = await api.reportCsv(mes);
@@ -125,6 +134,23 @@ function MonthReport({ mes }: { mes: string }) {
       const link = await api.generateDecripto(mes);
       if (link.url) triggerDownload(link.url, link.filename);
       else setNotice(t.report.demoDecripto);
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const finalize = async () => {
+    if (!ready || !data || data.status !== "draft") return;
+    setBusy("finalize");
+    setActionError(null);
+    setNotice(null);
+    try {
+      const updated = await api.finalizeReport(mes);
+      setData(updated);
+      setConfirmFinalize(false);
+      setNotice(t.report.finalized);
     } catch (err) {
       setActionError(errorMessage(err));
     } finally {
@@ -164,31 +190,54 @@ function MonthReport({ mes }: { mes: string }) {
           ) : null
         }
         actions={
-          <>
-            <Button
-              variant="secondary"
-              icon={DownloadSimpleIcon}
-              onClick={downloadCsv}
-              loading={busy === "csv"}
-              disabled={!ready || busy !== null}
-            >
-              {t.report.downloadReviewCsv}
-            </Button>
-            <Button
-              icon={FileArrowUpIcon}
-              onClick={generateDecripto}
-              loading={busy === "decripto"}
-              disabled={!data || !ready || !decriptoReady || busy !== null || data.rows.length === 0}
-            >
-              {t.report.generateDecripto}
-            </Button>
-          </>
+          confirmFinalize ? (
+            <>
+              <span className="self-center text-sm text-muted">{t.report.finalizeConfirmText}</span>
+              <Button variant="secondary" onClick={() => setConfirmFinalize(false)} disabled={busy !== null}>
+                {t.common.cancel}
+              </Button>
+              <Button icon={SealCheckIcon} onClick={finalize} loading={busy === "finalize"} disabled={busy !== null}>
+                {t.report.finalizeConfirmButton}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                icon={DownloadSimpleIcon}
+                onClick={downloadCsv}
+                loading={busy === "csv"}
+                disabled={!ready || busy !== null}
+              >
+                {t.report.downloadReviewCsv}
+              </Button>
+              {data?.status === "draft" && (
+                <Button
+                  variant="secondary"
+                  icon={SealCheckIcon}
+                  onClick={() => setConfirmFinalize(true)}
+                  disabled={!ready || busy !== null || data.rows.length === 0}
+                >
+                  {t.report.finalize}
+                </Button>
+              )}
+              <Button
+                icon={FileArrowUpIcon}
+                onClick={generateDecripto}
+                loading={busy === "decripto"}
+                disabled={!data || !ready || !decriptoReady || busy !== null || data.rows.length === 0}
+                title={t.report.decriptoSummaryNote}
+              >
+                {t.report.generateDecripto}
+              </Button>
+            </>
+          )
         }
       />
 
       <DemoNotice text={t.demo.report} />
 
-      {data && <ReportReviewPanel report={data} />}
+      {data && <ReportReviewPanel report={data} onReviewed={reload} />}
 
       <InlineError>{actionError}</InlineError>
       {notice && (
@@ -240,7 +289,7 @@ function Total({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ReportReviewPanel({ report }: { report: ReportDetail }) {
+function ReportReviewPanel({ report, onReviewed }: { report: ReportDetail; onReviewed: () => void }) {
   const { t } = useI18n();
   const [history, setHistory] = useState<Record<string, ReviewRecord[]>>({});
   const review = report.review;
@@ -278,6 +327,7 @@ function ReportReviewPanel({ report }: { report: ReportDetail }) {
               item={item}
               history={history[item.id] ?? []}
               onSave={(entry) => setHistory((current) => ({ ...current, [item.id]: [...(current[item.id] ?? []), entry] }))}
+              onReviewed={onReviewed}
             />
           ))}
         </section>
@@ -300,25 +350,47 @@ function ReviewAction({
   item,
   history,
   onSave,
+  onReviewed,
 }: {
   item: ReportReviewItem;
   history: ReviewRecord[];
   onSave: (record: ReviewRecord) => void;
+  onReviewed: () => void;
 }) {
   const { t } = useI18n();
+  const isCost = item.kind === "acquisition_cost";
+  // A classificação ainda não tem rota no back-end: só funciona na demonstração.
+  const demoOnly = !isCost;
+  const usable = isCost || config.useMocks || isDemoSession();
   const [raw, setRaw] = useState("");
   const [classification, setClassification] = useState<EventType | "">("");
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const cost = parseBRLInput(raw);
-  const after = item.kind === "acquisition_cost"
+  const after = isCost
     ? cost !== null && cost >= 0 ? formatBRL(cost) : ""
     : classification ? t.eventType[classification] : "";
+  const canSubmit = usable && !!after && !!reason.trim() && !!evidence.trim() && confirmed;
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!config.useMocks || !after || !reason.trim() || !evidence.trim() || !confirmed) return;
+    if (!canSubmit || cost === null) return;
+    setError(null);
+    if (isCost) {
+      setSaving(true);
+      try {
+        await api.reviewAcquisitionCost(item.id, { costBrl: cost, reason: reason.trim(), evidence: evidence.trim(), confirmed: true });
+        onReviewed();
+      } catch (err) {
+        setError(errorMessage(err));
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+    }
     onSave({ before: t.report.reviewPending, after, reason: reason.trim(), evidence: evidence.trim(), createdAt: new Date().toISOString() });
     setRaw("");
     setClassification("");
@@ -331,14 +403,14 @@ function ReviewAction({
     <div className="flex flex-col gap-3 rounded-lg border border-line px-4 py-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <span className="text-sm font-medium">{item.label}</span>
-        <Badge tone="warn">{item.kind === "acquisition_cost" ? t.report.cost : t.report.classification}</Badge>
+        <Badge tone="warn">{isCost ? t.report.cost : t.report.classification}</Badge>
       </div>
-      {!config.useMocks && <p className="m-0 text-[13px] text-muted">{t.report.reviewBackendUnavailable}</p>}
+      {demoOnly && !usable && <p className="m-0 text-[13px] text-muted">{t.report.reviewBackendUnavailable}</p>}
       <form onSubmit={submit} className="flex flex-col gap-3">
-        {item.kind === "acquisition_cost" ? (
+        {isCost ? (
           <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-cost`}>
             {t.report.costAmount}
-            <Input id={`${item.id}-cost`} inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} disabled={!config.useMocks} />
+            <Input id={`${item.id}-cost`} inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} />
           </label>
         ) : (
           <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-class`}>
@@ -347,7 +419,7 @@ function ReviewAction({
               id={`${item.id}-class`}
               value={classification}
               onChange={(e) => setClassification(e.target.value as EventType | "")}
-              disabled={!config.useMocks}
+              disabled={!usable}
               className="h-11 w-full rounded-xl border border-line2 bg-bg px-3.5 text-sm text-ink disabled:opacity-60"
             >
               <option value="">{t.report.classifyPlaceholder}</option>
@@ -363,7 +435,7 @@ function ReviewAction({
         </div>
         <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-reason`}>
           {t.report.reviewReason}
-          <Input id={`${item.id}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} disabled={!config.useMocks} />
+          <Input id={`${item.id}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} disabled={!usable} />
         </label>
         <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-evidence`}>
           {t.report.reviewEvidence}
@@ -371,24 +443,25 @@ function ReviewAction({
             id={`${item.id}-evidence`}
             value={evidence}
             onChange={(e) => setEvidence(e.target.value)}
-            disabled={!config.useMocks}
+            disabled={!usable}
             rows={2}
             className="w-full resize-y rounded-xl border border-line2 bg-bg px-3.5 py-3 text-sm text-ink outline-none focus:border-accent disabled:opacity-60"
           />
         </label>
-        {config.useMocks && (
+        {usable && (
           <label className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
             <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-1 accent-[var(--accent)]" />
             {t.report.confirmReview}
           </label>
         )}
-        <Button type="submit" size="sm" disabled={!config.useMocks || !after || !reason.trim() || !evidence.trim() || !confirmed}>
-          {item.kind === "acquisition_cost" ? t.report.resolveCostAction : t.report.classifyAction}
+        <InlineError>{error}</InlineError>
+        <Button type="submit" size="sm" loading={saving} disabled={!canSubmit}>
+          {isCost ? t.report.resolveCostAction : t.report.classifyAction}
         </Button>
       </form>
       {history.map((record, index) => (
         <div key={`${record.createdAt}-${index}`} role="status" className="border-t border-line pt-3 text-xs leading-relaxed text-muted">
-          <p className="m-0">{t.report.reviewSavedDemo} · {formatDateTime(record.createdAt)}</p>
+          <p className="m-0">{isCost ? t.report.reviewSaved : t.report.reviewSavedDemo} · {formatDateTime(record.createdAt)}</p>
           <p className="m-0">{record.before} → {record.after}</p>
           <p className="m-0">{record.reason} · {record.evidence}</p>
         </div>
@@ -468,6 +541,22 @@ function RowsTable({ report }: { report: ReportDetail }) {
                 {t.common.manual}
               </span>
             )}
+            {r.costManual && (
+              <span
+                className="ml-2 rounded-md border border-dashed border-line2 px-1.5 py-px font-mono text-[10.5px] text-muted"
+                title={t.report.costManualTitle}
+              >
+                {t.report.costManualBadge}
+              </span>
+            )}
+            {r.costUnknown && (
+              <span
+                className="ml-2 rounded-md border border-dashed border-warn px-1.5 py-px font-mono text-[10.5px] text-warn"
+                title={t.report.costUnknownTitle}
+              >
+                {t.report.costUnknownBadge}
+              </span>
+            )}
           </Td>
           <Td align="right" className={mono}>
             <span title={formatQtyFull(r.quantity)}>{formatQty(r.quantity)}</span>
@@ -520,7 +609,7 @@ function VerificationPanel({ report }: { report: ReportDetail }) {
         <Kicker>{t.report.hash}</Kicker>
         <span className="rounded-xl border border-line bg-bg px-3 py-2.5 font-mono text-[12.5px] leading-relaxed break-all">{a.hash}</span>
       </div>
-      {config.useMocks ? (
+      {config.useMocks || isDemoSession() ? (
         <div className="flex flex-col gap-1.5">
           <Kicker>{t.demo.fakeRecord}</Kicker>
           <p className="m-0 text-[13px] leading-relaxed text-muted">{t.demo.fakeRecordText}</p>

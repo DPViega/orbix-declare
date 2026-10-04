@@ -11,16 +11,19 @@ import {
   ArrowClockwiseIcon,
   ArrowSquareOutIcon,
   CircleNotchIcon,
+  EnvelopeSimpleIcon,
   EyeIcon,
+  GithubLogoIcon,
+  GoogleLogoIcon,
   KeyIcon,
   PuzzlePieceIcon,
   SignatureIcon,
 } from "@phosphor-icons/react";
 import { useWalletLogin } from "@/lib/wallet-login";
 import { useSession } from "@/lib/session";
-import { demoLogin, type Session } from "@/lib/api";
-import { config } from "@/lib/config";
-import { Button, cn, InlineError, LogoMark } from "@/components/ui";
+import { api, demoLogin, errorMessage, type OAuthProvider, type Providers, type Session } from "@/lib/api";
+import { postLoginRedirect } from "@/lib/auth-redirect";
+import { Button, cn, InlineError, Input, LogoMark } from "@/components/ui";
 import { StarField } from "@/components/star-field";
 import { TypewriterText } from "@/components/typewriter-text";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -37,15 +40,12 @@ const INSTALL_LINKS = [
   { name: "Solflare", href: "https://solflare.com/download" },
 ];
 
-function safeNext(raw: string | null) {
-  // Só caminhos internos, para não virar open redirect.
-  return raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/painel";
-}
+type AuthMode = "idle" | "code";
 
 export function LoginView() {
   const router = useRouter();
   const params = useSearchParams();
-  const { status, signIn } = useSession();
+  const { status, user, signIn } = useSession();
   const { t } = useI18n();
   const { wallets, detected, phase, error, loginWith, busy } = useWalletLogin();
   const [active, setActive] = useState<string | null>(null);
@@ -53,17 +53,51 @@ export function LoginView() {
   // Marca que o login partiu desta tela; aí quem decide o destino é go(), não o efeito abaixo.
   const loggingIn = useRef(false);
 
+  // Quais formas de login o servidor tem ligadas. null enquanto não chegou (trata como tudo ligado).
+  const [providers, setProviders] = useState<Providers | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("idle");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState<OAuthProvider | null>(null);
+  // O /auth/callback manda pra cá com ?error= quando o Google/GitHub falha ou o código vence.
+  const [authError, setAuthError] = useState<string | null>(() => (params.get("error") ? t.login.oauthErrorGeneric : null));
+  const [resendAt, setResendAt] = useState<number | null>(null);
+  const [resendLeft, setResendLeft] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .providers()
+      .then((p) => alive && setProviders(p))
+      .catch(() => alive && setProviders({ wallet: true, email: false, google: false, github: false }));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!resendAt) return;
+    const id = setInterval(() => {
+      const left = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+      setResendLeft(left);
+      if (left <= 0) clearInterval(id);
+    }, 500);
+    return () => clearInterval(id);
+  }, [resendAt]);
+
   const go = (s: Session | null) => {
     if (!s) {
       loggingIn.current = false;
       return;
     }
-    router.replace(s.user.onboarded ? safeNext(params.get("next")) : "/sincronizacao");
+    router.replace(postLoginRedirect(s.user, params.get("next")));
   };
 
   useEffect(() => {
-    if (status === "authenticated" && !loggingIn.current) router.replace(safeNext(params.get("next")));
-  }, [status, router, params]);
+    if (status === "authenticated" && !loggingIn.current && user) router.replace(postLoginRedirect(user, params.get("next")));
+  }, [status, user, router, params]);
 
   const connect = async (w: AdapterWallet) => {
     loggingIn.current = true;
@@ -86,7 +120,59 @@ export function LoginView() {
     }
   };
 
+  const startEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setEmailBusy(true);
+    try {
+      const res = await api.emailStart(email.trim());
+      setResendAt(Date.now() + res.resendAfter * 1000);
+      setResendLeft(res.resendAfter);
+      setAuthMode("code");
+    } catch (err) {
+      setAuthError(errorMessage(err));
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const verifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setCodeBusy(true);
+    loggingIn.current = true;
+    try {
+      const s = await api.emailVerify(email.trim(), code.trim());
+      signIn(s);
+      go(s);
+    } catch (err) {
+      setAuthError(errorMessage(err));
+      loggingIn.current = false;
+    } finally {
+      setCodeBusy(false);
+    }
+  };
+
+  const startOAuth = async (provider: OAuthProvider) => {
+    setAuthError(null);
+    setOauthBusy(provider);
+    try {
+      const next = params.get("next");
+      const { url } = await api.oauthStart(provider, next && next.startsWith("/") ? next : undefined);
+      window.location.href = url;
+    } catch (err) {
+      setAuthError(errorMessage(err));
+      setOauthBusy(null);
+    }
+  };
+
   const noWallet = detected && wallets.length === 0;
+  const anyBusy = busy || demoBusy || emailBusy || codeBusy || oauthBusy !== null;
+  // Enquanto providers ainda não chegou, mostra tudo (evita esconder botão à toa); depois, respeita o servidor.
+  const showWallet = providers?.wallet !== false;
+  const showEmail = providers?.email !== false;
+  const showGoogle = providers?.google === true;
+  const showGithub = providers?.github === true;
 
   return (
     <main className="relative min-h-dvh bg-bg text-ink lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,620px)_minmax(0,1fr)]">
@@ -159,48 +245,161 @@ export function LoginView() {
           </div>
 
           {/* Um botão por carteira detectada (Wallet Standard) */}
-          <div className="flex flex-col gap-2.5">
-            {!detected ? (
-              <Button size="lg" loading disabled className="w-full">
-                {t.login.searching}
+          {showWallet && authMode === "idle" && (
+            <div className="flex flex-col gap-2.5">
+              {!detected ? (
+                <Button size="lg" loading disabled className="w-full">
+                  {t.login.searching}
+                </Button>
+              ) : noWallet ? (
+                <NoWalletCard />
+              ) : (
+                wallets.map((w) => {
+                  const isActive = active === w.adapter.name;
+                  return (
+                    <button
+                      key={w.adapter.name}
+                      type="button"
+                      disabled={anyBusy}
+                      aria-busy={isActive || undefined}
+                      onClick={() => connect(w)}
+                      className={cn(
+                        "group relative flex h-[52px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-accent px-4 text-[15px] font-medium text-on-accent transition-colors",
+                        "hover:bg-accent-hover disabled:cursor-not-allowed",
+                        busy && !isActive && "opacity-55",
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- ícone da carteira vem como data: URI */}
+                      <img src={w.adapter.icon} alt="" width={22} height={22} className="absolute left-4 rounded-md" />
+                      {isActive && phase !== "idle" ? (
+                        <>
+                          <CircleNotchIcon size={18} className="animate-spin-slow" aria-hidden />
+                          {t.login.phase[phase]}
+                        </>
+                      ) : (
+                        <>{t.login.continueWith(w.adapter.name)}</>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {authMode === "idle" && <InlineError>{error}</InlineError>}
+
+          {authMode === "code" ? (
+            <form onSubmit={verifyEmail} className="flex flex-col gap-3">
+              <p className="m-0 text-[13px] text-muted">{t.login.emailSent(email)}</p>
+              <label htmlFor="login-code" className="text-[13px] font-medium">
+                {t.login.codeLabel}
+              </label>
+              <Input
+                id="login-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder={t.login.codePlaceholder}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                maxLength={6}
+                autoFocus
+                required
+              />
+              <InlineError>{authError}</InlineError>
+              <Button type="submit" size="lg" className="w-full" loading={codeBusy} disabled={code.length !== 6}>
+                {t.login.codeButton}
               </Button>
-            ) : noWallet ? (
-              <NoWalletCard />
-            ) : (
-              wallets.map((w) => {
-                const isActive = active === w.adapter.name;
-                return (
-                  <button
-                    key={w.adapter.name}
-                    type="button"
-                    disabled={busy || demoBusy}
-                    aria-busy={isActive || undefined}
-                    onClick={() => connect(w)}
-                    className={cn(
-                      "group relative flex h-[52px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-accent px-4 text-[15px] font-medium text-on-accent transition-colors",
-                      "hover:bg-accent-hover disabled:cursor-not-allowed",
-                      busy && !isActive && "opacity-55",
+              <div className="flex items-center justify-between text-[13px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("idle");
+                    setCode("");
+                    setAuthError(null);
+                  }}
+                  className="cursor-pointer bg-transparent p-0 text-accent-text hover:underline"
+                >
+                  {t.login.useAnotherEmail}
+                </button>
+                <button
+                  type="button"
+                  disabled={resendLeft > 0 || emailBusy}
+                  onClick={startEmail}
+                  className="cursor-pointer bg-transparent p-0 text-accent-text hover:underline disabled:cursor-not-allowed disabled:text-faint disabled:no-underline"
+                >
+                  {resendLeft > 0 ? t.login.resendIn(resendLeft) : t.login.resend}
+                </button>
+              </div>
+            </form>
+          ) : (
+            (showEmail || showGoogle || showGithub) && (
+              <>
+                {showWallet && (
+                  <div className="flex items-center gap-3" role="separator" aria-label={t.login.or}>
+                    <span className="h-px flex-1 bg-line" />
+                    <span className="font-mono text-[11px] tracking-[0.08em] text-faint uppercase">{t.login.or}</span>
+                    <span className="h-px flex-1 bg-line" />
+                  </div>
+                )}
+                {showEmail && (
+                  <form onSubmit={startEmail} className="flex gap-2">
+                    <label htmlFor="login-email" className="sr-only">
+                      {t.login.emailLabel}
+                    </label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder={t.login.emailPlaceholder}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={anyBusy}
+                      className="flex-1"
+                    />
+                    <Button type="submit" variant="secondary" icon={EnvelopeSimpleIcon} loading={emailBusy} disabled={anyBusy && !emailBusy}>
+                      {t.login.emailButton}
+                    </Button>
+                  </form>
+                )}
+                {(showGoogle || showGithub) && (
+                  <div className="flex flex-col gap-2">
+                    {showGoogle && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        icon={GoogleLogoIcon}
+                        className="w-full"
+                        loading={oauthBusy === "google"}
+                        disabled={anyBusy && oauthBusy !== "google"}
+                        onClick={() => startOAuth("google")}
+                      >
+                        {t.login.googleButton}
+                      </Button>
                     )}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- ícone da carteira vem como data: URI */}
-                    <img src={w.adapter.icon} alt="" width={22} height={22} className="absolute left-4 rounded-md" />
-                    {isActive && phase !== "idle" ? (
-                      <>
-                        <CircleNotchIcon size={18} className="animate-spin-slow" aria-hidden />
-                        {t.login.phase[phase]}
-                      </>
-                    ) : (
-                      <>{t.login.continueWith(w.adapter.name)}</>
+                    {showGithub && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        icon={GithubLogoIcon}
+                        className="w-full"
+                        loading={oauthBusy === "github"}
+                        disabled={anyBusy && oauthBusy !== "github"}
+                        onClick={() => startOAuth("github")}
+                      >
+                        {t.login.githubButton}
+                      </Button>
                     )}
-                  </button>
-                );
-              })
-            )}
-          </div>
+                  </div>
+                )}
+                <InlineError>{authError}</InlineError>
+              </>
+            )
+          )}
 
-          <InlineError>{error}</InlineError>
-
-          {config.useMocks && (
+          {authMode === "idle" && (
             <>
               <div className="flex items-center gap-3" role="separator" aria-label={t.login.or}>
                 <span className="h-px flex-1 bg-line" />
@@ -209,7 +408,7 @@ export function LoginView() {
               </div>
               <div className="flex flex-col gap-2">
                 <p className="m-0 text-xs text-muted">{t.login.demoHint}</p>
-                <Button variant="secondary" size="lg" className="w-full" loading={demoBusy} disabled={busy} onClick={enterDemo}>
+                <Button variant="secondary" size="lg" className="w-full" loading={demoBusy} disabled={anyBusy && !demoBusy} onClick={enterDemo}>
                   {t.login.demoButton}
                 </Button>
               </div>

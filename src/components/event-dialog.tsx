@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowSquareOutIcon, CheckCircleIcon, InfoIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
-import type { TaxEvent } from "@/lib/api";
+import { isDemoSession, type TaxEvent } from "@/lib/api";
 import { config } from "@/lib/config";
 import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
@@ -82,7 +82,7 @@ export function EventDialog({
             </Field>
             <Field label={d.protocol}>{event.protocol || na}</Field>
             <Field label={d.tx} last>
-              {config.useMocks ? (
+              {config.useMocks || isDemoSession() ? (
                 <span className="flex flex-col">
                   <span className="font-mono text-[12.5px] text-muted">{shortAddress(event.txHash, 8, 6)}</span>
                   <span className="text-[12.5px] text-warn">{t.demo.fakeTx}</span>

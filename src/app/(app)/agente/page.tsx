@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon, SparkleIcon } from "@phosphor-icons/react";
-import { api, errorMessage, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
+import { api, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
 import { config } from "@/lib/config";
 import { DemoNotice } from "@/components/demo-notice";
 import { useSession } from "@/lib/session";
@@ -269,7 +269,7 @@ function Block({ block }: { block: AgentBlock }) {
           "inline-flex items-center gap-1.5 rounded-lg border border-line2 px-2.5 py-1.5 font-mono text-xs no-underline",
           c.kind === "tx" ? "text-accent-text" : "text-ink",
         );
-        return c.url && /^https?:\/\//i.test(c.url) && !(config.useMocks && c.kind === "tx") ? (
+        return c.url && /^https?:\/\//i.test(c.url) && !((config.useMocks || isDemoSession()) && c.kind === "tx") ? (
           <a key={i} href={c.url} target="_blank" rel="noopener noreferrer" className={cn(cls, "hover:border-soft/60")}>
             <Icon size={14} aria-hidden />
             {c.label}

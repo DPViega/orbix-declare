@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRightIcon, FileTextIcon, TrayIcon, WarningIcon } from "@phosphor-icons/react";
-import { api, type EventType, type TaxEvent } from "@/lib/api";
+import { api, isDemoSession, type EventType, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { useSession } from "@/lib/session";
 import { config } from "@/lib/config";
@@ -291,7 +291,7 @@ export function DashboardView() {
                 </Td>
                 <Td>
                   {/* Modo demonstração: a transação é fictícia, então não há link para o explorador. */}
-                  {config.useMocks ? (
+                  {config.useMocks || isDemoSession() ? (
                     <span className="font-mono text-xs text-muted" title={t.demo.fakeTx}>
                       {shortAddress(e.txHash)}
                     </span>
@@ -324,9 +324,9 @@ export function DashboardView() {
       <PriceDialog
         event={pricing}
         onClose={() => setPricing(null)}
-        onSaved={(updated, audited) => {
+        onSaved={(updated) => {
           setPricing(null);
-          setReviewNotice(audited ? null : t.priceDialog.priceOnlySaved);
+          setReviewNotice(t.priceDialog.saved);
           events.setData((list) => list?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
           void dash.reload();
         }}

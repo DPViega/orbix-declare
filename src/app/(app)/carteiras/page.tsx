@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowsClockwiseIcon,
@@ -14,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { api, errorMessage, type Network, type Wallet } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
+import { useSession } from "@/lib/session";
 import { formatDate, formatDateTime, shortAddress } from "@/lib/format";
 import {
   Badge,
@@ -51,6 +53,8 @@ const isImporting = (w: Wallet) => w.status === "pending" || w.status === "synci
 
 export default function CarteirasPage() {
   const { t } = useI18n();
+  const router = useRouter();
+  const { user, refreshUser } = useSession();
   const list = useApi(() => api.listWallets(), []);
   const [network, setNetwork] = useState<Network>("solana");
   const [address, setAddress] = useState("");
@@ -98,6 +102,11 @@ export default function CarteirasPage() {
       setAddress("");
       setPolls(0);
       void sync(w);
+      // Entrou por e-mail, Google ou GitHub: esta é a primeira carteira, então segue pra sincronização.
+      if (user && !user.hasWallets) {
+        await refreshUser();
+        router.replace("/sincronizacao");
+      }
     } catch (err) {
       setAddError(errorMessage(err));
     } finally {

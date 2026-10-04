@@ -8,7 +8,7 @@
  * Para integrar com o back-end real basta configurar NEXT_PUBLIC_API_URL; nenhuma tela muda.
  */
 import { config } from "@/lib/config";
-import { http, SLOW_TIMEOUT_MS } from "./client";
+import { http, isDemoSession, SLOW_TIMEOUT_MS } from "./client";
 import { mockApi } from "./mock";
 import type {
   AddWalletRequest,
@@ -16,9 +16,14 @@ import type {
   AgentRequest,
   Dashboard,
   DownloadLink,
+  EmailStartResponse,
+  ManualCostRequest,
   ManualPriceRequest,
   ManualPriceReviewRequest,
   NonceResponse,
+  OAuthProvider,
+  OAuthStartResponse,
+  Providers,
   PublicVerification,
   ReportDetail,
   ReportSummary,
@@ -33,9 +38,15 @@ import type {
 const enc = encodeURIComponent;
 
 const httpApi = {
-  // Autenticação — Sign-In With Solana
+  // Autenticação — carteira, e-mail, Google, GitHub
+  providers: () => http<Providers>("GET", "/api/auth/providers"),
   getNonce: (address: string) => http<NonceResponse>("GET", `/api/auth/nonce?address=${enc(address)}`),
   verify: (req: VerifyRequest) => http<Session>("POST", "/api/auth/verify", req),
+  emailStart: (email: string) => http<EmailStartResponse>("POST", "/api/auth/email/start", { email }),
+  emailVerify: (email: string, code: string) => http<Session>("POST", "/api/auth/email/verify", { email, code }),
+  oauthStart: (provider: OAuthProvider, next?: string) =>
+    http<OAuthStartResponse>("GET", `/api/auth/oauth/${provider}/start${next ? `?next=${enc(next)}` : ""}`),
+  exchange: (code: string) => http<Session>("POST", "/api/auth/exchange", { code }),
   me: () => http<User>("GET", "/api/me"),
   logout: () => http<void>("POST", "/api/auth/logout"),
 
@@ -56,11 +67,15 @@ const httpApi = {
     http<TaxEvent>("PUT", `/api/events/${enc(eventId)}/price`, { unitPriceBrl } satisfies ManualPriceRequest),
   reviewManualPrice: (eventId: string, request: ManualPriceReviewRequest) =>
     http<TaxEvent>("PUT", `/api/events/${enc(eventId)}/price`, request),
+  reviewAcquisitionCost: (eventId: string, request: ManualCostRequest) =>
+    http<TaxEvent>("PUT", `/api/events/${enc(eventId)}/cost`, request),
 
   // Relatórios
   reports: () => http<ReportSummary[]>("GET", "/api/reports"),
   report: (month: string) => http<ReportDetail>("GET", `/api/report/${enc(month)}`),
   reportCsv: (month: string) => http<DownloadLink>("GET", `/api/report/${enc(month)}/csv`),
+  finalizeReport: (month: string) =>
+    http<ReportDetail>("POST", `/api/report/${enc(month)}/finalize`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
   generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Verificação pública (sem login)
@@ -75,10 +90,20 @@ const httpApi = {
 
 export type Api = typeof httpApi;
 
-export const api: Api = config.useMocks ? mockApi : httpApi;
+/**
+ * Qual implementação atende cada chamada. Fora do modo demonstração a API real responde
+ * normalmente; a exceção é uma sessão aberta pelo botão "Entrar no modo demonstração"
+ * (isDemoSession()), que continua inteira no mockApi mesmo com o back-end real configurado —
+ * é o que deixa esse botão disponível para quem for avaliar o projeto sem conectar nada.
+ */
+const impl = (): Api => (config.useMocks || isDemoSession() ? mockApi : httpApi);
 
-/** Login de demonstração (só existe no modo mock). */
+export const api: Api = new Proxy({} as Api, {
+  get: (_target, prop: keyof Api) => impl()[prop],
+}) as Api;
+
+/** Login de demonstração (sempre via mockApi, mesmo com a API real configurada). */
 export const demoLogin = () => mockApi.verify({ demo: true });
 
 export * from "./types";
-export { ApiError, errorMessage } from "./client";
+export { ApiError, errorMessage, isDemoSession } from "./client";

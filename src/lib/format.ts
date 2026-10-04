@@ -77,11 +77,19 @@ export function formatTime(iso: string, seconds = false): string {
 export const formatDateTime = (iso: string) => `${formatDate(iso)} · ${formatTime(iso)}`;
 
 /** Encurta endereços e hashes: "7xKp…3fQa" / "0x4f2A…9c1E" */
-export function shortAddress(addr: string, head = 4, tail = 4): string {
+export function shortAddress(addr: string | null | undefined, head = 4, tail = 4): string {
   if (!addr) return "";
   const h = addr.startsWith("0x") ? head + 2 : head;
   if (addr.length <= h + tail + 1) return addr;
   return `${addr.slice(0, h)}…${addr.slice(-tail)}`;
+}
+
+/**
+ * Como mostrar quem está logado: nome do provedor, senão o e-mail, senão o endereço encurtado.
+ * Quem entrou por e-mail, Google ou GitHub pode não ter nenhuma carteira (user.address é null).
+ */
+export function identityLabel(user: { address: string | null; email: string | null; displayName: string | null }): string {
+  return user.displayName || user.email || shortAddress(user.address) || "—";
 }
 
 /* ---------- Meses ----------

@@ -13,7 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { api, errorMessage, type StepState, type SyncStatus, type SyncWalletProgress } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { formatDate, formatInt, shortAddress } from "@/lib/format";
+import { formatDate, formatInt, identityLabel, shortAddress } from "@/lib/format";
 import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
@@ -86,7 +86,12 @@ export function SyncView() {
       <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-line px-5 sm:px-12">
         <Brand />
         <div className="flex items-center gap-4">
-          {user && <span className="hidden font-mono text-xs text-muted sm:inline">{shortAddress(user.address)} · Solana</span>}
+          {user && (
+            <span className="hidden font-mono text-xs text-muted sm:inline">
+              {identityLabel(user)}
+              {user.address && " · Solana"}
+            </span>
+          )}
           <LanguageSwitch />
         </div>
       </header>

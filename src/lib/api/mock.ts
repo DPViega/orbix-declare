@@ -19,9 +19,14 @@ import type {
   AgentRequest,
   Dashboard,
   DownloadLink,
+  EmailStartResponse,
   EventType,
+  ManualCostRequest,
   ManualPriceReviewRequest,
   NonceResponse,
+  OAuthProvider,
+  OAuthStartResponse,
+  Providers,
   PublicVerification,
   ReportDetail,
   ReportRow,
@@ -42,6 +47,7 @@ import { getLocale } from "@/lib/i18n/locale";
 const tr = (pt: string, en: string) => (getLocale() === "en" ? en : pt);
 
 const wait = (ms = 380) => new Promise((r) => setTimeout(r, ms + Math.random() * 220));
+const enc = encodeURIComponent;
 
 /** Data às 12:00 de Brasília (15:00 UTC) para não "virar o dia" em fuso nenhum do BR. */
 const day = (y: number, m: number, d: number, h = 15, min = 0) => new Date(Date.UTC(y, m - 1, d, h, min)).toISOString();
@@ -51,15 +57,22 @@ const FULL_TX = "5hN2vQpR8cW3mT7yLk4dZs1aFj6uBe9xGt2HnV8qKr3MwY5pC7oDiE4bUz1Xk9P
 
 /* ---------------- Estado em memória ---------------- */
 
-let user: User = {
+/** Persona padrão: já tem a carteira de login e as outras duas carteiras de exemplo. */
+const WALLET_USER: User = {
   id: "usr_demo",
   address: DEMO_ADDRESS,
+  email: null,
+  displayName: null,
+  loginMethods: ["wallet"],
+  hasWallets: true,
   plan: "free",
   agentQuestionsLeft: 20,
   onboarded: false,
 };
 
-let wallets: Wallet[] = [
+let user: User = { ...WALLET_USER };
+
+const DEFAULT_WALLETS: Wallet[] = [
   {
     id: "w_sol_main",
     network: "solana",
@@ -91,6 +104,8 @@ let wallets: Wallet[] = [
     status: "synced",
   },
 ];
+
+let wallets: Wallet[] = [...DEFAULT_WALLETS];
 
 /** Rótulos das carteiras de exemplo guardam "pt|en"; o usuário digita rótulos sem "|". */
 const localizeWallet = (w: Wallet): Wallet => {
@@ -263,7 +278,24 @@ const MONTHS: {
 
 /** Preços manuais informados pelo usuário (id do evento → preço unitário em R$). */
 const manualPrices = new Map<string, number>();
+/** Custo de aquisição informado pelo usuário (id do evento → custo total em R$). */
+const manualCosts = new Map<string, number>();
 const eventReviews = new Map<string, TaxEvent["reviewHistory"]>();
+
+/**
+ * O swap "JUP → SOL" do dia 21 representa, na demonstração, uma venda cujo custo de aquisição
+ * não está no histórico lido (carteira antiga ou ativo recebido antes do período). Até alguém
+ * informar o custo pela revisão auditada, ele entra com custo zero e `costUnknown: true` — é
+ * esse evento que aparece em `review.reviewItems` com `kind: "acquisition_cost"`.
+ */
+const COST_UNKNOWN_HASH = BASE[3].hash;
+
+function costInfo(id: string, b: BaseEvent, baseCost: number): { cost: number; costUnknown: boolean; costManual: boolean } {
+  if (b.hash !== COST_UNKNOWN_HASH) return { cost: baseCost, costUnknown: false, costManual: false };
+  const manual = manualCosts.get(id);
+  if (manual !== undefined) return { cost: round2(manual), costUnknown: false, costManual: true };
+  return { cost: 0, costUnknown: true, costManual: false };
+}
 
 function monthInfo(key: string) {
   const m = MONTHS.find((x) => x.key === key);
@@ -292,9 +324,12 @@ function eventsFor(key: string): TaxEvent[] {
     const source = b.brl === null ? (manual !== undefined ? "manual" : null) : "auto";
     const networkWallets = wallets.filter((w) => w.network === b.network);
     const wallet = networkWallets.length ? networkWallets[i % networkWallets.length] : undefined;
-    const cost = round2(b.cost * factor);
+    const { cost, costUnknown } = costInfo(id, b, round2(b.cost * factor));
     // PTAX de venda do dia útil anterior (aqui, simplificado para o dia anterior).
     const ptaxDate = new Date(new Date(date).getTime() - 86_400_000).toISOString().slice(0, 10);
+    const reasons: string[] = [];
+    if (value === null) reasons.push(tr("Cotação histórica não encontrada.", "Historical quote not found."));
+    if (costUnknown) reasons.push(tr("Custo de aquisição não encontrado no histórico lido.", "Acquisition cost not found in the history read."));
     return {
       id,
       date,
@@ -318,7 +353,7 @@ function eventsFor(key: string): TaxEvent[] {
       feesBrl: round2(value === null ? 0 : value * 0.001),
       costBrl: cost,
       gainBrl: value === null ? null : round2(value - cost),
-      pendingReasons: value === null ? [tr("Cotação histórica não encontrada.", "Historical quote not found.")] : [],
+      pendingReasons: reasons,
       reviewHistory: eventReviews.get(id) ?? [],
     } satisfies TaxEvent;
   });
@@ -328,10 +363,10 @@ function rowsFor(key: string): ReportRow[] {
   const factor = monthInfo(key).total / BASE_TOTAL;
   const base = baseFor(key);
   return eventsFor(key)
-    .map((e, i) => ({ e, b: base[i] }))
+    .map((e, i) => ({ e, b: base[i], id: `ev_${key}_${i}` }))
     .filter(({ e }) => e.valueBrl !== null)
-    .map(({ e, b }, i) => {
-      const cost = round2(b.cost * factor);
+    .map(({ e, b, id }, i) => {
+      const { cost, costUnknown, costManual } = costInfo(id, b, round2(b.cost * factor));
       const value = e.valueBrl!;
       return {
         id: `row_${key}_${i}`,
@@ -344,6 +379,8 @@ function rowsFor(key: string): ReportRow[] {
         costBrl: cost,
         gainBrl: round2(value - cost),
         manualPrice: e.priceSource === "manual",
+        costUnknown,
+        costManual,
       };
     });
 }
@@ -362,6 +399,22 @@ async function buildReport(key: string): Promise<ReportDetail> {
   const rows = rowsFor(key);
   const monthEvents = eventsFor(key);
   const datedEvents = monthEvents.map((event) => event.date).sort();
+  // Índice do swap "custo desconhecido" (se este mês incluir esse evento-base e ainda não resolvido).
+  const costIdx = baseFor(key).findIndex((b) => b.hash === COST_UNKNOWN_HASH);
+  const costEventId = costIdx >= 0 ? `ev_${key}_${costIdx}` : null;
+  const costItem =
+    costEventId && !manualCosts.has(costEventId)
+      ? [
+          {
+            id: costEventId,
+            kind: "acquisition_cost" as const,
+            label: tr(
+              `${baseFor(key)[costIdx].asset} · venda sem a compra correspondente no histórico lido`,
+              `${baseFor(key)[costIdx].asset} · sale without the matching purchase in the history read`,
+            ),
+          },
+        ]
+      : [];
   const report: ReportDetail = {
     month: key,
     status: info.status,
@@ -380,17 +433,14 @@ async function buildReport(key: string): Promise<ReportDetail> {
       pendingReasons: monthEvents.flatMap((event) => event.pendingReasons ?? []),
       unsupportedOperations: [tr("Transferências de NFT", "NFT transfers")],
       reviewItems: [
-        {
-          id: `cost_${key}`,
-          kind: "acquisition_cost",
-          label: tr("Custo de aquisição pendente · exemplo", "Acquisition cost pending · sample"),
-        },
+        ...costItem,
         {
           id: `classification_${key}`,
           kind: "classification",
           label: tr("Transferência de NFT · exemplo", "NFT transfer · sample"),
         },
       ],
+      // Igual ao back-end real: só fica true quando o arquivo seguir o leiaute oficial da Receita.
       decriptoReady: false,
     },
   };
@@ -422,6 +472,11 @@ function syncStartedAt(): number | null {
 /* ---------------- API simulada ---------------- */
 
 export const mockApi = {
+  async providers(): Promise<Providers> {
+    await wait(100);
+    return { wallet: true, email: true, google: true, github: true };
+  },
+
   async getNonce(address: string): Promise<NonceResponse> {
     await wait(200);
     const nonce = Math.random().toString(36).slice(2, 12);
@@ -456,7 +511,13 @@ export const mockApi = {
   async verify(req: VerifyRequest | { demo: true }): Promise<Session> {
     await wait(450);
     if ("address" in req) {
-      user = { ...user, address: req.address };
+      // Login por carteira sempre volta para a persona com as 3 carteiras de exemplo.
+      wallets = [...DEFAULT_WALLETS];
+      user = {
+        ...WALLET_USER,
+        address: req.address,
+        onboarded: user.hasWallets ? user.onboarded : false,
+      };
       wallets = wallets.map((w) => (w.isLogin ? { ...w, address: req.address, verifiedAt: new Date().toISOString() } : w));
     }
     return {
@@ -464,6 +525,55 @@ export const mockApi = {
       expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
       user,
     };
+  },
+
+  async emailStart(email: string): Promise<EmailStartResponse> {
+    await wait(400);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      throw new ApiError(tr("E-mail com formato inválido.", "Invalid email format."), 422, "invalid_email");
+    }
+    return { sent: true, expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(), resendAfter: 60 };
+  },
+
+  async emailVerify(email: string, code: string): Promise<Session> {
+    await wait(450);
+    if (code !== "000000") {
+      throw new ApiError(tr("Código incorreto.", "Incorrect code."), 401, "invalid_code");
+    }
+    // Entrar por e-mail simula uma conta nova, sem carteira nenhuma — demonstra o fluxo da seção 3.
+    wallets = [];
+    user = {
+      id: "usr_demo_email",
+      address: null,
+      email: email.trim(),
+      displayName: null,
+      loginMethods: ["email"],
+      hasWallets: false,
+      plan: "free",
+      agentQuestionsLeft: 20,
+      onboarded: false,
+    };
+    return { token: `demo.${Date.now()}`, expiresAt: new Date(Date.now() + 86_400_000).toISOString(), user };
+  },
+
+  async oauthStart(provider: OAuthProvider, next?: string): Promise<OAuthStartResponse> {
+    await wait(150);
+    return { url: `/auth/callback#code=demo-${provider}${next ? `&next=${enc(next)}` : ""}` };
+  },
+
+  async exchange(code: string): Promise<Session> {
+    await wait(500);
+    const provider = code.startsWith("demo-google") ? "google" : code.startsWith("demo-github") ? "github" : null;
+    if (!provider) throw new ApiError(tr("Código expirado ou já usado.", "Code expired or already used."), 401, "code_expired");
+    // Google/GitHub simulam quem já tem carteira conectada, com nome vindo do provedor.
+    wallets = [...DEFAULT_WALLETS];
+    user = {
+      ...WALLET_USER,
+      email: provider === "google" ? "ana.beatriz@gmail.com" : "ana-beatriz@users.noreply.github.com",
+      displayName: "Ana Beatriz",
+      loginMethods: [provider],
+    };
+    return { token: `demo.${Date.now()}`, expiresAt: new Date(Date.now() + 86_400_000).toISOString(), user };
   },
 
   async me(): Promise<User> {
@@ -522,6 +632,7 @@ export const mockApi = {
       network: req.network,
       address: req.address.trim(),
       label: req.label?.trim() || "Nova carteira|New wallet",
+      // Colada pelo endereço: nunca é a carteira de login, mesmo sendo a primeira (só a assinatura verifica).
       isLogin: false,
       verifiedAt: null,
       lastSyncAt: null,
@@ -529,6 +640,7 @@ export const mockApi = {
       status: "pending",
     };
     wallets = [...wallets, w];
+    if (!user.hasWallets) user = { ...user, hasWallets: true };
     return localizeWallet(w);
   },
 
@@ -672,10 +784,33 @@ export const mockApi = {
     eventReviews.set(eventId, [
       ...(eventReviews.get(eventId) ?? []),
       {
+        kind: "price",
         reason: request.reason,
         evidence: request.evidence,
         previousPriceBrl: current.unitPriceBrl ?? null,
         newPriceBrl: request.unitPriceBrl,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    return eventsFor(month).find((event) => event.id === eventId)!;
+  },
+
+  async reviewAcquisitionCost(eventId: string, request: ManualCostRequest): Promise<TaxEvent> {
+    await wait(500);
+    const month = eventId.split("_")[1];
+    const current = eventsFor(month).find((event) => event.id === eventId);
+    if (!current) throw new ApiError(tr("Evento não encontrado.", "Event not found."), 404, "event_not_found");
+    manualCosts.set(eventId, request.costBrl);
+    eventReviews.set(eventId, [
+      ...(eventReviews.get(eventId) ?? []),
+      {
+        kind: "cost",
+        reason: request.reason,
+        evidence: request.evidence,
+        previousPriceBrl: current.unitPriceBrl ?? null,
+        newPriceBrl: current.unitPriceBrl ?? 0,
+        previousCostBrl: current.costBrl ?? null,
+        newCostBrl: request.costBrl,
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -709,8 +844,32 @@ export const mockApi = {
     };
   },
 
+  async finalizeReport(month: string): Promise<ReportDetail> {
+    await wait(700);
+    const info = monthInfo(month);
+    if (info.status === "final") return buildReport(month);
+    if (rowsFor(month).length === 0) {
+      throw new ApiError(tr("Não há nenhuma alienação neste mês.", "There is no disposal this month."), 409, "nothing_to_report");
+    }
+    if (eventsFor(month).some((e) => e.valueBrl === null)) {
+      throw new ApiError(
+        tr(
+          "Há eventos sem preço neste mês. Informe o preço antes de finalizar.",
+          "There are events without a price this month. Set the price before finalizing.",
+        ),
+        409,
+        "missing_prices",
+      );
+    }
+    info.status = "final";
+    info.updatedAt = new Date().toISOString();
+    return buildReport(month);
+  },
+
   async generateDecripto(month: string): Promise<DownloadLink> {
     await wait(1100);
+    // Igual ao back-end real: finaliza sozinho se o mês ainda era rascunho.
+    await mockApi.finalizeReport(month);
     return {
       url: "",
       filename: `decripto-${month}.txt`,
@@ -957,5 +1116,11 @@ export const mockApi = {
   async deleteAccount(): Promise<void> {
     await wait(900);
     if (typeof window !== "undefined") window.sessionStorage.removeItem(SYNC_KEY);
+    // Volta ao estado inicial da demonstração para quem entrar de novo nesta mesma aba.
+    user = { ...WALLET_USER };
+    wallets = [...DEFAULT_WALLETS];
+    manualPrices.clear();
+    manualCosts.clear();
+    eventReviews.clear();
   },
 };

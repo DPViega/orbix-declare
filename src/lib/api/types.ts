@@ -9,9 +9,11 @@
 export type Network = "solana" | "hyperliquid";
 export type EventType = "swap" | "perp" | "funding";
 export type ReportStatus = "draft" | "final";
-export type Plan = "free" | "pro";
+export type Plan = "free" | "pro" | "accountant";
+export type LoginMethod = "wallet" | "email" | "google" | "github";
+export type OAuthProvider = "google" | "github";
 
-/* ---------- Autenticação (Sign-In With Solana) ---------- */
+/* ---------- Autenticação (Sign-In With Solana, e-mail, Google, GitHub) ---------- */
 
 export interface NonceResponse {
   /** Mensagem exata que a carteira deve assinar (o back-end monta e guarda o nonce). */
@@ -36,13 +38,34 @@ export interface Session {
 
 export interface User {
   id: string;
-  /** Endereço Solana usado no login. */
-  address: string;
+  /** Endereço Solana usado no login. null para quem entrou por e-mail, Google ou GitHub. */
+  address: string | null;
+  email: string | null;
+  /** Nome vindo do Google/GitHub, quando existe. */
+  displayName: string | null;
+  loginMethods: LoginMethod[];
+  /** false = nenhuma carteira cadastrada ainda (quem entrou sem carteira). */
+  hasWallets: boolean;
   plan: Plan;
   /** Quantas perguntas ao agente restam no mês (plano grátis: 20). */
   agentQuestionsLeft: number;
   /** true quando a primeira sincronização completa já terminou. */
   onboarded: boolean;
+}
+
+/** GET /api/auth/providers — quais formas de login estão ligadas no servidor. */
+export type Providers = Record<LoginMethod, boolean>;
+
+export interface EmailStartResponse {
+  sent: boolean;
+  expiresAt: string;
+  /** Segundos até poder pedir outro código. */
+  resendAfter: number;
+}
+
+/** POST /api/auth/oauth/:provider/start */
+export interface OAuthStartResponse {
+  url: string;
 }
 
 /* ---------- Carteiras ---------- */
@@ -172,11 +195,24 @@ export interface ManualPriceReviewRequest extends ManualPriceRequest {
   confirmed: true;
 }
 
+/** PUT /api/events/:id/cost — custo de aquisição informado para uma venda sem compra no histórico lido. */
+export interface ManualCostRequest {
+  /** Custo total da quantidade vendida, em reais. */
+  costBrl: number;
+  reason: string;
+  evidence: string;
+  confirmed: true;
+}
+
 export interface EventReview {
+  /** "price": preço corrigido. "cost": custo de aquisição informado. */
+  kind: "price" | "cost";
   reason: string;
   evidence: string;
   previousPriceBrl: number | null;
   newPriceBrl: number;
+  previousCostBrl?: number | null;
+  newCostBrl?: number | null;
   createdAt: string;
 }
 
@@ -201,6 +237,10 @@ export interface ReportRow {
   costBrl: number;
   gainBrl: number;
   manualPrice?: boolean;
+  /** true quando o ativo vendido entrou antes do histórico lido: o custo foi tratado como zero. */
+  costUnknown?: boolean;
+  /** true quando o custo de aquisição desta venda foi informado pelo usuário. */
+  costManual?: boolean;
 }
 
 export interface Attestation {
