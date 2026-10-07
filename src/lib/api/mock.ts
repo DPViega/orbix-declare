@@ -162,7 +162,8 @@ const BASE: BaseEvent[] = [
     asset: "USDC",
     qty: 18.42,
     qtyAsset: "USDC",
-    brl: 99.83,
+    // 18,42 USDC x PTAX 5,4096: funding em dólar vale a quantidade vezes a PTAX
+    brl: 99.64,
     hash: "0x1c7e4a9d2f6b8c3e5a1d7f9b2c4e6a8db208",
     ptax: 5.4096,
     cost: 0,

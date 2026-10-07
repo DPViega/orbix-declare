@@ -111,6 +111,13 @@ export function EventDialog({
                 <span className="ml-2 text-[12px] text-muted">{d.fills(event.fillCount ?? 1)}</span>
               )}
             </Field>
+            {typeof event.quantityIn === "number" && (
+              <Field label={d.received}>
+                <span className="font-mono text-[13px]">
+                  {formatQtyFull(event.quantityIn)} {event.quantityInAsset}
+                </span>
+              </Field>
+            )}
             <Field label={d.unitPrice}>
               <span className="font-mono text-[13px]">{unitPrice(event.unitPriceBrl)}</span>
             </Field>
@@ -120,6 +127,18 @@ export function EventDialog({
             <Field label={d.cost}>
               <span className="font-mono text-[13px]">{brl(event.costBrl)}</span>
             </Field>
+            {typeof event.avgCostUnitBrl === "number" && (
+              <Field label={d.avgCost}>
+                <span className="font-mono text-[13px]">{unitPrice(event.avgCostUnitBrl)}</span>
+              </Field>
+            )}
+            {typeof event.positionBeforeQty === "number" && (
+              <Field label={d.positionBefore}>
+                <span className="font-mono text-[13px]">
+                  {formatQtyFull(event.positionBeforeQty)} {event.quantityAsset}
+                </span>
+              </Field>
+            )}
             <Field label={d.gain} last>
               <span
                 className={cn(

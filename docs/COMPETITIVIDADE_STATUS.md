@@ -127,7 +127,7 @@ Pré-requisito de confiança para tudo acima: corrigir **B7** (eventos misturado
 
 - **Front (feito):** pasta [`examples/`](../examples/) com 3 casos sintéticos de setembro de 2026 do modo demonstração, cada um com `input` e `expected`:
   1. swap com stablecoin (12,4 SOL → USDC, ganho R$ 1.871,40);
-  2. perp com funding (HYPE-PERP, ganho R$ 932,50, e funding de R$ 99,83);
+  2. perp com funding (HYPE-PERP, ganho R$ 932,50, e funding de R$ 99,64);
   3. venda com custo informado (2.400 JUP: ganho de R$ 7.416,00 com custo desconhecido, depois R$ 891,60).
 
   O README traz as regras e o passo a passo na interface. `npx tsx examples/verify-demo.ts` confere os 24 valores contra o modo demonstração (24/24 ok).

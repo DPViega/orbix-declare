@@ -81,6 +81,12 @@ function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg): string {
     text(ev?.txHash ?? ""),
     text(ev?.explorerUrl ?? ""),
     text(ev?.ruleVersion ?? ""),
+    // Os dois lados da troca e a origem do custo (colunas novas, sempre no fim).
+    plain(ev?.quantityIn, 12),
+    text(ev?.quantityInAsset ?? ""),
+    plain(ev?.avgCostUnitBrl, 10),
+    plain(ev?.positionBeforeQty, 12),
+    ev?.fillCount ? String(ev.fillCount) : "",
   ].join(",");
 }
 
