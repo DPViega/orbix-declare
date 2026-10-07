@@ -1,5 +1,9 @@
 # Orbix Declare — frontend delivery and integration gates
 
+> Atualização de 07/10/2026: entrega de frontend registrada no commit `b2b58bc`, enviado à branch `fix/frontend-review-and-wallet-recovery` do repositório ERIKFABIANO/orbix-declare. Inclui filtro de transferências, carteira na tabela, aviso de cobertura parcial e tutorial PT/EN para erro de assinatura. Tipos e lint passaram; merge, deploy e aceite real não foram realizados nesta entrega. Ver [relatório separado](RELATORIO_ENTREGA_FRONTEND_2026-10-07.md).
+>
+> O conteúdo abaixo é histórico e conserva a data/versão da sua análise original. Pendências antigas não representam automaticamente o estado atual. Backend e regras fiscais são responsabilidade do Erik; não foram alterados neste trabalho.
+
 Review date: 2026-10-02. Backend inspected: ERIKFABIANO/orbix-core, commit `31a7180f0d5b0b669b386d961795ec18c181fdf1`.
 
 ## Changes delivered locally
