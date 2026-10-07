@@ -136,11 +136,17 @@ function MonthReport({ mes }: { mes: string }) {
     try {
       const events = await api.events(mes);
       const pkg = buildReviewPackage(data, events, t.reviewPackage, { monthLabel: monthLong(mes), formatBRL, formatDate, formatDateTime });
-      downloadText(pkg.csv.name, pkg.csv.text);
-      // Pequeno intervalo: alguns navegadores ignoram o segundo download quando os dois saem juntos.
-      await new Promise((r) => setTimeout(r, 400));
-      downloadText(pkg.readme.name, pkg.readme.text, "text/markdown;charset=utf-8");
-      setNotice(t.reviewPackage.downloaded(pkg.csv.name, pkg.readme.name));
+      const files = [
+        { ...pkg.csv, mime: "text/csv;charset=utf-8" },
+        ...(pkg.transfers ? [{ ...pkg.transfers, mime: "text/csv;charset=utf-8" }] : []),
+        { ...pkg.readme, mime: "text/markdown;charset=utf-8" },
+      ];
+      for (const [i, file] of files.entries()) {
+        // Pequeno intervalo: alguns navegadores ignoram downloads que saem todos juntos.
+        if (i > 0) await new Promise((r) => setTimeout(r, 400));
+        downloadText(file.name, file.text, file.mime);
+      }
+      setNotice(t.reviewPackage.downloaded(files.map((f) => f.name)));
     } catch (err) {
       setActionError(errorMessage(err));
     } finally {

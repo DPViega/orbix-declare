@@ -4,9 +4,10 @@ import { useState } from "react";
 import { ListChecksIcon, XIcon } from "@phosphor-icons/react";
 import { api, type ReportRow, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
-import { formatBRL, formatDate, formatPtax, formatQtyFull, monthLabel } from "@/lib/format";
+import { formatBRL, formatDate, formatPtax, formatQtyFull, formatUnitPriceBRL, monthLabel } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { Badge, Card, IconButton, Skeleton } from "@/components/ui";
+import { MonthPicker } from "@/components/month-picker";
 
 /** Por que a explicação por regras apareceu: IA indisponível (503) ou cota do mês esgotada (429). */
 export type RulesReason = "unavailable" | "quota";
@@ -19,9 +20,11 @@ export type RulesReason = "unavailable" | "quota";
 export function RulesExplanation({ month, reason, onClose }: { month?: string; reason: RulesReason; onClose: () => void }) {
   const { t } = useI18n();
   const r = t.rules;
-  // Sem mês em foco na conversa: usa o mês mais recente do painel.
+  // Mês inicial: o da conversa ou, sem ele, o mais recente do painel. A pessoa pode trocar no seletor.
   const dash = useApi(() => api.dashboard(), [], !month);
-  const target = month ?? dash.data?.month;
+  const reports = useApi(() => api.reports().catch(() => []), []);
+  const [picked, setPicked] = useState<string | null>(null);
+  const target = picked ?? month ?? dash.data?.month;
   const events = useApi(() => api.events(target!), [target], !!target);
   // O relatório só complementa (custo informado/desconhecido); se falhar, a explicação segue sem ele.
   const report = useApi(() => api.report(target!).catch(() => null), [target], !!target);
@@ -42,7 +45,19 @@ export function RulesExplanation({ month, reason, onClose }: { month?: string; r
         <IconButton icon={XIcon} label={r.hide} onClick={onClose} />
       </div>
       <p className="m-0 text-sm leading-relaxed text-muted">{reason === "quota" ? r.introQuota : r.introUnavailable}</p>
-      {target && <p className="m-0 font-mono text-xs text-muted">{r.month(monthLabel(target))}</p>}
+      {target &&
+        (reports.data && reports.data.length > 1 ? (
+          <MonthPicker
+            value={target}
+            months={reports.data.map((x) => x.month)}
+            onChange={(m) => {
+              setPicked(m);
+              setSelected(null);
+            }}
+          />
+        ) : (
+          <p className="m-0 font-mono text-xs text-muted">{r.month(monthLabel(target))}</p>
+        ))}
 
       {(events.error || dash.error) && <p className="m-0 text-sm text-danger">{events.error ?? dash.error}</p>}
       {!events.error && !dash.error && !events.data && (
@@ -85,18 +100,40 @@ export function explain(e: TaxEvent, row: ReportRow | undefined, t: T): string {
   const r = t.rules;
   const or = (v: string | null | undefined) => v || r.missing;
   const brl = (v: number | null | undefined) => (v === null || v === undefined ? r.missing : formatBRL(v));
+  const ptax = e.ptax === null || e.ptax === undefined ? r.missing : formatPtax(e.ptax);
+  const ptaxDate = e.ptaxDate ? formatDate(`${e.ptaxDate}T15:00:00Z`) : r.missing;
+  const quantity = formatQtyFull(Math.abs(e.quantity));
+  // Transferência não é venda: texto próprio, sem preço de venda, custo nem ganho.
+  if (e.type === "transfer")
+    return r.transferText({ quantity, unit: e.quantityAsset, date: formatDate(e.date), value: brl(e.valueBrl), ptax, ptaxDate });
+  // Funding: recebido entra como ganho, pago entra como custo.
+  if (e.type === "funding") {
+    const received = (e.gainBrl ?? e.valueBrl ?? 0) >= 0 && e.quantity >= 0;
+    const amount = received ? brl(e.gainBrl ?? e.valueBrl) : brl(e.costBrl ?? (e.valueBrl === null ? null : Math.abs(e.valueBrl)));
+    return r.fundingText({
+      received,
+      quantity,
+      unit: e.quantityAsset,
+      date: formatDate(e.date),
+      value: brl(e.valueBrl),
+      ptax,
+      ptaxDate,
+      amount,
+      rule: or(e.ruleVersion),
+    });
+  }
   const costManual = row?.costManual || e.reviewHistory?.some((x) => x.kind === "cost");
   const costUnknown = row?.costUnknown || e.costBrl === null || e.costBrl === undefined;
   return r.text({
     verb: r.verb[e.type],
-    quantity: formatQtyFull(e.quantity),
+    quantity,
     unit: e.quantityAsset,
     asset: e.asset,
     date: formatDate(e.date),
-    price: brl(e.unitPriceBrl),
+    price: e.unitPriceBrl === null || e.unitPriceBrl === undefined ? r.missing : formatUnitPriceBRL(e.unitPriceBrl),
     source: e.priceSource === "manual" ? r.sourceManual : or(e.priceProvider),
-    ptax: e.ptax === null || e.ptax === undefined ? r.missing : formatPtax(e.ptax),
-    ptaxDate: e.ptaxDate ? formatDate(`${e.ptaxDate}T15:00:00Z`) : r.missing,
+    ptax,
+    ptaxDate,
     value: brl(e.valueBrl),
     cost: brl(e.costBrl),
     costStatus: costManual ? r.costStatus.manual : costUnknown ? r.costStatus.unknown : r.costStatus.average,

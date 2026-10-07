@@ -305,3 +305,18 @@ Base: [`COMPETITIVIDADE_STATUS.md`](COMPETITIVIDADE_STATUS.md), seção 4. Os qu
   - sem rolagem horizontal em 390 px e sem erros na página.
 
 **Ainda depende do back:** quantidade recebida no swap e composição do custo médio (`quantityIn`, `quantityInAsset`, `avgCostUnitBrl`, `positionBeforeQty`), B7 e B10, fallback por regras na própria API, carteira de memo com SOL na devnet e o teste espelho dos exemplos em `tests/`.
+
+### 9.7 Correções do relatório de testes (F1–F4) — 07/10/2026
+
+| Item | Correção | Aceite verificado |
+|---|---|---|
+| **F1** Preço unitário com 2 casas | `formatUnitPriceBRL` (`lib/format.ts`): 2 casas a partir de R$ 1 e 4 algarismos significativos abaixo disso. Vale para o detalhe do evento, o histórico de revisão, o diálogo de preço e a explicação por regras. No CSV, o preço unitário sai com até 10 casas. O mock também arredondava o preço para 2 casas; agora não arredonda mais (por isso os preços de `examples/02` mudaram para 46,08333333 e 5,419652552). | Outubro tem um caso BONK (16.880.952,3 BONK por R$ 180,18): preço R$ 0,00001067. Nas 5 linhas do CSV de outubro, preço × quantidade bate com o valor (diferença máxima de R$ 0,0005). |
+| **F2** Transferências fora do pacote | Terceiro arquivo, `…-transferencias.csv`, com data, rede, carteira, ativo, quantidade, valor de referência, PTAX, transação e link. O leia-me cita o arquivo e a quantidade e explica que transferência não é venda, mas define a base do custo. Direção e contraparte ficam para quando o back expuser (B9). O mock ganhou a transferência de 0,08398 SOL em 06/10, fora do cálculo do relatório. | O pacote de outubro baixa 3 arquivos, e o de transferências tem a entrada de 0,08398 SOL de 06/10. |
+| **F3** Linha sem evento, sem aviso | O leia-me ganhou a seção "Linhas sem evidência", com a contagem e a lista (data · ativo). Sem casos, mostra "Todas as linhas do relatório têm o evento correspondente". | Com um evento removido, aparece "1 linha… sem evento correspondente" e a lista identifica JUP → SOL de 02/10. |
+| **F4** Explicação errada para transferências | Textos próprios para transferência e funding (`rules.transferText` e `rules.fundingText`). Funding recebido entra como ganho e pago como custo. O seletor de mês na explicação permite chegar a outros meses. | No agente com IA indisponível, outubro → transferência de SOL de 06/10 mostra o texto próprio, sem as palavras custo e ganho. O rótulo "Regras, não IA" continua. |
+
+Detalhe do F4: o texto sugerido no relatório usava "ganho de capital" e "o custo segue com o ativo", o que contradizia o aceite (sem as palavras custo e ganho). A versão final diz o mesmo com "não entra no cálculo do imposto" e "o preço de compra original acompanha o ativo".
+
+No mock, eventos e linhas do relatório passaram a vir do mais recente para o mais antigo, como na API real.
+
+Validação: `npm run check` sem erros nem avisos; `examples/verify-demo.ts` 24/24; aceites de F1 a F3 conferidos com um script sobre o gerador do pacote e F4 no Edge headless, sem erros na página.

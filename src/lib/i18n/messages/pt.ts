@@ -436,6 +436,12 @@ export const pt = {
     }) =>
       `${p.verb} ${p.quantity} ${p.unit} (${p.asset}) em ${p.date}. Preço: ${p.price} (${p.source}), PTAX ${p.ptax} de ${p.ptaxDate}. Valor: ${p.value}. Custo: ${p.cost} (${p.costStatus}). Ganho: ${p.gain}. Regra ${p.rule}.`,
     pending: (reasons: string) => `Pendências: ${reasons}`,
+    transferText: (p: { quantity: string; unit: string; date: string; value: string; ptax: string; ptaxDate: string }) =>
+      `Você transferiu ${p.quantity} ${p.unit} em ${p.date}. Valor de referência: ${p.value}, pela PTAX ${p.ptax} de ${p.ptaxDate}. Transferência não é venda e não entra no cálculo do imposto: ela só muda a posição da carteira, e o preço de compra original acompanha o ativo.`,
+    fundingText: (p: { received: boolean; quantity: string; unit: string; date: string; value: string; ptax: string; ptaxDate: string; amount: string; rule: string }) =>
+      p.received
+        ? `Você recebeu funding de ${p.quantity} ${p.unit} em ${p.date}. Valor: ${p.value}, pela PTAX ${p.ptax} de ${p.ptaxDate}. Funding recebido entra como ganho: ${p.amount}. Regra ${p.rule}.`
+        : `Você pagou funding de ${p.quantity} ${p.unit} em ${p.date}. Valor: ${p.value}, pela PTAX ${p.ptax} de ${p.ptaxDate}. Funding pago entra como custo: ${p.amount}. Regra ${p.rule}.`,
   },
 
   settings: {
@@ -554,10 +560,24 @@ export const pt = {
   reviewPackage: {
     button: "Pacote para revisão",
     buttonTitle: "Baixa o CSV detalhado e o leia-me com cobertura, limitações e pendências, para um contador revisar",
-    downloaded: (csv: string, readme: string) => `Baixamos 2 arquivos: ${csv} e ${readme}. Se o navegador pedir, permita downloads múltiplos.`,
+    downloaded: (files: string[]) =>
+      `Baixamos ${files.length} arquivos: ${files.slice(0, -1).join(", ")} e ${files[files.length - 1]}. Se o navegador pedir, permita downloads múltiplos.`,
     fileBase: (month: string, draft: boolean) => `orbix-declare-${month}${draft ? "-rascunho" : ""}`,
     csvSuffix: "revisao",
     readmeSuffix: "leia-me",
+    transfersSuffix: "transferencias",
+    transferColumns: [
+      "data (Brasília)",
+      "rede",
+      "carteira",
+      "ativo",
+      "quantidade",
+      "valor de referência (R$)",
+      "PTAX",
+      "data da PTAX",
+      "transação",
+      "link do explorer",
+    ],
     columns: [
       "data (Brasília)",
       "rede",
@@ -599,6 +619,8 @@ export const pt = {
       csvFile: (name: string, rows: number) =>
         `\`${name}\`: uma linha por evento do relatório (${rows} ${rows === 1 ? "linha" : "linhas"}). Separador vírgula, decimal com ponto, valores em reais e datas no horário de Brasília.`,
       readmeFile: (name: string) => `\`${name}\`: este arquivo.`,
+      transfersFile: (name: string, rows: number) =>
+        `\`${name}\`: transferências de cripto do mês (${rows} ${rows === 1 ? "linha" : "linhas"}), fora do cálculo do relatório.`,
       totalsTitle: "Totais do mês",
       disposed: "Total alienado",
       cost: "Custo de aquisição",
@@ -616,6 +638,15 @@ export const pt = {
       pendingTitle: "Pendências abertas",
       none: "Nenhuma informada pelo motor.",
       noPending: "Nenhuma pendência aberta.",
+      transfersTitle: "Transferências",
+      transfersText: (n: number) =>
+        `${n} ${n === 1 ? "transferência" : "transferências"} no mês, no arquivo de transferências. Transferência não é venda, mas define a base do custo: o que entra numa carteira pode ser vendido depois.`,
+      transfersPending: "A API ainda não informa a direção (entrada ou saída) nem a contraparte de cada transferência.",
+      noTransfers: "Nenhuma transferência neste mês.",
+      missingEvidenceTitle: "Linhas sem evidência",
+      missingEvidenceText: (n: number) =>
+        `${n} ${n === 1 ? "linha do relatório não tem" : "linhas do relatório não têm"} evento correspondente: carteira, fonte do preço, transação e link saíram em branco no CSV.`,
+      allEvidence: "Todas as linhas do relatório têm o evento correspondente.",
       rulesTitle: "Regras adotadas",
       rules: [
         "Custo de aquisição pelo custo médio ponderado de cada ativo.",

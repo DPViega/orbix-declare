@@ -422,6 +422,12 @@ export const en: Messages = {
     text: (p) =>
       `${p.verb} ${p.quantity} ${p.unit} (${p.asset}) on ${p.date}. Price: ${p.price} (${p.source}), PTAX ${p.ptax} from ${p.ptaxDate}. Value: ${p.value}. Cost: ${p.cost} (${p.costStatus}). Gain: ${p.gain}. Rule ${p.rule}.`,
     pending: (reasons) => `Open items: ${reasons}`,
+    transferText: (p) =>
+      `You transferred ${p.quantity} ${p.unit} on ${p.date}. Reference value: ${p.value}, at PTAX ${p.ptax} from ${p.ptaxDate}. A transfer is not a sale and is not part of the tax calculation: it only changes the wallet's position, and the original purchase price goes with the asset.`,
+    fundingText: (p) =>
+      p.received
+        ? `You received funding of ${p.quantity} ${p.unit} on ${p.date}. Value: ${p.value}, at PTAX ${p.ptax} from ${p.ptaxDate}. Funding received counts as a gain: ${p.amount}. Rule ${p.rule}.`
+        : `You paid funding of ${p.quantity} ${p.unit} on ${p.date}. Value: ${p.value}, at PTAX ${p.ptax} from ${p.ptaxDate}. Funding paid counts as a cost: ${p.amount}. Rule ${p.rule}.`,
   },
 
   settings: {
@@ -542,10 +548,24 @@ export const en: Messages = {
   reviewPackage: {
     button: "Review package",
     buttonTitle: "Downloads the detailed CSV and a readme with coverage, limitations and open items, for an accountant to review",
-    downloaded: (csv, readme) => `We downloaded 2 files: ${csv} and ${readme}. If your browser asks, allow multiple downloads.`,
+    downloaded: (files) =>
+      `We downloaded ${files.length} files: ${files.slice(0, -1).join(", ")} and ${files[files.length - 1]}. If your browser asks, allow multiple downloads.`,
     fileBase: (month, draft) => `orbix-declare-${month}${draft ? "-draft" : ""}`,
     csvSuffix: "review",
     readmeSuffix: "readme",
+    transfersSuffix: "transfers",
+    transferColumns: [
+      "date (Brasília)",
+      "network",
+      "wallet",
+      "asset",
+      "quantity",
+      "reference value (BRL)",
+      "PTAX",
+      "PTAX date",
+      "transaction",
+      "explorer link",
+    ],
     columns: [
       "date (Brasília)",
       "network",
@@ -587,6 +607,8 @@ export const en: Messages = {
       csvFile: (name, rows) =>
         `\`${name}\`: one row per report event (${rows} ${rows === 1 ? "row" : "rows"}). Comma separator, dot decimals, amounts in Brazilian reais and dates in Brasília time.`,
       readmeFile: (name) => `\`${name}\`: this file.`,
+      transfersFile: (name, rows) =>
+        `\`${name}\`: crypto transfers this month (${rows} ${rows === 1 ? "row" : "rows"}), outside the report calculation.`,
       totalsTitle: "Monthly totals",
       disposed: "Total disposed",
       cost: "Acquisition cost",
@@ -604,6 +626,15 @@ export const en: Messages = {
       pendingTitle: "Open items",
       none: "None reported by the engine.",
       noPending: "No open items.",
+      transfersTitle: "Transfers",
+      transfersText: (n) =>
+        `${n} ${n === 1 ? "transfer" : "transfers"} this month, in the transfers file. A transfer is not a sale, but it sets the cost basis: what comes into a wallet can be sold later.`,
+      transfersPending: "The API doesn't provide each transfer's direction (in or out) or counterparty yet.",
+      noTransfers: "No transfers this month.",
+      missingEvidenceTitle: "Rows without evidence",
+      missingEvidenceText: (n) =>
+        `${n} report ${n === 1 ? "row has" : "rows have"} no matching event: wallet, price source, transaction and link are blank in the CSV.`,
+      allEvidence: "Every report row has its matching event.",
       rulesTitle: "Rules applied",
       rules: [
         "Acquisition cost by the weighted average cost of each asset.",
