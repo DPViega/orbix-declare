@@ -47,7 +47,7 @@ export function LoginView() {
   const params = useSearchParams();
   const { status, user, signIn } = useSession();
   const { t } = useI18n();
-  const { wallets, detected, phase, error, loginWith, busy } = useWalletLogin();
+  const { wallets, detected, phase, error, formattingError, loginWith, busy } = useWalletLogin();
   const [active, setActive] = useState<string | null>(null);
   const [demoBusy, setDemoBusy] = useState(false);
   // Marca que o login partiu desta tela; aí quem decide o destino é go(), não o efeito abaixo.
@@ -287,6 +287,19 @@ export function LoginView() {
           )}
 
           {authMode === "idle" && <InlineError>{error}</InlineError>}
+          {authMode === "idle" && error && formattingError && (
+            <details className="rounded-xl border border-line bg-panel p-4 text-[13px] leading-relaxed">
+              <summary className="cursor-pointer font-medium text-accent-text focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">
+                {t.walletErrors.recoveryTitle}
+              </summary>
+              <p className="mt-3 text-muted">{t.walletErrors.recoveryIntro}</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-ink">
+                {t.walletErrors.recoverySteps.map((step) => <li key={step}>{step}</li>)}
+              </ol>
+              <p className="mt-3 text-muted">{t.walletErrors.recoverySafety}</p>
+              <p className="mt-3 text-muted">{t.walletErrors.recoveryPersistent}</p>
+            </details>
+          )}
 
           {authMode === "code" ? (
             <form onSubmit={verifyEmail} className="flex flex-col gap-3">

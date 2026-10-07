@@ -41,7 +41,7 @@ export const pt = {
     en: "English",
   },
 
-  eventType: { swap: "Swap", perp: "Perp", funding: "Funding" },
+  eventType: { swap: "Swap", perp: "Perp", funding: "Funding", transfer: "Transferência" },
 
   welcome: {
     title: "Bem-vindo ao",
@@ -122,6 +122,11 @@ export const pt = {
   },
 
   walletErrors: {
+    recoveryTitle: "Como tentar recuperar o acesso",
+    recoveryIntro: "Limpar os dados deste site resolveu esse erro em um teste da equipe. É uma alternativa de recuperação, não uma garantia de correção.",
+    recoverySteps: ["Feche as outras abas do Orbix Declare.", "No Brave, Chrome ou Edge, clique no ícone ao lado do endereço do site e abra Configurações do site ou Cookies e dados do site. Os nomes variam conforme o navegador.", "Apague somente os dados do site do Orbix Declare que está aberto. Isso encerra o login local e pode redefinir preferências neste navegador.", "Abra novamente o Orbix Declare, desbloqueie a carteira e tente entrar outra vez."],
+    recoverySafety: "Não apague dados da extensão da carteira nem sua frase de recuperação. Limpar os dados do site não exclui seus registros no servidor.",
+    recoveryPersistent: "Se o erro continuar, avise a equipe com o navegador, a carteira e uma captura do aviso, sem enviar chaves ou frase de recuperação.",
     cancelled: "Você cancelou na carteira. Tente de novo quando quiser.",
     notReady: "A carteira não está pronta. Abra a extensão e tente de novo.",
     windowClosed: "A janela da carteira foi fechada antes de terminar.",
@@ -306,6 +311,7 @@ export const pt = {
     coveragePeriod: "Período importado",
     importedEvents: "Eventos importados",
     coverageComplete: "Completa",
+    coveragePartialNotice: "Histórico parcial: algumas operações podem não ter sido importadas. Confira as limitações abaixo antes de usar os totais.",
     coveragePartial: "Parcial",
     coverageUnknown: "Não informada",
     decriptoStatus: "DeCripto validada",
