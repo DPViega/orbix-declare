@@ -365,11 +365,12 @@ function rowsFor(key: string): ReportRow[] {
   return eventsFor(key)
     .map((e, i) => ({ e, b: base[i], id: `ev_${key}_${i}` }))
     .filter(({ e }) => e.valueBrl !== null)
-    .map(({ e, b, id }, i) => {
+    .map(({ e, b, id }) => {
       const { cost, costUnknown, costManual } = costInfo(id, b, round2(b.cost * factor));
       const value = e.valueBrl!;
       return {
-        id: `row_${key}_${i}`,
+        // Mesmo id do evento, como na API real: o pacote de revisão junta linha e evento por ele.
+        id,
         date: e.date,
         type: e.type,
         asset: e.asset,
@@ -906,6 +907,10 @@ export const mockApi = {
 
   async agent(req: AgentRequest): Promise<AgentReply> {
     await wait(1200);
+    // Teste do fallback por regras: localStorage["orbix.mock.agentDown"] = "1" simula a IA sem créditos.
+    if (typeof window !== "undefined" && window.localStorage.getItem("orbix.mock.agentDown") === "1") {
+      throw new ApiError(tr("O agente de IA está indisponível no momento.", "The AI agent is unavailable right now."), 503, "agent_unavailable");
+    }
     if (user.agentQuestionsLeft <= 0) {
       throw new ApiError(
         tr("Você usou as 20 perguntas do mês no plano Grátis.", "You've used this month's 20 questions on the Free plan."),

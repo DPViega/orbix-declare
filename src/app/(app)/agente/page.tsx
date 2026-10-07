@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon, SparkleIcon } from "@phosphor-icons/react";
-import { api, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
+import { api, ApiError, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
+import { RulesExplanation, type RulesReason } from "@/components/rules-explanation";
 import { config } from "@/lib/config";
 import { DemoNotice } from "@/components/demo-notice";
 import { useSession } from "@/lib/session";
@@ -12,10 +13,10 @@ import { useI18n } from "@/lib/i18n";
 
 export default function AgentePage() {
   const { user, setUser } = useSession();
-  const { t, locale } = useI18n();
-  const copy = locale === "en"
-    ? { exhausted: "Monthly question limit reached. You can still review your conversation and sources.", retry: "Retry question", fresh: "New conversation", demo: "Responses and the March 2026 scenario are simulated. No live AI model is called." }
-    : { exhausted: "Limite mensal de perguntas atingido. Você ainda pode conferir a conversa e as fontes.", retry: "Tentar pergunta novamente", fresh: "Nova conversa", demo: "Respostas e cenário de março de 2026 são simulados. Nenhum modelo de IA é chamado ao vivo." };
+  const { t } = useI18n();
+  const copy = t.agent;
+  // Explicação por regras: aparece quando a IA está indisponível (503) ou a cota acabou (429).
+  const [rules, setRules] = useState<RulesReason | null>(null);
   const exhausted = user !== null && user.agentQuestionsLeft <= 0;
   const inFlight = useRef(false);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
@@ -70,6 +71,11 @@ export default function AgentePage() {
       setFailedMessage(message);
       setError(errorMessage(err));
       setInput(message);
+      if (err instanceof ApiError && err.status === 503) setRules("unavailable");
+      else if (err instanceof ApiError && err.status === 429) {
+        setRules("quota");
+        if (user) setUser({ ...user, agentQuestionsLeft: 0 });
+      }
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -140,6 +146,8 @@ export default function AgentePage() {
             </div>
           )}
 
+          {rules && <RulesExplanation month={context?.month} reason={rules} onClose={() => setRules(null)} />}
+
           {!pending && !exhausted && chips.length > 0 && (
             <div className="flex flex-wrap gap-2 sm:pl-12">
               {chips.map((s) => (
@@ -166,6 +174,11 @@ export default function AgentePage() {
           <InlineError>{error}</InlineError>
           {failedMessage && !pending && !exhausted && <button type="button" className="min-h-11 self-start text-sm text-accent-text" onClick={() => void send(failedMessage, true)}>{copy.retry}</button>}
           {exhausted && <p role="status" className="m-0 text-sm text-muted">{copy.exhausted}</p>}
+          {exhausted && !rules && (
+            <button type="button" className="min-h-11 self-start text-sm text-accent-text" onClick={() => setRules("quota")}>
+              {t.rules.show}
+            </button>
+          )}
           <div className="flex h-[54px] items-center gap-2.5 rounded-xl border border-line2 bg-panel pr-2 pl-[18px] transition-colors focus-within:border-accent">
             <label htmlFor="agent-input" className="sr-only">
               {t.agent.inputLabel}

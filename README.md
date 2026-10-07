@@ -222,6 +222,9 @@ Se alguém pedir para fazer uma dessas coisas do back-end aqui, a resposta é n�
 - [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md): todas as rotas que o front chama, com exemplos de JSON, autenticação, CORS e erros. **Comece por aqui se você é do back-end.**
 - [`docs/RELATORIO_DESENVOLVIMENTO.md`](docs/RELATORIO_DESENVOLVIMENTO.md): como o front foi construído, decisões, verificação feita, limitações conhecidas e próximos passos.
 - [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md): mapa da arquitetura, fluxos (login, sincronização, verificação) e onde mexer para cada tipo de mudança.
+- [`docs/COMPETITIVIDADE_STATUS.md`](docs/COMPETITIVIDADE_STATUS.md): o que já temos e o que falta em cada item de competitividade, com as tarefas do front e do back.
+- [`docs/TESTE_USUARIOS.md`](docs/TESTE_USUARIOS.md): roteiro e planilha dos testes com usuários e com o contador.
+- [`examples/`](examples/): casos sintéticos reproduzíveis com o resultado esperado (`npx tsx examples/verify-demo.ts`).
 
 ## Código de terceiros e licenças
 

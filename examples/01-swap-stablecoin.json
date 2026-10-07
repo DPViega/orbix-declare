@@ -1,0 +1,32 @@
+{
+  "id": "01-swap-stablecoin",
+  "description": "Venda de SOL por USDC (swap com stablecoin) na Solana. Preço automático, custo pelo custo médio.",
+  "synthetic": true,
+  "source": "Modo demonstração (src/lib/api/mock.ts), setembro de 2026, evento ev_2026-09_0",
+  "input": {
+    "event": {
+      "date": "2026-09-28T15:00:00Z",
+      "network": "solana",
+      "type": "swap",
+      "asset": "SOL → USDC",
+      "quantity": 12.4,
+      "quantityAsset": "SOL",
+      "priceProvider": "Birdeye",
+      "ptax": 5.4128,
+      "ptaxDate": "2026-09-27",
+      "valueBrl": 11284.0,
+      "txHash": "4Zq8nV2xK9pR3sL7wY1cB5mT2k (fictícia)"
+    },
+    "averageCostBrl": 9412.6
+  },
+  "expected": {
+    "unitPriceBrl": 910.0,
+    "valueBrl": 11284.0,
+    "costBrl": 9412.6,
+    "gainBrl": 1871.4,
+    "feesBrl": 11.28,
+    "costUnknown": false,
+    "costManual": false,
+    "pendingReasons": []
+  }
+}

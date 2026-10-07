@@ -264,3 +264,44 @@ Pedido da equipe: a transição para o painel segue a mesma lógica da abertura.
 - Clique, Esc, Enter ou espaço continuam pulando.
 
 Medido no Edge headless, do clique até `/painel`: 4,09 s na primeira vez e 1,86 s nas seguintes, sem erros. `npm run check` sem erros.
+
+### 9.6 Competitividade: tarefas do front sem esperar o back — 07/10/2026
+
+Base: [`COMPETITIVIDADE_STATUS.md`](COMPETITIVIDADE_STATUS.md), seção 4. Os quatro itens que o front podia fazer sozinho estão prontos.
+
+1. **Pacote para revisão** (`lib/review-package.ts`; botão em *Relatórios → mês*).
+   - Gera no navegador, a partir de `GET /api/report/:mes` e `GET /api/events?month=`, dois arquivos:
+     - `orbix-declare-AAAA-MM-revisao.csv`: 21 colunas, de data em Brasília até versão da regra;
+     - `orbix-declare-AAAA-MM-leia-me.md`: situação, totais, cobertura, limitações, operações não suportadas, pendências, regras adotadas e o aviso de que é estimativa para revisão profissional.
+   - Com relatório em rascunho, o nome do arquivo leva `-rascunho`.
+   - Células de texto que começam com `=`, `+`, `-` ou `@` são neutralizadas, e o CSV leva BOM para o Excel abrir os acentos.
+   - Os arquivos saem no idioma da interface (PT ou EN).
+   - No mock, a linha do relatório passou a ter o mesmo `id` do evento, como na API real.
+2. **Explicação automática por regras** (`components/rules-explanation.tsx`).
+   - Aparece no agente quando a API responde `503` (IA indisponível) ou `429` (cota). Com a cota já zerada, há o botão "Ver explicação por regras".
+   - É montada só com os campos do evento: quantidade, preço e fonte, PTAX e data, valor, custo e status do custo, ganho e regra. Campo ausente aparece como "não informado".
+   - É sempre rotulada "Regras, não IA" e não imita o agente.
+   - Para testar no mock: `localStorage["orbix.mock.agentDown"] = "1"` simula a IA indisponível.
+   - Os textos que estavam fixos na página do agente foram para o dicionário.
+3. **Exemplos públicos** (`examples/`).
+   - Três casos sintéticos de setembro de 2026 da demo: swap com stablecoin, perp com funding e venda com custo informado (antes e depois).
+   - O README explica as regras e como reproduzir.
+   - `npx tsx examples/verify-demo.ts` confere os 24 valores esperados contra o modo demonstração.
+4. **Teste com usuários** (`docs/TESTE_USUARIOS.md` e `docs/teste-usuarios-registro.csv`).
+   - Roteiro de 30 min com a mesma tarefa para 5 pessoas e 1 contador.
+   - Mede o tempo do jeito atual e com o Orbix, dúvidas, erros, pendências resolvidas e confiança de 1 a 5.
+   - Inclui regras de privacidade e como ler os resultados.
+
+**Validação.**
+- `npm run check` sem erros nem avisos.
+- `examples/verify-demo.ts`: 24 de 24 valores batem.
+- Edge headless, pacote:
+  - setembro (final) e outubro (rascunho) baixam 2 arquivos cada;
+  - o CSV tem 21 colunas em todas as linhas;
+  - o leia-me traz cobertura parcial, pendências e regras.
+- Edge headless, agente:
+  - com o mock em 503, a explicação aparece rotulada e muda ao trocar o evento (custo desconhecido aparece como tal);
+  - com a cota zerada, o botão abre a versão "limite atingido";
+  - sem rolagem horizontal em 390 px e sem erros na página.
+
+**Ainda depende do back:** quantidade recebida no swap e composição do custo médio (`quantityIn`, `quantityInAsset`, `avgCostUnitBrl`, `positionBeforeQty`), B7 e B10, fallback por regras na própria API, carteira de memo com SOL na devnet e o teste espelho dos exemplos em `tests/`.

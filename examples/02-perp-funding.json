@@ -1,0 +1,40 @@
+{
+  "id": "02-perp-funding",
+  "description": "Fechamento de posição perp de HYPE e funding recebido em USDC na Hyperliquid. Perp e funding não entram na isenção de R$ 35 mil.",
+  "synthetic": true,
+  "source": "Modo demonstração (src/lib/api/mock.ts), setembro de 2026, eventos ev_2026-09_1 e ev_2026-09_2",
+  "input": {
+    "events": [
+      {
+        "date": "2026-09-26T15:00:00Z",
+        "network": "hyperliquid",
+        "type": "perp",
+        "asset": "HYPE-PERP",
+        "quantity": 150,
+        "quantityAsset": "HYPE",
+        "priceProvider": "Hyperliquid",
+        "ptax": 5.4096,
+        "valueBrl": 6912.5,
+        "costBrl": 5980.0
+      },
+      {
+        "date": "2026-09-25T15:00:00Z",
+        "network": "hyperliquid",
+        "type": "funding",
+        "asset": "USDC",
+        "quantity": 18.42,
+        "quantityAsset": "USDC",
+        "priceProvider": "Hyperliquid",
+        "ptax": 5.4096,
+        "valueBrl": 99.83,
+        "costBrl": 0
+      }
+    ]
+  },
+  "expected": {
+    "perp": { "unitPriceBrl": 46.08, "valueBrl": 6912.5, "costBrl": 5980.0, "gainBrl": 932.5, "feesBrl": 6.91 },
+    "funding": { "unitPriceBrl": 5.42, "valueBrl": 99.83, "costBrl": 0, "gainBrl": 99.83, "feesBrl": 0.1 },
+    "combinedGainBrl": 1032.33,
+    "pendingReasons": []
+  }
+}
