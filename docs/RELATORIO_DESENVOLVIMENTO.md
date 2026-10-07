@@ -1,5 +1,9 @@
 # Relatório de desenvolvimento — Front-end do Orbix Declare
 
+> Atualização de 07/10/2026: entrega de frontend registrada no commit `b2b58bc`, enviado à branch `fix/frontend-review-and-wallet-recovery` do repositório ERIKFABIANO/orbix-declare. Inclui filtro de transferências, carteira na tabela, aviso de cobertura parcial e tutorial PT/EN para erro de assinatura. Tipos e lint passaram; merge, deploy e aceite real não foram realizados nesta entrega. Ver [relatório separado](RELATORIO_ENTREGA_FRONTEND_2026-10-07.md).
+>
+> O conteúdo abaixo é histórico e conserva a data/versão da sua análise original. Pendências antigas não representam automaticamente o estado atual. Backend e regras fiscais são responsabilidade do Erik; não foram alterados neste trabalho.
+
 **Projeto:** Orbix Declare · Orbix Lab
 **Evento:** Crypto World's Fair Hackathon (Colosseum), 14/09–12/10/2026
 **Escopo deste repositório:** somente o front-end
