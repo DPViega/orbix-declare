@@ -270,11 +270,22 @@ export function DashboardView() {
                   >
                     {e.asset}
                   </button>
+                  {/* A3: "N fills" só quando o evento agrupou mais de uma execução. */}
+                  {typeof e.fillCount === "number" && e.fillCount > 1 && (
+                    <span className="block font-mono text-xs text-muted">{t.common.fills(e.fillCount)}</span>
+                  )}
                 </Td>
                 <Td align="right" className="font-mono text-[13px]">
                   <span title={`${formatQtyFull(e.quantity)} ${e.quantityAsset}`}>
                     {formatQty(e.quantity)} {e.quantityAsset}
                   </span>
+                  {/* A1: lado que entrou na troca. Fora de swap, ou em rota com mais de um ativo de
+                      entrada, quantityIn/quantityInAsset vêm null e a linha não aparece. */}
+                  {typeof e.quantityIn === "number" && !!e.quantityInAsset && (
+                    <span className="block text-xs text-muted" title={`${formatQtyFull(e.quantityIn)} ${e.quantityInAsset}`}>
+                      {t.dashboard.bought(formatQty(e.quantityIn), e.quantityInAsset)}
+                    </span>
+                  )}
                 </Td>
                 <Td align="right">
                   {e.valueBrl === null ? (

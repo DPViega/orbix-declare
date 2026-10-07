@@ -38,7 +38,7 @@ import type {
   VerifyRequest,
   Wallet,
 } from "./types";
-import { reportToCsv, sha256Hex } from "@/lib/report-file";
+import { prepareReportCsv, reportToCsv, sha256Hex } from "@/lib/report-file";
 import { explorerTxUrl } from "@/lib/config";
 import { formatBRL, formatDate, monthLabel, monthName, previousMonthKey } from "@/lib/format";
 import { getLocale } from "@/lib/i18n/locale";
@@ -126,6 +126,9 @@ interface BaseEvent {
   hash: string;
   ptax: number;
   cost: number;
+  /** Quantidade recebida na troca, antes da escala mensal. */
+  qtyIn?: number;
+  fills?: number;
   /** Valores e dia exatos: não passam pela escala do mês nem pelo arredondamento da quantidade. */
   exact?: boolean;
 }
@@ -142,6 +145,8 @@ const BASE: BaseEvent[] = [
     hash: "4Zq8nV2xK9pR3sL7wY1cB5mT2k",
     ptax: 5.4128,
     cost: 9412.6,
+    qtyIn: 11284 / 5.4128,
+    fills: 2,
   },
   {
     d: 26,
@@ -178,6 +183,7 @@ const BASE: BaseEvent[] = [
     hash: "2vRt6yH3kP9mW1qN5xC8bL4jZ7f8KpL",
     ptax: 5.3987,
     cost: 6524.4,
+    qtyIn: 8.15,
   },
   {
     d: 17,
@@ -202,6 +208,7 @@ const BASE: BaseEvent[] = [
     hash: "5mWc8tR2nK6pX4vB9yL1hQ7jF3dTz3Q",
     ptax: 5.4471,
     cost: 430.0,
+    qtyIn: 0.51,
   },
   {
     d: 9,
@@ -214,6 +221,7 @@ const BASE: BaseEvent[] = [
     hash: "2kLm7pV4xN1rT8cW5bQ9yH3jZ6fQw7R",
     ptax: 5.4302,
     cost: 801.6,
+    qtyIn: 160,
   },
 ];
 
@@ -268,6 +276,13 @@ const MONTHS: {
     status: "final",
     updatedAt: day(2026, 6, 5),
     events: 6,
+  },
+  {
+    key: "2026-04",
+    total: 2027.92,
+    status: "final",
+    updatedAt: day(2026, 5, 5),
+    events: 1,
   },
   {
     key: "2026-03",
@@ -325,6 +340,7 @@ const OCTOBER_EXTRA: BaseEvent[] = [
     hash: "3hBk9qT2wN6mR1vX8cL4pZ7yF5dJb0nK",
     ptax: 5.4012,
     cost: 152.4,
+    qtyIn: 180.18 / 5.4012,
     exact: true,
   },
   {
@@ -343,7 +359,23 @@ const OCTOBER_EXTRA: BaseEvent[] = [
 ];
 
 /** Outubro é rascunho: 4 eventos-base + os casos exatos acima; os demais meses reaproveitam os 7 eventos-base. */
-const baseFor = (key: string) => (key === "2026-10" ? [...BASE.slice(2, 6), ...OCTOBER_EXTRA] : BASE);
+const APRIL: BaseEvent[] = [{
+  d: 30,
+  network: "hyperliquid",
+  type: "swap",
+  asset: "USDC → HYPE",
+  qty: 393.81,
+  qtyAsset: "USDC",
+  qtyIn: 10,
+  brl: 2027.92,
+  hash: "0xa630de0039381a5dc10abce20260430f1c",
+  ptax: 5.1495,
+  cost: 2027.92,
+  exact: true,
+}];
+
+const baseFor = (key: string) =>
+  key === "2026-04" ? APRIL : key === "2026-10" ? [...BASE.slice(2, 6), ...OCTOBER_EXTRA] : BASE;
 
 function eventsFor(key: string): TaxEvent[] {
   const info = monthInfo(key);
@@ -377,6 +409,12 @@ function eventsFor(key: string): TaxEvent[] {
       asset: b.asset,
       quantity: qty,
       quantityAsset: b.qtyAsset,
+      quantityIn: b.type === "swap" && b.qtyIn !== undefined ? b.qtyIn * f : null,
+      quantityInAsset: b.type === "swap" ? b.asset.split(" → ")[1] : null,
+      // Posição fictícia integralmente vendida; custo usa a quantidade já escalada/arredondada.
+      positionBeforeQty: b.type === "swap" ? qty : null,
+      avgCostUnitBrl: b.type === "swap" ? cost / qty : null,
+      fillCount: b.fills ?? 1,
       valueBrl: value,
       priceSource: source,
       txHash: hash,
@@ -488,6 +526,7 @@ async function buildReport(key: string): Promise<ReportDetail> {
       decriptoReady: false,
     },
   };
+  await prepareReportCsv(report, monthEvents);
   if (info.status === "final") {
     const hash = await sha256Hex(reportToCsv(report));
     const sig = key === "2026-09" ? FULL_TX : `${FULL_TX.slice(0, 40)}${hash.slice(0, 23)}`;

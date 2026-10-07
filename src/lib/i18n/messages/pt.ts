@@ -31,6 +31,10 @@ export const pt = {
     total: "Total",
     queued: "Aguardando",
     failed: "Falhou",
+    /** Execuções agrupadas no mesmo evento. Só aparece quando fillCount > 1. */
+    fills: (n: number) => `${n} fills`,
+    /** Valor em reais já formatado fora do Intl de moeda (o separador de milhar e o espaço mudam por idioma). */
+    brlAmount: (value: string) => `R$ ${value}`,
     staleData: (error: string) => `Não conseguimos atualizar. Mostrando os últimos dados carregados. ${error}`,
     loadFailedHint: "Nada foi perdido. Se o servidor continuar fora do ar, tente de novo em alguns minutos ou saia e entre de novo mais tarde.",
   },
@@ -210,6 +214,7 @@ export const pt = {
       value: "Valor em R$",
       tx: "Transação",
     },
+    bought: (qty: string, asset: string) => `Comprou ${qty} ${asset}`,
     setPriceTitle: "Informar preço manualmente",
     noPrice: "Sem preço",
     allGood: (month: string) => `Tudo certo com ${month}?`,
@@ -292,6 +297,14 @@ export const pt = {
     downloadCsv: "Baixar CSV",
     downloadReviewCsv: "CSV para revisão",
     generateDecripto: "Gerar DeCripto",
+    /**
+     * Explicação do botão "Gerar DeCripto", visível na própria página (nunca em title ou tooltip).
+     * Três partes porque o miolo é um link para o pacote de revisão; juntas formam o texto aprovado.
+     */
+    decriptoSoonBefore: "Gerar DeCripto: em breve. Hoje, baixe ",
+    decriptoSoonLink: "o pacote para revisão",
+    decriptoSoonAfter:
+      ": ele traz tudo o que seu contador precisa para preencher a DeCripto no Coleta Nacional (e-CAC). O arquivo no leiaute oficial da Receita vem a seguir.",
     decriptoSummaryNote:
       "O arquivo gerado é um resumo de apoio para o preenchimento. Ainda não segue o leiaute oficial de transmissão da Receita Federal.",
     finalize: "Finalizar relatório",
@@ -435,6 +448,8 @@ export const pt = {
       rule: string;
     }) =>
       `${p.verb} ${p.quantity} ${p.unit} (${p.asset}) em ${p.date}. Preço: ${p.price} (${p.source}), PTAX ${p.ptax} de ${p.ptaxDate}. Valor: ${p.value}. Custo: ${p.cost} (${p.costStatus}). Ganho: ${p.gain}. Regra ${p.rule}.`,
+    costAccount: (p: { quantity: string; unit: string; avgUnit: string; total: string; positionBefore: string }) =>
+      `Origem do custo: ${p.positionBefore} ${p.unit} em posição antes da venda e custo médio de ${p.avgUnit} por unidade; ${p.quantity} ${p.unit} × ${p.avgUnit} dá cerca de ${p.total}, podendo variar alguns centavos por arredondamento.`,
     pending: (reasons: string) => `Pendências: ${reasons}`,
     transferText: (p: { quantity: string; unit: string; date: string; value: string; ptax: string; ptaxDate: string }) =>
       `Você transferiu ${p.quantity} ${p.unit} em ${p.date}. Valor de referência: ${p.value}, pela PTAX ${p.ptax} de ${p.ptaxDate}. Transferência não é venda e não entra no cálculo do imposto: ela só muda a posição da carteira, e o preço de compra original acompanha o ativo.`,
@@ -513,6 +528,10 @@ export const pt = {
     tx: "Transação",
     values: "Valores",
     quantity: "Quantidade",
+    fills: "Execuções",
+    swapSides: "Dois lados da troca",
+    swapSidesValue: (qtyIn: string, assetIn: string, qtyOut: string, assetOut: string) =>
+      `Comprou ${qtyIn} ${assetIn} · pagou ${qtyOut} ${assetOut}`,
     unitPrice: "Preço unitário",
     value: "Valor em R$",
     cost: "Custo de aquisição",
@@ -534,6 +553,17 @@ export const pt = {
     pendingCost: "Custo de aquisição indisponível: o ganho deste evento não pode ser calculado.",
     manualNote: "Preço informado por você; aparece como manual no relatório.",
     setPrice: "Informar preço",
+    costOrigin: "Origem do custo",
+    positionBefore: "Posição antes da venda",
+    avgCostUnit: "Custo médio por unidade",
+    costAccount: "Conta do custo",
+    costAccountValue: (p: { quantity: string; unit: string; avgUnit: string; total: string }) =>
+      `${p.quantity} ${p.unit} × ${p.avgUnit} ≈ ${p.total}`,
+    costApproxNote:
+      "Custo = quantidade × custo médio. A conta pode não fechar ao centavo: o custo total, o custo médio e os números desta tela são arredondados em etapas diferentes.",
+    costUnknownNote:
+      "Custo desconhecido: não encontramos a compra deste ativo no histórico lido. O custo foi considerado zero até você informar o valor.",
+    costManualNote: "Custo de aquisição informado por você.",
   },
 
   priceDialog: {
@@ -600,6 +630,11 @@ export const pt = {
       "transação",
       "link do explorer",
       "versão da regra",
+      "quantidade recebida",
+      "unidade recebida",
+      "posição anterior",
+      "custo unitário médio (R$)",
+      "número de fills",
     ],
     yes: "sim",
     no: "não",
@@ -617,7 +652,7 @@ export const pt = {
         "Estimativa para revisão profissional. Não é uma declaração transmitida à Receita Federal e não substitui a análise de um contador.",
       filesTitle: "Arquivos",
       csvFile: (name: string, rows: number) =>
-        `\`${name}\`: uma linha por evento do relatório (${rows} ${rows === 1 ? "linha" : "linhas"}). Separador vírgula, decimal com ponto, valores em reais e datas no horário de Brasília.`,
+        `\`${name}\`: uma linha por evento do relatório (${rows} ${rows === 1 ? "linha" : "linhas"}). Separador ponto e vírgula, decimal com vírgula, valores em reais e datas no horário de Brasília.`,
       readmeFile: (name: string) => `\`${name}\`: este arquivo.`,
       transfersFile: (name: string, rows: number) =>
         `\`${name}\`: transferências de cripto do mês (${rows} ${rows === 1 ? "linha" : "linhas"}), fora do cálculo do relatório.`,

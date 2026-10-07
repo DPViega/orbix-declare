@@ -276,6 +276,23 @@ function MonthReport({ mes }: { mes: string }) {
 
       <DemoNotice text={t.demo.report} />
 
+      {/*
+        A5 · o botão "Gerar DeCripto" ainda não entrega o arquivo no leiaute oficial. A explicação fica
+        aqui, visível sem passar o mouse (nem title, nem tooltip), com link para o pacote de revisão.
+      */}
+      <Card className="px-5 py-4 text-sm leading-relaxed text-muted">
+        {t.report.decriptoSoonBefore}
+        <button
+          type="button"
+          onClick={downloadPackage}
+          disabled={!data || !ready || busy !== null || data.rows.length === 0}
+          className="cursor-pointer bg-transparent p-0 font-medium text-accent-text underline decoration-line2 underline-offset-4 hover:decoration-accent disabled:cursor-not-allowed disabled:text-muted"
+        >
+          {t.report.decriptoSoonLink}
+        </button>
+        {t.report.decriptoSoonAfter}
+      </Card>
+
       {data && <ReportReviewPanel report={data} onReviewed={reload} />}
 
       <InlineError>{actionError}</InlineError>

@@ -33,6 +33,8 @@ export const en: Messages = {
     total: "Total",
     queued: "Waiting",
     failed: "Failed",
+    fills: (n) => `${n} fills`,
+    brlAmount: (value) => `R$${value}`,
     staleData: (error) => `We couldn't refresh. Showing the last data loaded. ${error}`,
     loadFailedHint: "Nothing was lost. If the server stays down, try again in a few minutes or sign out and come back later.",
   },
@@ -211,6 +213,7 @@ export const en: Messages = {
       value: "Value in R$",
       tx: "Transaction",
     },
+    bought: (qty, asset) => `Bought ${qty} ${asset}`,
     setPriceTitle: "Enter price manually",
     noPrice: "No price",
     allGood: (month) => `All good with ${month}?`,
@@ -293,6 +296,10 @@ export const en: Messages = {
     downloadCsv: "Download CSV",
     downloadReviewCsv: "Review CSV",
     generateDecripto: "Generate DeCripto",
+    decriptoSoonBefore: "Generate DeCripto: coming soon. For now, download ",
+    decriptoSoonLink: "the review package",
+    decriptoSoonAfter:
+      ": it has everything your accountant needs to fill in DeCripto on Coleta Nacional (e-CAC). The file in the official Receita layout is next.",
     decriptoSummaryNote:
       "The generated file is a support summary for filing. It doesn't follow the Federal Revenue's official transmission layout yet.",
     finalize: "Finalize report",
@@ -421,6 +428,8 @@ export const en: Messages = {
     },
     text: (p) =>
       `${p.verb} ${p.quantity} ${p.unit} (${p.asset}) on ${p.date}. Price: ${p.price} (${p.source}), PTAX ${p.ptax} from ${p.ptaxDate}. Value: ${p.value}. Cost: ${p.cost} (${p.costStatus}). Gain: ${p.gain}. Rule ${p.rule}.`,
+    costAccount: (p) =>
+      `Cost origin: ${p.positionBefore} ${p.unit} held before the sale and an average cost of ${p.avgUnit} per unit; ${p.quantity} ${p.unit} × ${p.avgUnit} comes to about ${p.total}, which may vary by a few cents due to rounding.`,
     pending: (reasons) => `Open items: ${reasons}`,
     transferText: (p) =>
       `You transferred ${p.quantity} ${p.unit} on ${p.date}. Reference value: ${p.value}, at PTAX ${p.ptax} from ${p.ptaxDate}. A transfer is not a sale and is not part of the tax calculation: it only changes the wallet's position, and the original purchase price goes with the asset.`,
@@ -501,6 +510,9 @@ export const en: Messages = {
     tx: "Transaction",
     values: "Values",
     quantity: "Quantity",
+    fills: "Fills",
+    swapSides: "Both sides of the swap",
+    swapSidesValue: (qtyIn, assetIn, qtyOut, assetOut) => `Bought ${qtyIn} ${assetIn} · paid ${qtyOut} ${assetOut}`,
     unitPrice: "Unit price",
     value: "Value in R$",
     cost: "Acquisition cost",
@@ -522,6 +534,16 @@ export const en: Messages = {
     pendingCost: "Acquisition cost unavailable: the gain for this event can't be calculated.",
     manualNote: "Price entered by you; shown as manual in the report.",
     setPrice: "Enter price",
+    costOrigin: "Cost origin",
+    positionBefore: "Position before the sale",
+    avgCostUnit: "Average cost per unit",
+    costAccount: "Cost calculation",
+    costAccountValue: (p) => `${p.quantity} ${p.unit} × ${p.avgUnit} ≈ ${p.total}`,
+    costApproxNote:
+      "Cost = quantity × average cost. The figures may not match to the cent: total cost, average cost and the numbers on this screen are rounded at different steps.",
+    costUnknownNote:
+      "Cost unknown: we didn't find the purchase of this asset in the history we read. The cost was treated as zero until you enter the value.",
+    costManualNote: "Acquisition cost entered by you.",
   },
 
   priceDialog: {
@@ -588,6 +610,11 @@ export const en: Messages = {
       "transaction",
       "explorer link",
       "rule version",
+      "quantity received",
+      "received unit",
+      "previous position",
+      "avg unit cost (BRL)",
+      "fill count",
     ],
     yes: "yes",
     no: "no",
