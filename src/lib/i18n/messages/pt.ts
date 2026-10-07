@@ -527,6 +527,7 @@ export const pt = {
     quoteTime: "Instante da cotação",
     ruleVersion: "Regra / versão",
     fees: "Taxas em R$",
+    fills: (count: number) => `ordem executada em ${count} partes`,
     reviewHistory: "Histórico de revisão",
     pending: "Pendências",
     pendingNone: "Nenhuma pendência. Este evento já entra no relatório.",

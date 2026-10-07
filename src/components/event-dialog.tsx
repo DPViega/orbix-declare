@@ -107,6 +107,9 @@ export function EventDialog({
               <span className="font-mono text-[13px]">
                 {formatQtyFull(event.quantity)} {event.quantityAsset}
               </span>
+              {(event.fillCount ?? 1) > 1 && (
+                <span className="ml-2 text-[12px] text-muted">{d.fills(event.fillCount ?? 1)}</span>
+              )}
             </Field>
             <Field label={d.unitPrice}>
               <span className="font-mono text-[13px]">{unitPrice(event.unitPriceBrl)}</span>

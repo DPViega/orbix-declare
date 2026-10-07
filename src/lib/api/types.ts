@@ -176,6 +176,14 @@ export interface TaxEvent {
   ruleVersion?: string | null;
   /** Taxas totais do evento em reais. */
   feesBrl?: number | null;
+  /** Quantos fills da corretora formam o evento (uma ordem pode executar em vários). */
+  fillCount?: number;
+  /** O outro lado da troca: o que entrou na carteira (null fora de swap). */
+  quantityIn?: number | null;
+  quantityInAsset?: string | null;
+  /** Origem do custo: posição do ativo antes da venda e custo médio por unidade usado. */
+  positionBeforeQty?: number | null;
+  avgCostUnitBrl?: number | null;
   /** Custo de aquisição e ganho de capital do evento, em R$. */
   costBrl?: number | null;
   gainBrl?: number | null;

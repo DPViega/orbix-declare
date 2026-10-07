@@ -515,6 +515,7 @@ export const en: Messages = {
     quoteTime: "Quote timestamp",
     ruleVersion: "Rule / version",
     fees: "Fees in R$",
+    fills: (count: number) => `order filled in ${count} parts`,
     reviewHistory: "Review history",
     pending: "Pending items",
     pendingNone: "Nothing pending. This event is already in the report.",
