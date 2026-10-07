@@ -30,7 +30,7 @@ import { Table, Td } from "@/components/table";
 import { LoadFailure, StaleDataError } from "@/components/load-failure";
 
 type Filter = "all" | EventType;
-const FILTERS: Filter[] = ["all", "swap", "perp", "funding"];
+const FILTERS: Filter[] = ["all", "swap", "perp", "funding", "transfer"];
 type NetworkFilter = "all" | "solana" | "hyperliquid";
 const NETWORK = { solana: "Solana", hyperliquid: "Hyperliquid" } as const;
 
@@ -234,10 +234,11 @@ export function DashboardView() {
         ) : (
           <Table
             caption={t.dashboard.monthEvents}
-            minWidth={900}
+            minWidth={1060}
             columns={[
               { label: t.dashboard.cols.date, width: "126px" },
               { label: t.dashboard.cols.network, width: "146px" },
+              { label: t.eventDialog.wallet, width: "160px" },
               { label: t.dashboard.cols.type, width: "116px" },
               { label: t.dashboard.cols.asset, width: "156px" },
               { label: t.dashboard.cols.quantity, align: "right" },
@@ -249,8 +250,16 @@ export function DashboardView() {
               <tr key={e.id}>
                 <Td className="font-mono text-[13px]">{formatDate(e.date)}</Td>
                 <Td className="text-[13px]">{NETWORK[e.network]}</Td>
+                <Td className="text-[13px]">
+                  <span className="block max-w-40 truncate" title={e.wallet?.address || undefined}>
+                    {e.wallet?.label || shortAddress(e.wallet?.address) || t.report.notReported}
+                  </span>
+                  {e.wallet?.label && e.wallet.address && (
+                    <span className="block font-mono text-xs text-muted">{shortAddress(e.wallet.address)}</span>
+                  )}
+                </Td>
                 <Td>
-                  <Chip>{e.type}</Chip>
+                  <Chip>{t.eventType[e.type]}</Chip>
                 </Td>
                 <Td className="font-medium">
                   <button

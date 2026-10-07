@@ -309,6 +309,11 @@ function ReportReviewPanel({ report, onReviewed }: { report: ReportDetail; onRev
           {coverage?.state === "complete" ? t.report.coverageComplete : coverage?.state === "partial" ? t.report.coveragePartial : t.report.coverageUnknown}
         </Badge>
       </div>
+      {coverage?.state === "partial" && (
+        <p role="status" className="m-0 rounded-lg bg-warn-bg p-3 text-sm text-warn">
+          {t.report.coveragePartialNotice}
+        </p>
+      )}
       <dl className="m-0 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
         <ReviewField label={t.report.coveragePeriod} value={period} />
         <ReviewField label={t.report.importedEvents} value={coverage?.importedEvents == null ? t.report.notReported : String(coverage.importedEvents)} />

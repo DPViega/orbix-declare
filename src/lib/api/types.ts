@@ -7,7 +7,7 @@
  */
 
 export type Network = "solana" | "hyperliquid";
-export type EventType = "swap" | "perp" | "funding";
+export type EventType = "swap" | "perp" | "funding" | "transfer";
 export type ReportStatus = "draft" | "final";
 export type Plan = "free" | "pro" | "accountant";
 export type LoginMethod = "wallet" | "email" | "google" | "github";

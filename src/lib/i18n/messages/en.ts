@@ -43,7 +43,7 @@ export const en: Messages = {
     en: "English",
   },
 
-  eventType: { swap: "Swap", perp: "Perp", funding: "Funding" },
+  eventType: { swap: "Swap", perp: "Perp", funding: "Funding", transfer: "Transfer" },
 
   welcome: {
     title: "Welcome to",
@@ -123,6 +123,11 @@ export const en: Messages = {
   },
 
   walletErrors: {
+    recoveryTitle: "How to try recovering access",
+    recoveryIntro: "Clearing this site's data resolved this error in a team test. This is a recovery option, not a guaranteed fix.",
+    recoverySteps: ["Close other Orbix Declare tabs.", "In Brave, Chrome or Edge, click the icon next to the site address and open Site settings or Cookies and site data. Labels vary by browser.", "Clear data only for the Orbix Declare site you have open. This signs you out locally and may reset preferences in this browser.", "Open Orbix Declare again, unlock your wallet and try signing in again."],
+    recoverySafety: "Do not clear the wallet extension's data or delete your recovery phrase. Clearing site data does not delete your records on the server.",
+    recoveryPersistent: "If the error persists, tell the team your browser and wallet and share a screenshot of the error. Never send private keys or a recovery phrase.",
     cancelled: "You cancelled in the wallet. Try again whenever you like.",
     notReady: "The wallet isn't ready. Open the extension and try again.",
     windowClosed: "The wallet window was closed before finishing.",
@@ -307,6 +312,7 @@ export const en: Messages = {
     coveragePeriod: "Imported period",
     importedEvents: "Imported events",
     coverageComplete: "Complete",
+    coveragePartialNotice: "Partial history: some operations may not have been imported. Check the limitations below before using the totals.",
     coveragePartial: "Partial",
     coverageUnknown: "Not reported",
     decriptoStatus: "Validated DeCripto",

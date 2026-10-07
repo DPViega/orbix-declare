@@ -49,6 +49,7 @@ export function useWalletLogin() {
   const { signIn } = useSession();
   const [phase, setPhase] = useState<LoginPhase>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [formattingError, setFormattingError] = useState(false);
   // Carteiras padrão registram-se de forma assíncrona; esperamos um instante antes de dizer "nenhuma".
   const [detected, setDetected] = useState(false);
 
@@ -62,6 +63,7 @@ export function useWalletLogin() {
   const loginWith = useCallback(
     async (wallet: AdapterWallet) => {
       setError(null);
+      setFormattingError(false);
       const adapter = wallet.adapter;
       try {
         setPhase("connecting");
@@ -87,6 +89,8 @@ export function useWalletLogin() {
         signIn(session);
         return session;
       } catch (err) {
+        const detail = err as { message?: string; error?: { message?: string } };
+        setFormattingError(/invalid formatting/i.test(`${detail?.message ?? ""} ${detail?.error?.message ?? ""}`));
         setError(friendly(err));
         try {
           await disconnect();
@@ -106,6 +110,7 @@ export function useWalletLogin() {
     detected,
     phase,
     error,
+    formattingError,
     setError,
     loginWith,
     busy: phase !== "idle",
