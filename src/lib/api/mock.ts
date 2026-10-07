@@ -126,6 +126,8 @@ interface BaseEvent {
   hash: string;
   ptax: number;
   cost: number;
+  /** Valores e dia exatos: não passam pela escala do mês nem pelo arredondamento da quantidade. */
+  exact?: boolean;
 }
 
 const BASE: BaseEvent[] = [
@@ -305,8 +307,43 @@ function monthInfo(key: string) {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/** Outubro é rascunho e tem só 4 eventos; os demais meses reaproveitam os 7 eventos-base. */
-const baseFor = (key: string) => (key === "2026-10" ? BASE.slice(2, 6) : BASE);
+/**
+ * Outubro (rascunho) tem casos próprios, exatos:
+ * - BONK: token barato (preço por unidade ~R$ 0,0000107), para o preço não aparecer como R$ 0,00;
+ * - transferência de 0,08398 SOL em 06/10: entrada de cripto, sem custo nem ganho, fora do cálculo
+ *   do relatório, mas incluída no pacote para revisão.
+ */
+const OCTOBER_EXTRA: BaseEvent[] = [
+  {
+    d: 3,
+    network: "solana",
+    type: "swap",
+    asset: "BONK → USDC",
+    qty: 16880952.3,
+    qtyAsset: "BONK",
+    brl: 180.18,
+    hash: "3hBk9qT2wN6mR1vX8cL4pZ7yF5dJb0nK",
+    ptax: 5.4012,
+    cost: 152.4,
+    exact: true,
+  },
+  {
+    d: 6,
+    network: "solana",
+    type: "transfer",
+    asset: "SOL",
+    qty: 0.08398,
+    qtyAsset: "SOL",
+    brl: 76.42,
+    hash: "6tRf2kW8nP4xM1qV9cH3jL7bZ5yDs8eQ",
+    ptax: 5.3964,
+    cost: 0,
+    exact: true,
+  },
+];
+
+/** Outubro é rascunho: 4 eventos-base + os casos exatos acima; os demais meses reaproveitam os 7 eventos-base. */
+const baseFor = (key: string) => (key === "2026-10" ? [...BASE.slice(2, 6), ...OCTOBER_EXTRA] : BASE);
 
 function eventsFor(key: string): TaxEvent[] {
   const info = monthInfo(key);
@@ -316,15 +353,17 @@ function eventsFor(key: string): TaxEvent[] {
   return base.map((b, i) => {
     const id = `ev_${key}_${i}`;
     const manual = manualPrices.get(id);
-    const qty = round2(b.qty * factor);
-    const value = b.brl === null ? (manual !== undefined ? round2(manual * qty) : null) : round2(b.brl * factor);
-    const dd = key === "2026-10" ? Math.min(b.d, 29) - 20 + 1 : b.d;
+    const f = b.exact ? 1 : factor;
+    const qty = b.exact ? b.qty : round2(b.qty * f);
+    const value = b.brl === null ? (manual !== undefined ? round2(manual * qty) : null) : round2(b.brl * f);
+    const dd = b.exact ? b.d : key === "2026-10" ? Math.min(b.d, 29) - 20 + 1 : b.d;
+    const transfer = b.type === "transfer";
     const hash = key === "2026-09" ? b.hash : `${b.hash.slice(0, -4)}${(i * 7919 + y + mo).toString(36).slice(-4)}`;
     const date = day(y, mo, Math.max(1, dd));
     const source = b.brl === null ? (manual !== undefined ? "manual" : null) : "auto";
     const networkWallets = wallets.filter((w) => w.network === b.network);
     const wallet = networkWallets.length ? networkWallets[i % networkWallets.length] : undefined;
-    const { cost, costUnknown } = costInfo(id, b, round2(b.cost * factor));
+    const { cost, costUnknown } = costInfo(id, b, round2(b.cost * f));
     // PTAX de venda do dia útil anterior (aqui, simplificado para o dia anterior).
     const ptaxDate = new Date(new Date(date).getTime() - 86_400_000).toISOString().slice(0, 10);
     const reasons: string[] = [];
@@ -344,15 +383,17 @@ function eventsFor(key: string): TaxEvent[] {
       explorerUrl: b.network === "solana" ? explorerTxUrl(hash) : `https://app.hyperliquid.xyz/explorer/tx/${hash}`,
       wallet: wallet ? { address: wallet.address, label: localizeWallet(wallet).label } : null,
       protocol: b.network === "solana" ? "Jupiter" : "Hyperliquid",
-      unitPriceBrl: value === null ? null : manual !== undefined ? manual : round2(value / qty),
+      // Sem arredondar para 2 casas: tokens baratos e preço × quantidade = valor (diferença < R$ 0,01).
+      unitPriceBrl: value === null ? null : manual !== undefined ? manual : Number((value / qty).toPrecision(10)),
       priceProvider: source === "auto" ? (b.network === "solana" ? "Birdeye" : "Hyperliquid") : null,
       ptax: b.ptax,
       ptaxDate,
       priceObservedAt: value === null ? null : new Date(new Date(date).getTime() + 60_000).toISOString(),
       ruleVersion: "demo-2026.10",
       feesBrl: round2(value === null ? 0 : value * 0.001),
-      costBrl: cost,
-      gainBrl: value === null ? null : round2(value - cost),
+      // Transferência não é venda: não tem custo de aquisição nem ganho; o valor é só referência.
+      costBrl: transfer ? null : cost,
+      gainBrl: value === null || transfer ? null : round2(value - cost),
       pendingReasons: reasons,
       reviewHistory: eventReviews.get(id) ?? [],
     } satisfies TaxEvent;
@@ -364,9 +405,10 @@ function rowsFor(key: string): ReportRow[] {
   const base = baseFor(key);
   return eventsFor(key)
     .map((e, i) => ({ e, b: base[i], id: `ev_${key}_${i}` }))
-    .filter(({ e }) => e.valueBrl !== null)
+    // Transferências não entram no cálculo do relatório (vão só para o pacote para revisão).
+    .filter(({ e }) => e.valueBrl !== null && e.type !== "transfer")
     .map(({ e, b, id }) => {
-      const { cost, costUnknown, costManual } = costInfo(id, b, round2(b.cost * factor));
+      const { cost, costUnknown, costManual } = costInfo(id, b, round2(b.cost * (b.exact ? 1 : factor)));
       const value = e.valueBrl!;
       return {
         // Mesmo id do evento, como na API real: o pacote de revisão junta linha e evento por ele.
@@ -383,7 +425,8 @@ function rowsFor(key: string): ReportRow[] {
         costUnknown,
         costManual,
       };
-    });
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 function totals(rows: ReportRow[]) {
@@ -766,7 +809,8 @@ export const mockApi = {
 
   async events(month: string): Promise<TaxEvent[]> {
     await wait();
-    return eventsFor(month);
+    // Mais recente primeiro, como a API real. (eventsFor mantém a ordem dos dados-base: rowsFor depende dela.)
+    return eventsFor(month).sort((a, b) => b.date.localeCompare(a.date));
   },
 
   async setManualPrice(eventId: string, unitPriceBrl: number): Promise<TaxEvent> {

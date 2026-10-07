@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { ArrowSquareOutIcon, CheckCircleIcon, InfoIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
 import { isDemoSession, type TaxEvent } from "@/lib/api";
 import { config } from "@/lib/config";
-import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, shortAddress } from "@/lib/format";
+import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, formatUnitPriceBRL, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
@@ -36,6 +36,7 @@ export function EventDialog({
 
   const na = <span className="text-faint">{d.unavailable}</span>;
   const brl = (v: number | null | undefined) => (v === null || v === undefined ? na : formatBRL(v));
+  const unitPrice = (v: number | null | undefined) => (v === null || v === undefined ? na : formatUnitPriceBRL(v));
 
   return (
     <dialog
@@ -108,7 +109,7 @@ export function EventDialog({
               </span>
             </Field>
             <Field label={d.unitPrice}>
-              <span className="font-mono text-[13px]">{brl(event.unitPriceBrl)}</span>
+              <span className="font-mono text-[13px]">{unitPrice(event.unitPriceBrl)}</span>
             </Field>
             <Field label={d.value}>
               <span className="font-mono text-[13px]">{brl(event.valueBrl)}</span>
@@ -165,7 +166,7 @@ export function EventDialog({
               {event.reviewHistory.map((review, index) => (
                 <Field key={`${review.createdAt}-${index}`} label={formatDateTime(review.createdAt)} last={index === event.reviewHistory!.length - 1}>
                   <span className="flex min-w-0 flex-col items-end gap-1 break-words">
-                    <span>{brl(review.previousPriceBrl)} → {formatBRL(review.newPriceBrl)}</span>
+                    <span>{unitPrice(review.previousPriceBrl)} → {formatUnitPriceBRL(review.newPriceBrl)}</span>
                     <span className="text-muted">{review.reason}</span>
                     <span className="text-muted">{review.evidence}</span>
                   </span>

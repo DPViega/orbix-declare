@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WarningIcon, XIcon } from "@phosphor-icons/react";
 import { api, errorMessage, type TaxEvent } from "@/lib/api";
-import { formatBRL, formatDate, formatQtyFull, parseBRLInput, shortAddress } from "@/lib/format";
+import { formatBRL, formatDate, formatQtyFull, formatUnitPriceBRL, parseBRLInput, shortAddress } from "@/lib/format";
 import { Button, Card, InlineError, Input, StateIcon } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
@@ -119,7 +119,7 @@ export function PriceDialog({ event, onClose, onSaved }: { event: TaxEvent | nul
           </div>
           <div className="grid grid-cols-2 gap-3 rounded-xl border border-line px-4 py-3 text-sm">
             <span className="text-muted">{t.priceDialog.before}</span>
-            <span className="text-right font-mono">{event.unitPriceBrl == null ? "—" : formatBRL(event.unitPriceBrl)}</span>
+            <span className="text-right font-mono">{event.unitPriceBrl == null ? "—" : formatUnitPriceBRL(event.unitPriceBrl)}</span>
             <span className="text-muted">{t.priceDialog.after}</span>
             <span className="text-right font-mono">{price === null ? "—" : formatBRL(price)}</span>
             <span className="text-muted">{t.priceDialog.projectedTotal}</span>

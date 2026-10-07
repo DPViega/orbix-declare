@@ -161,5 +161,6 @@ Itens do relatório de testes que continuam no back e não estão acima: B4 (col
 | 3 | Pasta `examples/` com casos sintéticos, README e verificação automática | ✅ feito em 07/10 |
 | 4 | Roteiro e planilha de testes com usuários | ✅ feito em 07/10; aplicar as sessões |
 | 5 | Testes de aceite: reimportação sem duplicar, pendência de custo resolvida, verificação de hash com arquivo alterado | ⏳ depende do back em produção (e da carteira de memo para o hash) |
+| 6 | Correções F1–F4 do relatório de testes: preço unitário de token barato, arquivo de transferências no pacote, aviso de linha sem evidência e texto próprio de transferência e funding | ✅ feito em 07/10 (ver `RELATORIO_DESENVOLVIMENTO.md` 9.7); direção e contraparte da transferência dependem do B9 |
 
 Quando o back publicar os campos `quantityIn`, `quantityInAsset`, `avgCostUnitBrl` e `positionBeforeQty`, o front exibe os dois lados da troca e a composição do custo no detalhe do evento e no CSV do pacote.

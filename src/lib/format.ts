@@ -18,6 +18,16 @@ export const formatBRL = (v: number) =>
   nf("brl", { style: "currency", currency: "BRL" })
     .format(v)
     .replace(/\u00a0/g, " ");
+/**
+ * Preço por unidade: "R$ 910,00" a partir de R$ 1; abaixo disso, 4 algarismos significativos
+ * ("R$ 0,00001070"), para tokens baratos (MAX, kPEPE, BONK) não virarem "R$ 0,00".
+ */
+export function formatUnitPriceBRL(v: number): string {
+  if (v === 0 || Math.abs(v) >= 1) return formatBRL(v);
+  return nf("brlUnit", { style: "currency", currency: "BRL", minimumSignificantDigits: 4, maximumSignificantDigits: 4 })
+    .format(v)
+    .replace(/\u00a0/g, " ");
+}
 /** "R$ 35.000" — sem centavos quando o valor é inteiro (limites, eixos) */
 export const formatBRLShort = (v: number) =>
   nf(Number.isInteger(v) ? "brl0" : "brl", {

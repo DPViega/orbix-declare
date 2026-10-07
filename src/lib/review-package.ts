@@ -13,6 +13,8 @@ type Pkg = Messages["reviewPackage"];
 export interface ReviewPackage {
   csv: { name: string; text: string };
   readme: { name: string; text: string };
+  /** Transferências do mês (fora do cálculo, mas definem a base do custo); null quando não há. */
+  transfers: { name: string; text: string } | null;
 }
 
 const TZ = "America/Sao_Paulo";
@@ -64,7 +66,8 @@ function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg): string {
     text(row.asset),
     plain(row.quantity, 12),
     text(ev?.quantityAsset ?? ""),
-    money(ev?.unitPriceBrl),
+    // Preço por unidade com até 10 casas: tokens baratos (0,0000107) não podem virar 0,00.
+    plain(ev?.unitPriceBrl, 10),
     text(source),
     plain(ev?.ptax ?? row.ptax, 6),
     text(ev?.ptaxDate ?? ""),
@@ -78,6 +81,22 @@ function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg): string {
     text(ev?.txHash ?? ""),
     text(ev?.explorerUrl ?? ""),
     text(ev?.ruleVersion ?? ""),
+  ].join(",");
+}
+
+/** Transferência: entrada ou saída de cripto, sem venda. Direção e contraparte ainda não vêm da API (B9). */
+function transferRow(ev: TaxEvent): string {
+  return [
+    text(dateTimeBR(ev.date)),
+    text(ev.network),
+    text(ev.wallet?.address ?? ""),
+    text(ev.quantityAsset || ev.asset),
+    plain(ev.quantity, 12),
+    money(ev.valueBrl),
+    plain(ev.ptax, 6),
+    text(ev.ptaxDate ?? ""),
+    text(ev.txHash),
+    text(ev.explorerUrl),
   ].join(",");
 }
 
@@ -101,9 +120,18 @@ export function buildReviewPackage(
   const base = m.fileBase(report.month, draft);
   const csvName = `${base}-${m.csvSuffix}.csv`;
   const readmeName = `${base}-${m.readmeSuffix}.md`;
+  const transfersName = `${base}-${m.transfersSuffix}.csv`;
 
   // BOM: o Excel abre os acentos corretamente.
-  const csv = "﻿" + [m.columns.map(text).join(","), ...report.rows.map((r) => csvRow(r, byId.get(r.id), m))].join("\n") + "\n";
+  const toCsv = (header: string[], rows: string[]) => "\uFEFF" + [header.map(text).join(","), ...rows].join("\n") + "\n";
+  const csv = toCsv(
+    m.columns,
+    report.rows.map((r) => csvRow(r, byId.get(r.id), m)),
+  );
+  const transferEvents = events.filter((e) => e.type === "transfer");
+  const transfers = transferEvents.length ? { name: transfersName, text: toCsv(m.transferColumns, transferEvents.map(transferRow)) } : null;
+  // Linhas do relatório sem o evento correspondente: as colunas de origem saem em branco, então o leia-me avisa.
+  const missing = report.rows.filter((row) => !byId.has(row.id));
 
   const r = m.readme;
   const review = report.review;
@@ -133,6 +161,7 @@ export function buildReviewPackage(
     "",
     `- ${r.csvFile(csvName, report.rows.length)}`,
     `- ${r.readmeFile(readmeName)}`,
+    ...(transfers ? [`- ${r.transfersFile(transfersName, transferEvents.length)}`] : []),
     "",
     `## ${r.totalsTitle}`,
     "",
@@ -160,6 +189,16 @@ export function buildReviewPackage(
     "",
     ...bullets(pending, r.noPending),
     "",
+    `## ${r.transfersTitle}`,
+    "",
+    ...(transfers ? [r.transfersText(transferEvents.length), "", r.transfersPending] : [r.noTransfers]),
+    "",
+    `## ${r.missingEvidenceTitle}`,
+    "",
+    ...(missing.length
+      ? [r.missingEvidenceText(missing.length), "", ...missing.map((row) => `- ${opts.formatDate(row.date)} · ${row.asset}`)]
+      : [r.allEvidence]),
+    "",
     `## ${r.rulesTitle}`,
     "",
     ...r.rules.map((x) => `- ${x}`),
@@ -170,5 +209,5 @@ export function buildReviewPackage(
     "",
   ];
 
-  return { csv: { name: csvName, text: csv }, readme: { name: readmeName, text: lines.join("\n") } };
+  return { csv: { name: csvName, text: csv }, readme: { name: readmeName, text: lines.join("\n") }, transfers };
 }

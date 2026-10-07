@@ -32,8 +32,8 @@
     ]
   },
   "expected": {
-    "perp": { "unitPriceBrl": 46.08, "valueBrl": 6912.5, "costBrl": 5980.0, "gainBrl": 932.5, "feesBrl": 6.91 },
-    "funding": { "unitPriceBrl": 5.42, "valueBrl": 99.83, "costBrl": 0, "gainBrl": 99.83, "feesBrl": 0.1 },
+    "perp": { "unitPriceBrl": 46.08333333, "valueBrl": 6912.5, "costBrl": 5980.0, "gainBrl": 932.5, "feesBrl": 6.91 },
+    "funding": { "unitPriceBrl": 5.419652552, "valueBrl": 99.83, "costBrl": 0, "gainBrl": 99.83, "feesBrl": 0.1 },
     "combinedGainBrl": 1032.33,
     "pendingReasons": []
   }
