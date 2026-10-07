@@ -1,0 +1,45 @@
+{
+  "id": "03-custo-informado",
+  "description": "Venda de JUP cujo custo de aquisição não estava no histórico lido. Antes: custo desconhecido, tratado como zero. Depois: a pessoa informa o custo com motivo e evidência e o ganho é recalculado.",
+  "synthetic": true,
+  "source": "Modo demonstração (src/lib/api/mock.ts), setembro de 2026, evento ev_2026-09_3",
+  "input": {
+    "event": {
+      "date": "2026-09-21T15:00:00Z",
+      "network": "solana",
+      "type": "swap",
+      "asset": "JUP → SOL",
+      "quantity": 2400,
+      "quantityAsset": "JUP",
+      "priceProvider": "Birdeye",
+      "ptax": 5.3987,
+      "valueBrl": 7416.0
+    },
+    "review": {
+      "kind": "cost",
+      "costBrl": 6524.4,
+      "reason": "Compra feita antes do período importado",
+      "evidence": "Extrato sintético da corretora, compra de 2.400 JUP",
+      "confirmed": true
+    }
+  },
+  "expected": {
+    "before": {
+      "costBrl": 0,
+      "gainBrl": 7416.0,
+      "costUnknown": true,
+      "costManual": false,
+      "pendingReasons": ["Custo de aquisição não encontrado no histórico lido."]
+    },
+    "after": {
+      "costBrl": 6524.4,
+      "gainBrl": 891.6,
+      "costUnknown": false,
+      "costManual": true,
+      "pendingReasons": [],
+      "reviewHistory": [{ "kind": "cost", "previousCostBrl": 0, "newCostBrl": 6524.4 }]
+    },
+    "unitPriceBrl": 3.09,
+    "feesBrl": 7.42
+  }
+}

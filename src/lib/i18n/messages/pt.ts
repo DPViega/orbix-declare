@@ -386,6 +386,56 @@ export const pt = {
     tax: (rate: number) => `Imposto (${rate}%)`,
     sourceTx: "Transação de origem",
     citedEmpty: "Quando o agente citar um relatório ou uma transação, os detalhes aparecem aqui para você conferir.",
+    exhausted: "Limite mensal de perguntas atingido. Você ainda pode conferir a conversa e as fontes.",
+    retry: "Tentar pergunta novamente",
+    fresh: "Nova conversa",
+    demo: "Respostas e cenário de março de 2026 são simulados. Nenhum modelo de IA é chamado ao vivo.",
+  },
+
+  rules: {
+    title: "Explicação automática por regras",
+    badge: "Regras, não IA",
+    show: "Ver explicação por regras",
+    hide: "Fechar explicação por regras",
+    introUnavailable:
+      "O agente de IA está indisponível agora. Esta explicação é montada automaticamente com os campos de cada evento, sem IA.",
+    introQuota:
+      "Você atingiu o limite de perguntas do mês. Esta explicação é montada automaticamente com os campos de cada evento, sem IA.",
+    month: (month: string) => `Mês: ${month}`,
+    eventLabel: "Evento",
+    loading: "Carregando eventos…",
+    empty: "Nenhum evento neste mês.",
+    missing: "não informado",
+    sourceManual: "informado por você",
+    costStatus: {
+      manual: "informado por você",
+      unknown: "desconhecido, tratado como zero até ser informado",
+      average: "pelo custo médio",
+    },
+    verb: {
+      swap: "Você vendeu",
+      perp: "Você fechou uma posição de",
+      funding: "Você teve funding de",
+      transfer: "Você transferiu",
+    },
+    text: (p: {
+      verb: string;
+      quantity: string;
+      unit: string;
+      asset: string;
+      date: string;
+      price: string;
+      source: string;
+      ptax: string;
+      ptaxDate: string;
+      value: string;
+      cost: string;
+      costStatus: string;
+      gain: string;
+      rule: string;
+    }) =>
+      `${p.verb} ${p.quantity} ${p.unit} (${p.asset}) em ${p.date}. Preço: ${p.price} (${p.source}), PTAX ${p.ptax} de ${p.ptaxDate}. Valor: ${p.value}. Custo: ${p.cost} (${p.costStatus}). Ganho: ${p.gain}. Regra ${p.rule}.`,
+    pending: (reasons: string) => `Pendências: ${reasons}`,
   },
 
   settings: {
@@ -499,6 +549,82 @@ export const pt = {
     saved: "Revisão registrada e preço atualizado.",
     saveReview: "Salvar revisão auditada",
     skip: "Ignorar por enquanto",
+  },
+
+  reviewPackage: {
+    button: "Pacote para revisão",
+    buttonTitle: "Baixa o CSV detalhado e o leia-me com cobertura, limitações e pendências, para um contador revisar",
+    downloaded: (csv: string, readme: string) => `Baixamos 2 arquivos: ${csv} e ${readme}. Se o navegador pedir, permita downloads múltiplos.`,
+    fileBase: (month: string, draft: boolean) => `orbix-declare-${month}${draft ? "-rascunho" : ""}`,
+    csvSuffix: "revisao",
+    readmeSuffix: "leia-me",
+    columns: [
+      "data (Brasília)",
+      "rede",
+      "carteira",
+      "tipo",
+      "ativo",
+      "quantidade",
+      "unidade",
+      "preço unitário (R$)",
+      "fonte do preço",
+      "PTAX",
+      "data da PTAX",
+      "valor (R$)",
+      "custo (R$)",
+      "ganho (R$)",
+      "taxas (R$)",
+      "custo desconhecido",
+      "custo informado",
+      "pendências",
+      "transação",
+      "link do explorer",
+      "versão da regra",
+    ],
+    yes: "sim",
+    no: "não",
+    manualSource: "manual",
+    readme: {
+      title: (month: string) => `Orbix Declare · pacote para revisão · ${month}`,
+      status: "Situação do relatório",
+      draft: "Rascunho: os valores ainda podem mudar antes da finalização.",
+      final: "Final.",
+      generatedAt: "Gerado em",
+      brasiliaTime: "horário de Brasília",
+      engineVersion: "Versão do motor",
+      notInformed: "não informado",
+      disclaimer:
+        "Estimativa para revisão profissional. Não é uma declaração transmitida à Receita Federal e não substitui a análise de um contador.",
+      filesTitle: "Arquivos",
+      csvFile: (name: string, rows: number) =>
+        `\`${name}\`: uma linha por evento do relatório (${rows} ${rows === 1 ? "linha" : "linhas"}). Separador vírgula, decimal com ponto, valores em reais e datas no horário de Brasília.`,
+      readmeFile: (name: string) => `\`${name}\`: este arquivo.`,
+      totalsTitle: "Totais do mês",
+      disposed: "Total alienado",
+      cost: "Custo de aquisição",
+      gain: "Ganho de capital",
+      tax: "Imposto estimado",
+      coverageTitle: "Período importado e cobertura",
+      coverageState: "Situação",
+      coverageStates: { complete: "completa", partial: "parcial", unknown: "desconhecida" },
+      period: "Período",
+      periodRange: (from: string, through: string) => `de ${from} a ${through}`,
+      importedEvents: "Eventos importados",
+      partialWarning: "O histórico importado está incompleto: eventos fora do período acima não entram nos números.",
+      limitationsTitle: "Limitações",
+      unsupportedTitle: "Operações não suportadas",
+      pendingTitle: "Pendências abertas",
+      none: "Nenhuma informada pelo motor.",
+      noPending: "Nenhuma pendência aberta.",
+      rulesTitle: "Regras adotadas",
+      rules: [
+        "Custo de aquisição pelo custo médio ponderado de cada ativo.",
+        "Isenção de R$ 35.000 de vendas por mês só para operações à vista (spot); perp e funding não entram na isenção.",
+        "Conversão de dólar para real pela PTAX de venda do Banco Central, na data indicada em cada linha.",
+        "Preço ou custo informado pela pessoa aparece em \"fonte do preço\" = manual e em \"custo informado\" = sim.",
+      ],
+      columnsTitle: "Colunas do CSV",
+    },
   },
 
   demo: {

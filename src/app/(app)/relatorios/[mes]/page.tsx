@@ -11,6 +11,7 @@ import {
   DownloadSimpleIcon,
   FileArrowUpIcon,
   HourglassIcon,
+  PackageIcon,
   PencilSimpleIcon,
   SealCheckIcon,
   WarningIcon,
@@ -36,6 +37,7 @@ import {
   shortAddress,
 } from "@/lib/format";
 import { downloadText, reportToCsv, triggerDownload } from "@/lib/report-file";
+import { buildReviewPackage } from "@/lib/review-package";
 import { Badge, Button, ButtonLink, Card, InlineError, Input, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
@@ -54,7 +56,7 @@ function MonthReport({ mes }: { mes: string }) {
   const { data, error, loading, reload, setData } = useApi(() => api.report(mes), [mes], valid);
   // Exportar só com o relatório deste mês carregado e atualizado.
   const ready = !!data && !loading;
-  const [busy, setBusy] = useState<"csv" | "decripto" | "finalize" | null>(null);
+  const [busy, setBusy] = useState<"csv" | "package" | "decripto" | "finalize" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmFinalize, setConfirmFinalize] = useState(false);
@@ -118,6 +120,27 @@ function MonthReport({ mes }: { mes: string }) {
         const link = await api.reportCsv(mes);
         triggerDownload(link.url, link.filename);
       }
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Pacote para revisão: CSV detalhado + leia-me, montados no navegador com o relatório e os eventos do mês.
+  const downloadPackage = async () => {
+    if (!data || !ready) return;
+    setBusy("package");
+    setActionError(null);
+    setNotice(null);
+    try {
+      const events = await api.events(mes);
+      const pkg = buildReviewPackage(data, events, t.reviewPackage, { monthLabel: monthLong(mes), formatBRL, formatDate, formatDateTime });
+      downloadText(pkg.csv.name, pkg.csv.text);
+      // Pequeno intervalo: alguns navegadores ignoram o segundo download quando os dois saem juntos.
+      await new Promise((r) => setTimeout(r, 400));
+      downloadText(pkg.readme.name, pkg.readme.text, "text/markdown;charset=utf-8");
+      setNotice(t.reviewPackage.downloaded(pkg.csv.name, pkg.readme.name));
     } catch (err) {
       setActionError(errorMessage(err));
     } finally {
@@ -210,6 +233,16 @@ function MonthReport({ mes }: { mes: string }) {
                 disabled={!ready || busy !== null}
               >
                 {t.report.downloadReviewCsv}
+              </Button>
+              <Button
+                variant="secondary"
+                icon={PackageIcon}
+                onClick={downloadPackage}
+                loading={busy === "package"}
+                disabled={!data || !ready || busy !== null || data.rows.length === 0}
+                title={t.reviewPackage.buttonTitle}
+              >
+                {t.reviewPackage.button}
               </Button>
               {data?.status === "draft" && (
                 <Button
