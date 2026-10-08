@@ -21,12 +21,14 @@ export const config = {
    */
   useMocks: process.env.NEXT_PUBLIC_USE_MOCKS === "true" || rawApiUrl === "",
   solanaCluster: cluster,
+  /** Rede do registro fiscal, independente da rede usada para consultar carteiras. */
+  attestationCluster: (process.env.NEXT_PUBLIC_ATTESTATION_CLUSTER ?? "devnet") as SolanaCluster,
   /** URL pública do app (link de verificação). Vazia = usa o domínio da própria página. */
   appUrl: (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, ""),
 } as const;
 
-export function explorerTxUrl(signature: string): string {
-  const suffix = config.solanaCluster === "mainnet-beta" ? "" : `?cluster=${config.solanaCluster}`;
+export function explorerTxUrl(signature: string, network: SolanaCluster = config.solanaCluster): string {
+  const suffix = network === "mainnet-beta" ? "" : `?cluster=${network}`;
   return `https://explorer.solana.com/tx/${signature}${suffix}`;
 }
 

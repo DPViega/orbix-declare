@@ -48,14 +48,13 @@ export function reportToCsv(report: ReportDetail, events?: TaxEvent[]): string {
         event?.feesBrl == null ? "" : num(event.feesBrl),
         r.costUnknown ? "sim" : "nao",
         cell(event?.network ?? ""),
-        cell(event?.wallet?.address ?? ""),
+        cell(event?.wallet?.address ? `${event.wallet.address.slice(0, 4)}…${event.wallet.address.slice(-4)}` : ""),
       ].join(","),
     );
   }
   lines.push(
     ["total", "", "", "", "", num(report.totals.disposedBrl), num(report.totals.costBrl), num(report.totals.gainBrl), "",
-      report.rows.every((r) => byId.get(r.id)?.feesBrl != null)
-        ? num(report.rows.reduce((sum, r) => sum + byId.get(r.id)!.feesBrl!, 0)) : "",
+      "",
       "", "", ""].join(
       ",",
     ),

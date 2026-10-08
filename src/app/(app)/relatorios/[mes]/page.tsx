@@ -241,7 +241,6 @@ function MonthReport({ mes }: { mes: string }) {
                 {t.report.downloadReviewCsv}
               </Button>
               <Button
-                variant="secondary"
                 icon={PackageIcon}
                 onClick={downloadPackage}
                 loading={busy === "package"}
@@ -261,6 +260,7 @@ function MonthReport({ mes }: { mes: string }) {
                 </Button>
               )}
               <Button
+                variant="secondary"
                 icon={FileArrowUpIcon}
                 onClick={generateDecripto}
                 loading={busy === "decripto"}
@@ -268,6 +268,7 @@ function MonthReport({ mes }: { mes: string }) {
                 title={t.report.decriptoSummaryNote}
               >
                 {t.report.generateDecripto}
+                {review?.decriptoReady !== true && <span className="rounded border border-line px-1.5 py-0.5 text-xs">{t.report.comingSoon}</span>}
               </Button>
             </>
           )
@@ -394,7 +395,7 @@ function ReportReviewPanel({ report, onReviewed }: { report: ReportDetail; onRev
         </section>
       )}
       {!review && <p className="m-0 text-sm text-muted">{t.report.reviewMetadataMissing}</p>}
-      {review && !ready && <p className="m-0 text-sm text-muted">{t.report.decriptoBlocked}</p>}
+      {review && (coverage?.state !== "complete" || !coverage.importedFrom || !coverage.importedThrough || coverage.importedEvents == null || !!review.pendingReasons.length || !!review.unsupportedOperations.length || !!review.reviewItems?.length) && <p className="m-0 text-sm text-muted">{t.report.decriptoBlocked}</p>}
     </Panel>
   );
 }
@@ -558,8 +559,8 @@ function RowsTable({ report }: { report: ReportDetail }) {
     { label: c.date, width: "76px" },
     { label: c.type, width: "76px" },
     { label: c.asset },
-    { label: c.qty, width: "90px", align: "right" as const },
-    { label: c.ptax, width: "70px", align: "right" as const },
+    { label: c.qty, width: "156px", align: "right" as const },
+    { label: c.ptax, width: "94px", align: "right" as const },
     { label: c.value, width: "100px", align: "right" as const },
     { label: c.cost, width: "100px", align: "right" as const },
     { label: c.gain, width: "96px", align: "right" as const },
@@ -569,7 +570,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
     <Table
       dense
       caption={t.report.rowsCaption(monthLong(report.month))}
-      minWidth={720}
+      minWidth={960}
       columns={cols}
       footer={
         <tr className="bg-card font-medium">
@@ -620,7 +621,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
             )}
           </Td>
           <Td align="right" className={mono}>
-            <span title={formatQtyFull(r.quantity)}>{formatQty(r.quantity)}</span>
+            <span className="whitespace-nowrap" title={formatQtyFull(r.quantity)}>{formatQty(r.quantity)}</span>
           </Td>
           <Td align="right" className={`${mono} text-muted`}>
             {formatPtax(r.ptax)}
@@ -687,7 +688,7 @@ function VerificationPanel({ report }: { report: ReportDetail }) {
             </span>
           </div>
           <a
-            href={explorerTxUrl(a.txSignature)}
+            href={explorerTxUrl(a.txSignature, config.attestationCluster)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-accent-text"

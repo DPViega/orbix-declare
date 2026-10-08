@@ -179,6 +179,9 @@ export interface TaxEvent {
   /** Custo de aquisição e ganho de capital do evento, em R$. */
   costBrl?: number | null;
   gainBrl?: number | null;
+  /** Indicadores do motor; back-ends anteriores podem omitir (usar ReportRow pelo id). */
+  costUnknown?: boolean | null;
+  costManual?: boolean | null;
   /**
    * Origem dos números (opcionais: o back-end pode omitir ou mandar null).
    * quantityIn/quantityInAsset são null fora de swap ou em rota com mais de um ativo de entrada:

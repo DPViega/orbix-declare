@@ -295,7 +295,8 @@ export const pt = {
     demoDecripto: "Modo demonstração: o arquivo da DeCripto é gerado pelo back-end. Com a API conectada, o download começa aqui.",
     title: (month: string) => `Relatório de ${month}`,
     downloadCsv: "Baixar CSV",
-    downloadReviewCsv: "CSV para revisão",
+    downloadReviewCsv: "CSV do relatório",
+    comingSoon: "em breve",
     generateDecripto: "Gerar DeCripto",
     /**
      * Explicação do botão "Gerar DeCripto", visível na própria página (nunca em title ou tooltip).
@@ -491,6 +492,12 @@ export const pt = {
   },
 
   verify: {
+    awaitingTitle: "Registro encontrado na Solana: envie o arquivo para conferir",
+    mismatchTitle: "Este arquivo não é o relatório registrado",
+    hashDisclaimer: "O hash prova que o arquivo não foi alterado desde o registro. Não certifica que o cálculo fiscal está correto.",
+    testNetwork: (network: string) => `${network} (rede de testes)`,
+    fileError: "Não foi possível ler o arquivo. Tente selecioná-lo novamente.",
+    fileChecking: "Conferindo o arquivo…",
     kicker: "Verificação pública",
     noAccount: "Não precisa de conta",
     notFound: "Relatório não encontrado",
@@ -518,6 +525,9 @@ export const pt = {
   },
 
   eventDialog: {
+    reviewCost: "Custo",
+    reviewInReport: "Revisar pendências e informar custo no relatório",
+    costContextUnavailable: "Não foi possível conferir a situação do custo. Consulte o relatório para revisar as pendências.",
     open: (asset: string) => `Ver detalhes de ${asset}`,
     title: "Detalhes do evento",
     unavailable: "Indisponível",
