@@ -201,6 +201,9 @@ export interface TaxEvent {
   avgCostUnitBrl?: number | null;
   /** Quantos fills compuseram o evento. */
   fillCount?: number | null;
+  /** Transferência: entrada ("in") ou saída ("out") e o endereço do outro lado, quando há um só. */
+  direction?: "in" | "out" | null;
+  counterparty?: string | null;
   /** Motivos reportados pelo motor para manter o evento pendente. */
   pendingReasons?: string[];
   /** Revisões auditáveis persistidas pelo back-end. */
@@ -343,6 +346,8 @@ export interface AgentMessage {
   text?: string;
   blocks?: AgentBlock[];
   createdAt: string;
+  /** "rules": texto montado pelas regras de cálculo no back-end, sem IA (IA fora do ar ou cota esgotada). */
+  source?: "ai" | "rules";
 }
 
 export interface AgentContext {
@@ -373,4 +378,6 @@ export interface AgentReply {
   context: AgentContext | null;
   suggestions: string[];
   questionsLeft: number;
+  /** Por que a resposta veio por regras; null quando veio da IA. */
+  rulesReason?: "unavailable" | "quota" | null;
 }

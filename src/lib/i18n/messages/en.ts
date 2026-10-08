@@ -597,7 +597,11 @@ export const en: Messages = {
       "PTAX date",
       "transaction",
       "explorer link",
+      "direction",
+      "counterparty",
     ],
+    directionIn: "in",
+    directionOut: "out",
     columns: [
       "date (Brasília)",
       "network",
@@ -666,7 +670,8 @@ export const en: Messages = {
       transfersTitle: "Transfers",
       transfersText: (n) =>
         `${n} ${n === 1 ? "transfer" : "transfers"} this month, in the transfers file. A transfer is not a sale, but it sets the cost basis: what comes into a wallet can be sold later.`,
-      transfersPending: "The API doesn't provide each transfer's direction (in or out) or counterparty yet.",
+      transfersPending:
+        "The counterparty is blank when the transaction has more than one address on the other side, or when the wallet has not been synced again yet.",
       noTransfers: "No transfers this month.",
       missingEvidenceTitle: "Rows without evidence",
       missingEvidenceText: (n) =>
