@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowSquareOutIcon, CheckCircleIcon, InfoIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
-import { isDemoSession, type TaxEvent } from "@/lib/api";
+import { api, isDemoSession, type TaxEvent } from "@/lib/api";
+import Link from "next/link";
+import { useApi } from "@/lib/use-api";
+import { eventCost, eventMonth } from "@/lib/event-cost";
 import { config } from "@/lib/config";
 import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, formatUnitPriceBRL, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
@@ -24,8 +27,12 @@ export function EventDialog({
   onSetPrice: (e: TaxEvent) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const d = t.eventDialog;
+  const month = event ? eventMonth(event.date) : null;
+  const report = useApi(() => api.report(month!), [month, event?.id, locale],
+    !!event && (event.type === "swap" || event.type === "perp") && (event.costUnknown == null || event.costManual == null));
+  const cost = event ? eventCost(event, report.data?.rows.find((row) => row.id === event.id)) : { costUnknown: false, costManual: false };
 
   useEffect(() => {
     const dlg = ref.current;
@@ -151,7 +158,7 @@ export function EventDialog({
             </Field>
           </Section>
 
-          <CostOrigin event={event} />
+          <CostOrigin event={event} {...cost} />
 
           <Section title={d.price}>
             <Field label={d.source}>
@@ -190,7 +197,11 @@ export function EventDialog({
               {event.reviewHistory.map((review, index) => (
                 <Field key={`${review.createdAt}-${index}`} label={formatDateTime(review.createdAt)} last={index === event.reviewHistory!.length - 1}>
                   <span className="flex min-w-0 flex-col items-end gap-1 break-words">
-                    <span>{unitPrice(review.previousPriceBrl)} → {formatUnitPriceBRL(review.newPriceBrl)}</span>
+                    {review.kind === "cost" ? (
+                      <span>{d.reviewCost}: {review.previousCostBrl == null ? t.report.reviewPending : formatBRL(review.previousCostBrl)} → {brl(review.newCostBrl)}</span>
+                    ) : (
+                      <span>{d.unitPrice}: {review.previousPriceBrl == null ? t.report.reviewPending : unitPrice(review.previousPriceBrl)} → {formatUnitPriceBRL(review.newPriceBrl)}</span>
+                    )}
                     <span className="text-muted">{review.reason}</span>
                     <span className="text-muted">{review.evidence}</span>
                   </span>
@@ -199,7 +210,9 @@ export function EventDialog({
             </Section>
           )}
 
-          <Pending event={event} onSetPrice={onSetPrice} />
+          {report.loading && <p role="status" className="m-0 text-sm text-muted">{t.common.loading}</p>}
+          {report.error && <p role="alert" className="m-0 text-sm text-warn">{d.costContextUnavailable}</p>}
+          <Pending event={event} costUnknown={cost.costUnknown} contextPending={report.loading || !!report.error} onSetPrice={onSetPrice} />
         </div>
       )}
     </dialog>
@@ -211,11 +224,10 @@ export function EventDialog({
  * que leva ao custo total devolvido pelo back-end (costBrl). A tela só formata: nunca troca costBrl
  * pelo produto calculado aqui, e a conta é apresentada como aproximação (arredondamentos em etapas).
  *
- * costUnknown e costManual não existem em TaxEvent (estão em ReportRow, que esta tela não carrega):
- * usamos o mesmo fallback de rules-explanation.tsx — histórico de revisão de custo e custo ausente.
+ * Indicadores vêm do evento ou, para back-ends anteriores, da linha do relatório pelo id.
  * Custo médio zero nunca é lido como custo desconhecido.
  */
-function CostOrigin({ event }: { event: TaxEvent }) {
+function CostOrigin({ event, costUnknown, costManual }: { event: TaxEvent; costUnknown: boolean; costManual: boolean }) {
   const { t } = useI18n();
   const d = t.eventDialog;
   // Transferência não é venda e funding não tem custo médio: a origem do custo não se aplica.
@@ -227,8 +239,6 @@ function CostOrigin({ event }: { event: TaxEvent }) {
    * Abaixo de R$ 1 ele já guarda 4 algarismos significativos. Mesmo critério em rules-explanation.tsx.
    */
   const avgCost = (v: number) => (Math.abs(v) >= 1 ? t.common.brlAmount(formatPtax(v)) : formatUnitPriceBRL(v));
-  const costManual = !!event.reviewHistory?.some((x) => x.kind === "cost");
-  const costUnknown = event.costBrl === null || event.costBrl === undefined;
   /*
    * Conta só com os três números disponíveis (vêm null quando a venda tem mais de um ativo de saída)
    * e com custo médio e custo total acima de zero. Zero aqui não é lido como custo desconhecido —
@@ -289,19 +299,19 @@ function CostOrigin({ event }: { event: TaxEvent }) {
   );
 }
 
-function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEvent) => void }) {
+function Pending({ event, costUnknown, contextPending, onSetPrice }: { event: TaxEvent; costUnknown: boolean; contextPending: boolean; onSetPrice: (e: TaxEvent) => void }) {
   const { t } = useI18n();
   const d = t.eventDialog;
   const missingPrice = event.valueBrl === null;
   // Custo só é pendência quando há preço (sem preço, a pendência principal já explica o ganho ausente).
-  const missingCost = !missingPrice && (event.costBrl === null || event.costBrl === undefined);
+  const missingCost = costUnknown;
 
   return (
     <section className="flex flex-col gap-2.5" aria-labelledby="event-pending">
       <Kicker as="h3">
         <span id="event-pending">{d.pending}</span>
       </Kicker>
-      {!missingPrice && !missingCost ? (
+      {!contextPending && !missingPrice && !missingCost && !event.pendingReasons?.length ? (
         <p className="m-0 flex items-start gap-2 text-sm text-muted">
           <CheckCircleIcon size={18} className="mt-px shrink-0 text-ok" aria-hidden />
           {event.priceSource === "manual" ? d.manualNote : d.pendingNone}
@@ -331,6 +341,11 @@ function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEv
         <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
           {event.pendingReasons.map((reason) => <li key={reason}>{reason}</li>)}
         </ul>
+      )}
+      {(contextPending || missingCost || !!event.pendingReasons?.length) && (
+        <Link href={`/relatorios/${eventMonth(event.date)}`} className="text-sm font-medium text-accent-text underline">
+          {d.reviewInReport}
+        </Link>
       )}
     </section>
   );

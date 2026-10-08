@@ -23,7 +23,9 @@ const TZ = "America/Sao_Paulo";
 /** Número com ponto decimal, sem notação científica e sem zeros à direita: 0.000123, 12.5. */
 function plain(v: number | null | undefined, digits: number): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "";
-  const s = v.toFixed(digits);
+  // Limita a 15 algarismos significativos sem expor a cauda binária em quantidades grandes.
+  const significantDecimals = v === 0 ? digits : Math.max(0, 14 - Math.floor(Math.log10(Math.abs(v))));
+  const s = v.toFixed(Math.min(digits, significantDecimals));
   return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 }
 const money = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? "" : v.toFixed(2));
