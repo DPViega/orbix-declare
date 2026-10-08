@@ -22,7 +22,7 @@ async function main() {
   assert.equal(eventMonth("2026-06-01T02:59:59Z"), "2026-05");
   const official = reportToCsv(report);
   const lines = official.trimEnd().split("\n");
-  assert.ok(lines.every((l) => l.split(",").length === 13));
+  assert.ok(lines.every((l) => l.split(",").length === 14));
   assert.equal(lines.at(-2)!.split(",")[9], "");
   assert.equal(lines[1].split(",")[12], `${events.find((e) => e.id === report.rows[0].id)!.wallet!.address.slice(0, 4)}…${events.find((e) => e.id === report.rows[0].id)!.wallet!.address.slice(-4)}`);
   assert.equal(await sha256Hex(official), report.attestation!.hash);
@@ -40,6 +40,6 @@ async function main() {
       for (const index of [5, 21, 23]) assert.equal(fields[index], locale === "pt" ? String(quantity).replace(".", ",") : String(quantity));
     }
   }
-  console.log("F8/F9/D1/D2: indicadores, fuso, quantidades PT/EN, 13/26 colunas, carteira, total e hash OK.");
+  console.log("F8/F9/D1/D2: indicadores, fuso, quantidades PT/EN, 14/26 colunas, carteira, total e hash OK.");
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

@@ -396,7 +396,7 @@ function eventsFor(key: string): TaxEvent[] {
     const source = b.brl === null ? (manual !== undefined ? "manual" : null) : "auto";
     const networkWallets = wallets.filter((w) => w.network === b.network);
     const wallet = networkWallets.length ? networkWallets[i % networkWallets.length] : undefined;
-    const { cost, costUnknown } = costInfo(id, b, round2(b.cost * f));
+    const { cost, costUnknown, costManual } = costInfo(id, b, round2(b.cost * f));
     // PTAX de venda do dia útil anterior (aqui, simplificado para o dia anterior).
     const ptaxDate = new Date(new Date(date).getTime() - 86_400_000).toISOString().slice(0, 10);
     const reasons: string[] = [];
@@ -433,6 +433,9 @@ function eventsFor(key: string): TaxEvent[] {
       // Transferência não é venda: não tem custo de aquisição nem ganho; o valor é só referência.
       costBrl: transfer ? null : cost,
       gainBrl: value === null || transfer ? null : round2(value - cost),
+      // Igual ao back-end (e2954bf): as marcações vêm no próprio evento.
+      costUnknown,
+      costManual,
       pendingReasons: reasons,
       reviewHistory: eventReviews.get(id) ?? [],
     } satisfies TaxEvent;

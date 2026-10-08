@@ -168,3 +168,8 @@ export function parseBRLInput(raw: string): number | null {
   const n = Number(normalized);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
+
+/** Identificador interno (ex.: "hl:@53:…") quando a fonte não informa o hash: não há página no explorador. */
+export function isPseudoHash(hash: string | null | undefined) {
+  return !hash || hash.startsWith("hl:");
+}

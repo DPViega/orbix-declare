@@ -9,7 +9,7 @@ import type { ReportDetail, TaxEvent } from "@/lib/api/types";
  * oficial vem do back-end (GET /api/report/:mes/csv) e o front só confere o hash na página /v/[id].
  */
 
-const CSV_HEADER = ["data", "tipo", "ativo", "quantidade", "ptax", "valor_brl", "custo_brl", "ganho_brl", "preco_manual", "taxas_brl", "custo_desconhecido", "rede", "carteira"];
+const CSV_HEADER = ["data", "tipo", "ativo", "quantidade", "ptax", "valor_brl", "custo_brl", "ganho_brl", "preco_manual", "taxas_brl", "custo_desconhecido", "rede", "carteira", "custo_informado"];
 
 // Evidências da demo acompanham a instância do relatório sem ampliar o contrato da API.
 const csvEvidence = new WeakMap<ReportDetail, { events: TaxEvent[]; verification: string | null }>();
@@ -49,13 +49,14 @@ export function reportToCsv(report: ReportDetail, events?: TaxEvent[]): string {
         r.costUnknown ? "sim" : "nao",
         cell(event?.network ?? ""),
         cell(event?.wallet?.address ? `${event.wallet.address.slice(0, 4)}…${event.wallet.address.slice(-4)}` : ""),
+        r.costManual ? "sim" : "nao",
       ].join(","),
     );
   }
   lines.push(
     ["total", "", "", "", "", num(report.totals.disposedBrl), num(report.totals.costBrl), num(report.totals.gainBrl), "",
       "",
-      "", "", ""].join(
+      "", "", "", ""].join(
       ",",
     ),
   );
@@ -66,7 +67,7 @@ export function reportToCsv(report: ReportDetail, events?: TaxEvent[]): string {
     if (!verification || !/^[a-f0-9]{64}$/i.test(verification)) {
       throw new Error("Final CSV requires a 64-character hexadecimal verification code.");
     }
-    lines.push(["verificacao", verification, ...Array<string>(11).fill("")].join(","));
+    lines.push(["verificacao", verification, ...Array<string>(12).fill("")].join(","));
   }
   return lines.join("\n") + "\n";
 }

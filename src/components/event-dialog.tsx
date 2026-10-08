@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useApi } from "@/lib/use-api";
 import { eventCost, eventMonth } from "@/lib/event-cost";
 import { config } from "@/lib/config";
-import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, formatUnitPriceBRL, shortAddress } from "@/lib/format";
+import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, formatUnitPriceBRL, isPseudoHash, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
@@ -89,6 +89,19 @@ export function EventDialog({
               )}
             </Field>
             <Field label={d.protocol}>{event.protocol || na}</Field>
+            {event.type === "transfer" && event.direction && (
+              <Field label={d.direction}>
+                {event.direction === "in" ? t.dashboard.transferIn : t.dashboard.transferOut}
+                {event.counterparty && (
+                  <span className="font-mono text-[12.5px] text-muted" title={event.counterparty}>
+                    {" "}
+                    {event.direction === "in"
+                      ? t.dashboard.transferFrom(shortAddress(event.counterparty, 6, 6))
+                      : t.dashboard.transferTo(shortAddress(event.counterparty, 6, 6))}
+                  </span>
+                )}
+              </Field>
+            )}
             {/* A3: "N fills" só quando o evento agrupou mais de uma execução; ausente/null não é zero. */}
             {typeof event.fillCount === "number" && event.fillCount > 1 && (
               <Field label={d.fills}>
@@ -100,6 +113,10 @@ export function EventDialog({
                 <span className="flex flex-col">
                   <span className="font-mono text-[12.5px] text-muted">{shortAddress(event.txHash, 8, 6)}</span>
                   <span className="text-[12.5px] text-warn">{t.demo.fakeTx}</span>
+                </span>
+              ) : isPseudoHash(event.txHash) ? (
+                <span className="font-mono text-[12.5px] text-muted" title={t.common.noTxHashTitle}>
+                  {t.common.noTxHash}
                 </span>
               ) : (
                 <a

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 interface State<T> {
   data: T | null;
@@ -26,7 +27,9 @@ export function useApi<T>(fetcher: () => Promise<T>, deps: readonly unknown[], e
     fetcherRef.current = fetcher;
   });
 
-  const depsKey = JSON.stringify(deps);
+  // F14: o back traduz textos (limitações, motivos de pendência); trocar o idioma busca de novo.
+  const { locale } = useI18n();
+  const depsKey = JSON.stringify([...deps, locale]);
   const key = `${depsKey}#${nonce}`;
   const depsKeyRef = useRef(depsKey);
   useEffect(() => {

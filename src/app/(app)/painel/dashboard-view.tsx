@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRightIcon, FileTextIcon, TrayIcon, WarningIcon } from "@phosphor-icons/react";
 import { api, isDemoSession, type EventType, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
+import { eventCost } from "@/lib/event-cost";
 import { useSession } from "@/lib/session";
 import { config } from "@/lib/config";
 import {
@@ -16,6 +17,7 @@ import {
   formatPct,
   formatQty,
   formatQtyFull,
+  isPseudoHash,
   monthName,
   previousMonthKey,
   shortAddress,
@@ -68,6 +70,9 @@ export function DashboardView() {
       (networkFilter === "all" || e.network === networkFilter) &&
       (walletFilter === "all" || e.wallet?.address === walletFilter),
   );
+
+  // F15: vendas com custo não encontrado no mês inteiro (não só no filtro), para o aviso de baixo.
+  const costUnknownCount = (events.data ?? []).filter((e) => eventCost(e).costUnknown).length;
 
   const setMonth = (m: string) => {
     setFilter("all");
@@ -211,7 +216,8 @@ export function DashboardView() {
           </div>
         )}
 
-        {events.loading && !events.data ? (
+        {/* F17: sem mês ainda (o painel está carregando), a busca de eventos nem começou: esqueleto, não "nenhum evento". */}
+        {(events.loading || !month) && !events.data ? (
           <div className="flex flex-col gap-3 p-6">
             {[0, 1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-6" />
@@ -260,6 +266,13 @@ export function DashboardView() {
                 </Td>
                 <Td>
                   <Chip>{t.eventType[e.type]}</Chip>
+                  {e.type === "transfer" && e.direction && (
+                    <span className="block pt-1 text-xs text-muted" title={e.counterparty ?? undefined}>
+                      {e.direction === "in" ? t.dashboard.transferIn : t.dashboard.transferOut}
+                      {e.counterparty &&
+                        ` ${e.direction === "in" ? t.dashboard.transferFrom(shortAddress(e.counterparty)) : t.dashboard.transferTo(shortAddress(e.counterparty))}`}
+                    </span>
+                  )}
                 </Td>
                 <Td className="font-medium">
                   <button
@@ -270,6 +283,14 @@ export function DashboardView() {
                   >
                     {e.asset}
                   </button>
+                  {eventCost(e).costUnknown && (
+                    <span
+                      className="mt-1 block w-fit rounded-md border border-dashed border-warn px-1.5 py-px font-mono text-[10.5px] text-warn"
+                      title={t.report.costUnknownTitle}
+                    >
+                      {t.report.costUnknownBadge}
+                    </span>
+                  )}
                   {/* A3: "N fills" só quando o evento agrupou mais de uma execução. */}
                   {typeof e.fillCount === "number" && e.fillCount > 1 && (
                     <span className="block font-mono text-xs text-muted">{t.common.fills(e.fillCount)}</span>
@@ -315,6 +336,11 @@ export function DashboardView() {
                     <span className="font-mono text-xs text-muted" title={t.demo.fakeTx}>
                       {shortAddress(e.txHash)}
                     </span>
+                  ) : isPseudoHash(e.txHash) ? (
+                    // F16: sem hash real, o link do explorador cairia na página da carteira.
+                    <span className="font-mono text-xs text-muted" title={t.common.noTxHashTitle}>
+                      {t.common.noTxHash}
+                    </span>
                   ) : (
                     <a
                       href={e.explorerUrl}
@@ -352,7 +378,16 @@ export function DashboardView() {
         }}
       />
 
-      {d && d.missingPrices === 0 && month && (
+      {d && month && costUnknownCount > 0 && (
+        <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-[13px] text-warn">
+          <WarningIcon size={15} aria-hidden />
+          {t.dashboard.costUnknownPending(costUnknownCount)}{" "}
+          <Link href={`/relatorios/${month}`} className="font-medium text-accent-text">
+            {t.dashboard.reviewPending}
+          </Link>
+        </p>
+      )}
+      {d && d.missingPrices === 0 && costUnknownCount === 0 && events.data && month && (
         <p className="m-0 text-[13px] text-muted">
           {t.dashboard.allGood(monthName(month))}{" "}
           <Link href={`/relatorios/${month}`} className="font-medium text-accent-text">
