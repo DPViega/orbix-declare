@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowSquareOutIcon,
   CheckCircleIcon,
@@ -21,9 +21,18 @@ import { useI18n } from "@/lib/i18n";
 import { DemoNotice } from "@/components/demo-notice";
 
 export function VerifyView({ publicId }: { publicId: string }) {
+  return <VerificationPage key={publicId} publicId={publicId} />;
+}
+
+type FileResult = { name: string; hash: string; expected: string } | null;
+
+function VerificationPage({ publicId }: { publicId: string }) {
   const { t, locale } = useI18n();
   // locale nas deps: a descrição do relatório vem do back-end no idioma pedido (Accept-Language).
   const { data, error, loading, reload } = useApi(() => api.verifyPublic(publicId), [publicId, locale]);
+  const [file, setFile] = useState<FileResult>(null);
+  const currentFile = file?.expected === data?.hash.toLowerCase() ? file : null;
+  const match = currentFile ? currentFile.hash === data?.hash.toLowerCase() : null;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-ink">
@@ -57,7 +66,7 @@ export function VerifyView({ publicId }: { publicId: string }) {
             {error ?? t.verify.checkLink} {t.verify.codeHint}
           </StateBlock>
         ) : (
-          <Result data={data} />
+          <Result data={data} match={match} />
         )}
 
         <aside className="flex flex-col gap-5">
@@ -70,27 +79,29 @@ export function VerifyView({ publicId }: { publicId: string }) {
               </div>
             ))}
           </Card>
-          {data && <FileCheck expected={data.hash} />}
+          {data && !loading && !error && <FileCheck key={data.hash} expected={data.hash} state={currentFile} onChange={setFile} />}
         </aside>
       </main>
     </div>
   );
 }
 
-function Result({ data }: { data: PublicVerification }) {
+function Result({ data, match }: { data: PublicVerification; match: boolean | null }) {
   const { t } = useI18n();
   // Modo demonstração: hash e transação são fictícios; nada pode parecer um registro real na Solana.
   const demo = config.useMocks;
+  const failed = !data.valid || match === false;
+  const verified = data.valid && match === true;
   return (
     <div className="flex min-w-0 flex-col gap-8">
       <DemoNotice text={t.demo.verify} />
       <div className="flex flex-col gap-[18px]">
-        <StateIcon icon={data.valid ? SealCheckIcon : SealWarningIcon} tone={demo ? "warn" : data.valid ? "ok" : "danger"} size={60} />
-        <h1 className="type-h1 m-0 max-w-[760px] text-pretty">
-          {demo ? t.demo.verifyTitle : data.valid ? t.verify.validTitle(formatDate(data.registeredAt)) : t.verify.invalidTitle}
+        <StateIcon icon={failed ? SealWarningIcon : verified ? SealCheckIcon : MagnifyingGlassIcon} tone={failed ? "danger" : demo ? "warn" : verified ? "ok" : "accent"} size={60} />
+        <h1 aria-live="polite" className={cn("type-h1 m-0 max-w-[760px] text-pretty", failed && "text-danger", verified && !demo && "text-ok")}>
+          {match === false ? t.verify.mismatchTitle : !data.valid ? t.verify.invalidTitle : demo ? t.demo.verifyTitle : verified ? t.verify.validTitle(formatDate(data.registeredAt)) : t.verify.awaitingTitle}
         </h1>
         <p className="m-0 max-w-[620px] text-base leading-relaxed text-muted">
-          {demo ? t.demo.verifyText : data.valid ? t.verify.validText : t.verify.invalidText}
+          {match === false ? t.verify.fileMismatch : !data.valid ? t.verify.invalidText : demo ? t.demo.verifyText : verified ? t.verify.validText : t.verify.fileHint}
         </p>
       </div>
 
@@ -99,7 +110,7 @@ function Result({ data }: { data: PublicVerification }) {
         <Row label={t.verify.hash}>
           <span className="font-mono text-[13px] break-all">{data.hash}</span>
         </Row>
-        <Row label={t.verify.tx}>
+        <Row label={`${t.verify.tx} · ${config.attestationCluster === "mainnet-beta" ? config.attestationCluster : t.verify.testNetwork(config.attestationCluster)}`}>
           {demo ? (
             <div className="flex flex-col gap-1">
               <span className="font-mono text-[13px] break-all text-muted">{data.txSignature}</span>
@@ -109,7 +120,7 @@ function Result({ data }: { data: PublicVerification }) {
             <div className="flex flex-col gap-2">
               <span className="font-mono text-[13px] break-all">{data.txSignature}</span>
               <a
-                href={explorerTxUrl(data.txSignature)}
+                href={explorerTxUrl(data.txSignature, config.attestationCluster)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-accent-text"
@@ -127,6 +138,7 @@ function Result({ data }: { data: PublicVerification }) {
           </span>
         </Row>
       </Panel>
+      <p className="m-0 text-sm leading-relaxed text-muted">{t.verify.hashDisclaimer}</p>
     </div>
   );
 }
@@ -141,20 +153,26 @@ function Row({ label, children, last }: { label: string; children: React.ReactNo
 }
 
 /** Confere um arquivo local: o hash é calculado no navegador e o arquivo nunca é enviado. */
-function FileCheck({ expected }: { expected: string }) {
-  const [state, setState] = useState<{ name: string; hash: string } | null>(null);
+function FileCheck({ expected, state, onChange }: { expected: string; state: FileResult; onChange: (value: FileResult) => void }) {
+  const request = useRef(0);
+  const [error, setError] = useState(false);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const { t } = useI18n();
 
   const check = async (file: File | undefined) => {
     if (!file) return;
+    const current = ++request.current;
+    onChange(null);
+    setError(false);
     setBusy(true);
     try {
       const hash = await sha256Hex(await file.arrayBuffer());
-      setState({ name: file.name, hash });
+      if (current === request.current) onChange({ name: file.name, hash, expected: expected.toLowerCase() });
+    } catch {
+      if (current === request.current) setError(true);
     } finally {
-      setBusy(false);
+      if (current === request.current) setBusy(false);
     }
   };
 
@@ -188,7 +206,7 @@ function FileCheck({ expected }: { expected: string }) {
         <UploadSimpleIcon size={24} className={cn("text-muted", busy && "animate-pulse")} aria-hidden />
       )}
       <span className="font-medium" aria-live="polite">
-        {!state ? t.verify.fileQuestion : match ? t.verify.fileMatch : t.verify.fileMismatch}
+        {error ? t.verify.fileError : busy ? t.verify.fileChecking : !state ? t.verify.fileQuestion : match ? t.verify.fileMatch : t.verify.fileMismatch}
       </span>
       <span className="text-[13px] leading-[1.55] text-muted">
         {!state ? (

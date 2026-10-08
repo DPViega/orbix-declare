@@ -1,4 +1,4 @@
-import type { ReportDetail } from "@/lib/api/types";
+import type { ReportDetail, TaxEvent } from "@/lib/api/types";
 
 /**
  * Geração de CSV e hash SHA-256 no navegador.
@@ -9,16 +9,31 @@ import type { ReportDetail } from "@/lib/api/types";
  * oficial vem do back-end (GET /api/report/:mes/csv) e o front só confere o hash na página /v/[id].
  */
 
-const CSV_HEADER = ["date", "type", "asset", "quantity", "ptax", "value_brl", "cost_brl", "gain_brl", "manual_price"];
+const CSV_HEADER = ["data", "tipo", "ativo", "quantidade", "ptax", "valor_brl", "custo_brl", "ganho_brl", "preco_manual", "taxas_brl", "custo_desconhecido", "rede", "carteira"];
+
+// Evidências da demo acompanham a instância do relatório sem ampliar o contrato da API.
+const csvEvidence = new WeakMap<ReportDetail, { events: TaxEvent[]; verification: string | null }>();
+
+/** Prepara o identificador do conteúdo antes de atestar os bytes do arquivo completo. */
+export async function prepareReportCsv(report: ReportDetail, events: TaxEvent[]): Promise<void> {
+  const evidence = { events, verification: null as string | null };
+  csvEvidence.set(report, evidence);
+  if (report.status === "final") {
+    evidence.verification = await sha256Hex(reportToCsv({ ...report, status: "draft" }, events));
+  }
+}
 
 const num = (v: number, digits = 2) => v.toFixed(digits);
 /** AAAA-MM-DD no fuso de Brasília (o mesmo dia que a tela mostra). */
 const isoDateBR = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
-const cell = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+const cell = (v: string) => (/[",\n\r;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
-export function reportToCsv(report: ReportDetail): string {
+export function reportToCsv(report: ReportDetail, events?: TaxEvent[]): string {
+  const evidence = csvEvidence.get(report);
+  const byId = new Map((events ?? evidence?.events ?? []).map((event) => [event.id, event]));
   const lines = [CSV_HEADER.join(",")];
   for (const r of report.rows) {
+    const event = byId.get(r.id);
     lines.push(
       [
         isoDateBR(r.date),
@@ -29,15 +44,30 @@ export function reportToCsv(report: ReportDetail): string {
         num(r.valueBrl),
         num(r.costBrl),
         num(r.gainBrl),
-        r.manualPrice ? "yes" : "no",
+        r.manualPrice ? "sim" : "nao",
+        event?.feesBrl == null ? "" : num(event.feesBrl),
+        r.costUnknown ? "sim" : "nao",
+        cell(event?.network ?? ""),
+        cell(event?.wallet?.address ? `${event.wallet.address.slice(0, 4)}…${event.wallet.address.slice(-4)}` : ""),
       ].join(","),
     );
   }
   lines.push(
-    ["total", "", "", "", "", num(report.totals.disposedBrl), num(report.totals.costBrl), num(report.totals.gainBrl), ""].join(
+    ["total", "", "", "", "", num(report.totals.disposedBrl), num(report.totals.costBrl), num(report.totals.gainBrl), "",
+      "",
+      "", "", ""].join(
       ",",
     ),
   );
+  if (report.status === "final") {
+    // O identificador do rodapé é o hash do conteúdo até total. A atestação da demo
+    // cobre o arquivo COMPLETO, incluindo esse rodapé, evitando hash autorreferente.
+    const verification = evidence?.verification ?? report.attestation?.hash;
+    if (!verification || !/^[a-f0-9]{64}$/i.test(verification)) {
+      throw new Error("Final CSV requires a 64-character hexadecimal verification code.");
+    }
+    lines.push(["verificacao", verification, ...Array<string>(11).fill("")].join(","));
+  }
   return lines.join("\n") + "\n";
 }
 

@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowSquareOutIcon, CheckCircleIcon, InfoIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
-import { isDemoSession, type TaxEvent } from "@/lib/api";
+import { api, isDemoSession, type TaxEvent } from "@/lib/api";
+import Link from "next/link";
+import { useApi } from "@/lib/use-api";
+import { eventCost, eventMonth } from "@/lib/event-cost";
 import { config } from "@/lib/config";
 import { formatBRL, formatDate, formatDateTime, formatPtax, formatQtyFull, formatUnitPriceBRL, shortAddress } from "@/lib/format";
 import { Button, Chip, cn, Kicker } from "@/components/ui";
@@ -24,8 +27,12 @@ export function EventDialog({
   onSetPrice: (e: TaxEvent) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const d = t.eventDialog;
+  const month = event ? eventMonth(event.date) : null;
+  const report = useApi(() => api.report(month!), [month, event?.id, locale],
+    !!event && (event.type === "swap" || event.type === "perp") && (event.costUnknown == null || event.costManual == null));
+  const cost = event ? eventCost(event, report.data?.rows.find((row) => row.id === event.id)) : { costUnknown: false, costManual: false };
 
   useEffect(() => {
     const dlg = ref.current;
@@ -82,6 +89,12 @@ export function EventDialog({
               )}
             </Field>
             <Field label={d.protocol}>{event.protocol || na}</Field>
+            {/* A3: "N fills" só quando o evento agrupou mais de uma execução; ausente/null não é zero. */}
+            {typeof event.fillCount === "number" && event.fillCount > 1 && (
+              <Field label={d.fills}>
+                <span className="font-mono text-[13px]">{t.common.fills(event.fillCount)}</span>
+              </Field>
+            )}
             <Field label={d.tx} last>
               {config.useMocks || isDemoSession() ? (
                 <span className="flex flex-col">
@@ -108,6 +121,22 @@ export function EventDialog({
                 {formatQtyFull(event.quantity)} {event.quantityAsset}
               </span>
             </Field>
+            {/*
+              A1: os dois lados da troca. quantityIn/quantityInAsset vêm null fora de swap e em rota
+              com mais de um ativo de entrada — nesse caso a linha simplesmente não aparece.
+            */}
+            {typeof event.quantityIn === "number" && !!event.quantityInAsset && (
+              <Field label={d.swapSides} wide>
+                <span className="font-mono text-[13px]">
+                  {d.swapSidesValue(
+                    formatQtyFull(event.quantityIn),
+                    event.quantityInAsset,
+                    formatQtyFull(Math.abs(event.quantity)),
+                    event.quantityAsset,
+                  )}
+                </span>
+              </Field>
+            )}
             <Field label={d.unitPrice}>
               <span className="font-mono text-[13px]">{unitPrice(event.unitPriceBrl)}</span>
             </Field>
@@ -128,6 +157,8 @@ export function EventDialog({
               </span>
             </Field>
           </Section>
+
+          <CostOrigin event={event} {...cost} />
 
           <Section title={d.price}>
             <Field label={d.source}>
@@ -166,7 +197,11 @@ export function EventDialog({
               {event.reviewHistory.map((review, index) => (
                 <Field key={`${review.createdAt}-${index}`} label={formatDateTime(review.createdAt)} last={index === event.reviewHistory!.length - 1}>
                   <span className="flex min-w-0 flex-col items-end gap-1 break-words">
-                    <span>{unitPrice(review.previousPriceBrl)} → {formatUnitPriceBRL(review.newPriceBrl)}</span>
+                    {review.kind === "cost" ? (
+                      <span>{d.reviewCost}: {review.previousCostBrl == null ? t.report.reviewPending : formatBRL(review.previousCostBrl)} → {brl(review.newCostBrl)}</span>
+                    ) : (
+                      <span>{d.unitPrice}: {review.previousPriceBrl == null ? t.report.reviewPending : unitPrice(review.previousPriceBrl)} → {formatUnitPriceBRL(review.newPriceBrl)}</span>
+                    )}
                     <span className="text-muted">{review.reason}</span>
                     <span className="text-muted">{review.evidence}</span>
                   </span>
@@ -175,26 +210,108 @@ export function EventDialog({
             </Section>
           )}
 
-          <Pending event={event} onSetPrice={onSetPrice} />
+          {report.loading && <p role="status" className="m-0 text-sm text-muted">{t.common.loading}</p>}
+          {report.error && <p role="alert" className="m-0 text-sm text-warn">{d.costContextUnavailable}</p>}
+          <Pending event={event} costUnknown={cost.costUnknown} contextPending={report.loading || !!report.error} onSetPrice={onSetPrice} />
         </div>
       )}
     </dialog>
   );
 }
 
-function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEvent) => void }) {
+/**
+ * A2 · origem do custo de aquisição: posição antes da venda, custo médio por unidade e a conta
+ * que leva ao custo total devolvido pelo back-end (costBrl). A tela só formata: nunca troca costBrl
+ * pelo produto calculado aqui, e a conta é apresentada como aproximação (arredondamentos em etapas).
+ *
+ * Indicadores vêm do evento ou, para back-ends anteriores, da linha do relatório pelo id.
+ * Custo médio zero nunca é lido como custo desconhecido.
+ */
+function CostOrigin({ event, costUnknown, costManual }: { event: TaxEvent; costUnknown: boolean; costManual: boolean }) {
+  const { t } = useI18n();
+  const d = t.eventDialog;
+  // Transferência não é venda e funding não tem custo médio: a origem do custo não se aplica.
+  if (event.type !== "swap" && event.type !== "perp") return null;
+
+  /*
+   * Custo médio por unidade com 4 casas a partir de R$ 1: formatUnitPriceBRL arredonda para centavos
+   * nessa faixa e a conta exibida passaria longe do custo total (393,81 × R$ 5,15 ≠ R$ 2.027,92).
+   * Abaixo de R$ 1 ele já guarda 4 algarismos significativos. Mesmo critério em rules-explanation.tsx.
+   */
+  const avgCost = (v: number) => (Math.abs(v) >= 1 ? t.common.brlAmount(formatPtax(v)) : formatUnitPriceBRL(v));
+  /*
+   * Conta só com os três números disponíveis (vêm null quando a venda tem mais de um ativo de saída)
+   * e com custo médio e custo total acima de zero. Zero aqui não é lido como custo desconhecido —
+   * essa dedução é proibida; a conta é apenas omitida, porque "× R$ 0,00 ≈ R$ 0,00" não explica nada
+   * e apresentaria um zero como se fosse custo conhecido. O aviso de custo desconhecido continua
+   * vindo do indicador (custo ausente) e das pendências que o motor reporta.
+   */
+  const account =
+    !costUnknown &&
+    typeof event.costBrl === "number" &&
+    event.costBrl > 0 &&
+    typeof event.positionBeforeQty === "number" &&
+    typeof event.avgCostUnitBrl === "number" &&
+    event.avgCostUnitBrl > 0
+      ? {
+          position: `${formatQtyFull(event.positionBeforeQty)} ${event.quantityAsset}`,
+          avgUnit: avgCost(event.avgCostUnitBrl),
+          line: d.costAccountValue({
+            quantity: formatQtyFull(Math.abs(event.quantity)),
+            unit: event.quantityAsset,
+            avgUnit: avgCost(event.avgCostUnitBrl),
+            total: formatBRL(event.costBrl),
+          }),
+        }
+      : null;
+  if (!account && !costUnknown && !costManual) return null;
+
+  return (
+    <section className="flex flex-col gap-2.5" aria-labelledby="event-cost-origin">
+      <Kicker as="h3">
+        <span id="event-cost-origin">{d.costOrigin}</span>
+      </Kicker>
+      {account && (
+        <>
+          <dl className="m-0 rounded-xl border border-line px-4">
+            <Field label={d.positionBefore} wide>
+              <span className="font-mono text-[13px]">{account.position}</span>
+            </Field>
+            <Field label={d.avgCostUnit} wide>
+              <span className="font-mono text-[13px]">{account.avgUnit}</span>
+            </Field>
+            <Field label={d.costAccount} wide last>
+              <span className="font-mono text-[13px]">{account.line}</span>
+            </Field>
+          </dl>
+          <p className="m-0 text-[13px] leading-relaxed text-muted">{d.costApproxNote}</p>
+        </>
+      )}
+      {/* Custo desconhecido entra no lugar da conta, nunca como um zero apresentado como custo conhecido. */}
+      {costUnknown && (
+        <p className="m-0 flex items-start gap-2 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn">
+          <WarningIcon size={18} className="mt-px shrink-0" aria-hidden />
+          {d.costUnknownNote}
+        </p>
+      )}
+      {costManual && <p className="m-0 text-[13px] leading-relaxed text-muted">{d.costManualNote}</p>}
+    </section>
+  );
+}
+
+function Pending({ event, costUnknown, contextPending, onSetPrice }: { event: TaxEvent; costUnknown: boolean; contextPending: boolean; onSetPrice: (e: TaxEvent) => void }) {
   const { t } = useI18n();
   const d = t.eventDialog;
   const missingPrice = event.valueBrl === null;
   // Custo só é pendência quando há preço (sem preço, a pendência principal já explica o ganho ausente).
-  const missingCost = !missingPrice && (event.costBrl === null || event.costBrl === undefined);
+  const missingCost = costUnknown;
 
   return (
     <section className="flex flex-col gap-2.5" aria-labelledby="event-pending">
       <Kicker as="h3">
         <span id="event-pending">{d.pending}</span>
       </Kicker>
-      {!missingPrice && !missingCost ? (
+      {!contextPending && !missingPrice && !missingCost && !event.pendingReasons?.length ? (
         <p className="m-0 flex items-start gap-2 text-sm text-muted">
           <CheckCircleIcon size={18} className="mt-px shrink-0 text-ok" aria-hidden />
           {event.priceSource === "manual" ? d.manualNote : d.pendingNone}
@@ -225,6 +342,11 @@ function Pending({ event, onSetPrice }: { event: TaxEvent; onSetPrice: (e: TaxEv
           {event.pendingReasons.map((reason) => <li key={reason}>{reason}</li>)}
         </ul>
       )}
+      {(contextPending || missingCost || !!event.pendingReasons?.length) && (
+        <Link href={`/relatorios/${eventMonth(event.date)}`} className="text-sm font-medium text-accent-text underline">
+          {d.reviewInReport}
+        </Link>
+      )}
     </section>
   );
 }
@@ -238,13 +360,23 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
+/**
+ * `wide`: rótulo e valor empilhados no celular, onde a coluna fixa de 140px deixaria frases como
+ * "Comprou 10 HYPE · pagou 393,81 USDC" em quatro linhas. A partir de sm volta às duas colunas.
+ */
+function Field({ label, children, last, wide }: { label: string; children: React.ReactNode; last?: boolean; wide?: boolean }) {
   return (
     <div
-      className={cn("grid grid-cols-[minmax(0,140px)_minmax(0,1fr)] items-baseline gap-4 py-2.5 text-sm", !last && "border-b border-line")}
+      className={cn(
+        "grid items-baseline py-2.5 text-sm",
+        wide
+          ? "grid-cols-1 gap-1 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:gap-4"
+          : "grid-cols-[minmax(0,140px)_minmax(0,1fr)] gap-4",
+        !last && "border-b border-line",
+      )}
     >
       <dt className="text-[13px] text-muted">{label}</dt>
-      <dd className="m-0 min-w-0 text-right">{children}</dd>
+      <dd className={cn("m-0 min-w-0", wide ? "text-left sm:text-right" : "text-right")}>{children}</dd>
     </div>
   );
 }
