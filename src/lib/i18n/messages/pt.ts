@@ -627,7 +627,11 @@ export const pt = {
       "data da PTAX",
       "transação",
       "link do explorer",
+      "direção",
+      "contraparte",
     ],
+    directionIn: "entrada",
+    directionOut: "saída",
     columns: [
       "data (Brasília)",
       "rede",
@@ -696,7 +700,8 @@ export const pt = {
       transfersTitle: "Transferências",
       transfersText: (n: number) =>
         `${n} ${n === 1 ? "transferência" : "transferências"} no mês, no arquivo de transferências. Transferência não é venda, mas define a base do custo: o que entra numa carteira pode ser vendido depois.`,
-      transfersPending: "A API ainda não informa a direção (entrada ou saída) nem a contraparte de cada transferência.",
+      transfersPending:
+        "A contraparte fica em branco quando a transação tem mais de um endereço do outro lado, ou quando a carteira ainda não foi sincronizada de novo.",
       noTransfers: "Nenhuma transferência neste mês.",
       missingEvidenceTitle: "Linhas sem evidência",
       missingEvidenceText: (n: number) =>

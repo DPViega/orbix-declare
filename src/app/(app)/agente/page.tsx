@@ -124,6 +124,11 @@ export default function AgentePage() {
               <div key={m.id} className="flex max-w-[700px] gap-3.5">
                 <AgentAvatar />
                 <div className="flex min-w-0 flex-col gap-3.5 text-[15px] leading-[1.65]">
+                  {m.source === "rules" && (
+                    <span className="self-start">
+                      <Badge tone="draft">{t.rules.badge}</Badge>
+                    </span>
+                  )}
                   {m.blocks?.map((b, i) => (
                     <Block key={i} block={b} />
                   ))}

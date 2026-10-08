@@ -107,8 +107,8 @@ function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg, { plain, money
   ].join(separator);
 }
 
-/** Transferência: entrada ou saída de cripto, sem venda. Direção e contraparte ainda não vêm da API (B9). */
-function transferRow(ev: TaxEvent, { plain, money, separator }: CsvFormat): string {
+/** Transferência: entrada ou saída de cripto, sem venda. A contraparte fica vazia quando a transação tem vários endereços do outro lado. */
+function transferRow(ev: TaxEvent, { plain, money, separator }: CsvFormat, m: Pkg): string {
   return [
     text(dateTimeBR(ev.date)),
     text(ev.network),
@@ -120,6 +120,8 @@ function transferRow(ev: TaxEvent, { plain, money, separator }: CsvFormat): stri
     text(ev.ptaxDate ?? ""),
     text(ev.txHash),
     text(ev.explorerUrl),
+    text(ev.direction === "in" ? m.directionIn : ev.direction === "out" ? m.directionOut : ""),
+    text(ev.counterparty ?? ""),
   ].join(separator);
 }
 
@@ -153,7 +155,7 @@ export function buildReviewPackage(
     report.rows.map((r) => csvRow(r, byId.get(r.id), m, format)),
   );
   const transferEvents = events.filter((e) => e.type === "transfer");
-  const transfers = transferEvents.length ? { name: transfersName, text: toCsv(m.transferColumns, transferEvents.map((ev) => transferRow(ev, format))) } : null;
+  const transfers = transferEvents.length ? { name: transfersName, text: toCsv(m.transferColumns, transferEvents.map((ev) => transferRow(ev, format, m))) } : null;
   // Linhas do relatório sem o evento correspondente: as colunas de origem saem em branco, então o leia-me avisa.
   const missing = report.rows.filter((row) => !byId.has(row.id));
 
