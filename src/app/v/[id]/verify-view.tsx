@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   ArrowSquareOutIcon,
@@ -38,7 +39,15 @@ function VerificationPage({ publicId }: { publicId: string }) {
     <div className="flex min-h-dvh flex-col bg-bg text-ink">
       <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-line px-5 sm:px-12 lg:px-24">
         <div className="flex items-baseline gap-4">
-          <Brand />
+          {/* Saída da página pública: o painel (sem sessão, o app manda para o login). */}
+          <Link
+            href="/painel"
+            aria-label={t.common.goToDashboard}
+            title={t.common.goToDashboard}
+            className="rounded-lg text-ink no-underline transition-opacity hover:opacity-80"
+          >
+            <Brand />
+          </Link>
           <Kicker as="span" className="hidden sm:inline">
             {t.verify.kicker}
           </Kicker>
