@@ -7,7 +7,7 @@ Nunca coloque aqui dados de testers ou de carteiras reais: endereço, saldo, tra
 | Caso | O que mostra | Resultado esperado |
 |---|---|---|
 | [`01-swap-stablecoin.json`](01-swap-stablecoin.json) | Venda de 12,4 SOL por USDC, preço automático (Birdeye), PTAX 5,4128 de 27/09 | valor R$ 11.284,00 · custo R$ 9.412,60 · ganho **R$ 1.871,40** |
-| [`02-perp-funding.json`](02-perp-funding.json) | Fechamento de 150 HYPE-PERP e funding de 18,42 USDC na Hyperliquid | perp: ganho **R$ 932,50** · funding: ganho **R$ 99,83** |
+| [`02-perp-funding.json`](02-perp-funding.json) | Fechamento de 150 HYPE-PERP e funding de 18,42 USDC na Hyperliquid | perp: ganho **R$ 932,50** · funding: ganho **R$ 99,64** |
 | [`03-custo-informado.json`](03-custo-informado.json) | Venda de 2.400 JUP sem custo no histórico; a pessoa informa o custo com motivo e evidência | antes: custo desconhecido (zero), ganho R$ 7.416,00 · depois: custo R$ 6.524,40, ganho **R$ 891,60** |
 
 Cada arquivo tem `input` (o evento como a API entrega e, no caso 3, a revisão enviada) e `expected` (os valores que a API deve devolver).
