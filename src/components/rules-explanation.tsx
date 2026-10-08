@@ -124,7 +124,30 @@ export function explain(e: TaxEvent, row: ReportRow | undefined, t: T): string {
   }
   const costManual = row?.costManual || e.reviewHistory?.some((x) => x.kind === "cost");
   const costUnknown = row?.costUnknown || e.costBrl === null || e.costBrl === undefined;
-  return r.text({
+  /*
+   * A2 · origem do custo: posição antes da venda e custo médio por unidade, com a conta que leva ao
+   * costBrl do back-end. Só com os três números disponíveis (vêm null quando a venda tem mais de um
+   * ativo de saída) e sem custo desconhecido — custo médio zero não deduz desconhecido, o indicador sim;
+   * com zero a conta é só omitida, para não apresentar "× R$ 0,00 ≈ R$ 0,00" como custo conhecido.
+   * A frase diz "cerca de": custo total e custo médio são arredondados em etapas diferentes.
+   */
+  const costOrigin =
+    !costUnknown &&
+    typeof e.costBrl === "number" &&
+    e.costBrl > 0 &&
+    typeof e.positionBeforeQty === "number" &&
+    typeof e.avgCostUnitBrl === "number" &&
+    e.avgCostUnitBrl > 0
+      ? r.costAccount({
+          quantity,
+          unit: e.quantityAsset,
+          // Mesmo critério de casas decimais do event-dialog.tsx, para a conta não desviar do custo total.
+          avgUnit: Math.abs(e.avgCostUnitBrl) >= 1 ? t.common.brlAmount(formatPtax(e.avgCostUnitBrl)) : formatUnitPriceBRL(e.avgCostUnitBrl),
+          total: formatBRL(e.costBrl),
+          positionBefore: formatQtyFull(e.positionBeforeQty),
+        })
+      : null;
+  const text = r.text({
     verb: r.verb[e.type],
     quantity,
     unit: e.quantityAsset,
@@ -140,4 +163,5 @@ export function explain(e: TaxEvent, row: ReportRow | undefined, t: T): string {
     gain: brl(e.gainBrl),
     rule: or(e.ruleVersion),
   });
+  return costOrigin ? `${text} ${costOrigin}` : text;
 }

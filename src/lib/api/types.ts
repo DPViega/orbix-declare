@@ -176,17 +176,28 @@ export interface TaxEvent {
   ruleVersion?: string | null;
   /** Taxas totais do evento em reais. */
   feesBrl?: number | null;
-  /** Quantos fills da corretora formam o evento (uma ordem pode executar em vários). */
-  fillCount?: number;
-  /** O outro lado da troca: o que entrou na carteira (null fora de swap). */
-  quantityIn?: number | null;
-  quantityInAsset?: string | null;
-  /** Origem do custo: posição do ativo antes da venda e custo médio por unidade usado. */
-  positionBeforeQty?: number | null;
-  avgCostUnitBrl?: number | null;
   /** Custo de aquisição e ganho de capital do evento, em R$. */
   costBrl?: number | null;
   gainBrl?: number | null;
+  /**
+   * Origem dos números (opcionais: o back-end pode omitir ou mandar null).
+   * quantityIn/quantityInAsset são null fora de swap ou em rota com mais de um ativo de entrada:
+   * não mostrar a linha dos dois lados quando ausentes ou null.
+   * positionBeforeQty/avgCostUnitBrl são null quando a venda tem mais de um ativo de saída:
+   * não mostrar a conta do custo quando ausentes ou null.
+   * Com costUnknown = true, o custo médio é ZERO: mostrar aviso de custo desconhecido em vez da conta.
+   * Com costManual = true, informar que o custo foi informado pelo usuário.
+   */
+  /** Quantidade que entrou no swap. */
+  quantityIn?: number | null;
+  /** Símbolo do ativo que entrou no swap. */
+  quantityInAsset?: string | null;
+  /** Posição antes da venda, em quantidade do ativo. */
+  positionBeforeQty?: number | null;
+  /** Custo médio por unidade usado, em R$. */
+  avgCostUnitBrl?: number | null;
+  /** Quantos fills compuseram o evento. */
+  fillCount?: number | null;
   /** Motivos reportados pelo motor para manter o evento pendente. */
   pendingReasons?: string[];
   /** Revisões auditáveis persistidas pelo back-end. */

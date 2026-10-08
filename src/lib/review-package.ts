@@ -1,5 +1,6 @@
 import type { ReportDetail, ReportRow, TaxEvent } from "@/lib/api/types";
 import type { Messages } from "@/lib/i18n/messages/pt";
+import { getLocale } from "@/lib/i18n/locale";
 
 /**
  * Pacote para revisão profissional: CSV detalhado + leia-me em Markdown, gerados no navegador
@@ -26,6 +27,18 @@ function plain(v: number | null | undefined, digits: number): string {
   return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 }
 const money = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? "" : v.toFixed(2));
+
+/** Captura o idioma uma vez para cabeçalhos, linhas e transferências usarem o mesmo formato. */
+function csvFormat() {
+  const pt = getLocale() === "pt";
+  const decimal = (s: string) => (pt ? s.replace(".", ",") : s);
+  return {
+    separator: pt ? ";" : ",",
+    plain: (v: number | null | undefined, digits: number) => decimal(plain(v, digits)),
+    money: (v: number | null | undefined) => decimal(money(v)),
+  };
+}
+type CsvFormat = ReturnType<typeof csvFormat>;
 
 /** "2026-09-28 14:59" no horário de Brasília. */
 function dateTimeBR(iso: string): string {
@@ -55,9 +68,12 @@ function text(v: string | null | undefined): string {
   return /[",;\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg): string {
+function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg, { plain, money, separator }: CsvFormat): string {
   const yesNo = (b: boolean | undefined) => (b ? m.yes : m.no);
   const source = ev?.priceSource === "manual" || row.manualPrice ? m.manualSource : (ev?.priceProvider ?? "");
+  // Múltiplos ativos de saída são sinalizados pelo contrato com origem null.
+  const knownCost = !row.costUnknown && (ev?.type === "swap" || ev?.type === "perp")
+    && ev.positionBeforeQty != null && ev.avgCostUnitBrl != null;
   return [
     text(dateTimeBR(row.date)),
     text(ev?.network ?? ""),
@@ -81,17 +97,16 @@ function csvRow(row: ReportRow, ev: TaxEvent | undefined, m: Pkg): string {
     text(ev?.txHash ?? ""),
     text(ev?.explorerUrl ?? ""),
     text(ev?.ruleVersion ?? ""),
-    // Os dois lados da troca e a origem do custo (colunas novas, sempre no fim).
-    plain(ev?.quantityIn, 12),
-    text(ev?.quantityInAsset ?? ""),
-    plain(ev?.avgCostUnitBrl, 10),
-    plain(ev?.positionBeforeQty, 12),
-    ev?.fillCount ? String(ev.fillCount) : "",
-  ].join(",");
+    plain(ev?.type === "swap" ? ev.quantityIn : null, 12),
+    text(ev?.type === "swap" ? ev.quantityInAsset : null),
+    plain(knownCost ? ev?.positionBeforeQty : null, 12),
+    plain(knownCost ? ev?.avgCostUnitBrl : null, 10),
+    ev?.fillCount == null || !Number.isFinite(ev.fillCount) ? "" : String(Math.round(ev.fillCount)),
+  ].join(separator);
 }
 
 /** Transferência: entrada ou saída de cripto, sem venda. Direção e contraparte ainda não vêm da API (B9). */
-function transferRow(ev: TaxEvent): string {
+function transferRow(ev: TaxEvent, { plain, money, separator }: CsvFormat): string {
   return [
     text(dateTimeBR(ev.date)),
     text(ev.network),
@@ -103,7 +118,7 @@ function transferRow(ev: TaxEvent): string {
     text(ev.ptaxDate ?? ""),
     text(ev.txHash),
     text(ev.explorerUrl),
-  ].join(",");
+  ].join(separator);
 }
 
 const bullets = (items: string[], empty: string) => (items.length ? items.map((x) => `- ${x}`) : [`- ${empty}`]);
@@ -121,6 +136,7 @@ export function buildReviewPackage(
     now?: Date;
   },
 ): ReviewPackage {
+  const format = csvFormat();
   const byId = new Map(events.map((e) => [e.id, e]));
   const draft = report.status !== "final";
   const base = m.fileBase(report.month, draft);
@@ -129,13 +145,13 @@ export function buildReviewPackage(
   const transfersName = `${base}-${m.transfersSuffix}.csv`;
 
   // BOM: o Excel abre os acentos corretamente.
-  const toCsv = (header: string[], rows: string[]) => "\uFEFF" + [header.map(text).join(","), ...rows].join("\n") + "\n";
+  const toCsv = (header: string[], rows: string[]) => "\uFEFF" + [header.map(text).join(format.separator), ...rows].join("\n") + "\n";
   const csv = toCsv(
     m.columns,
-    report.rows.map((r) => csvRow(r, byId.get(r.id), m)),
+    report.rows.map((r) => csvRow(r, byId.get(r.id), m, format)),
   );
   const transferEvents = events.filter((e) => e.type === "transfer");
-  const transfers = transferEvents.length ? { name: transfersName, text: toCsv(m.transferColumns, transferEvents.map(transferRow)) } : null;
+  const transfers = transferEvents.length ? { name: transfersName, text: toCsv(m.transferColumns, transferEvents.map((ev) => transferRow(ev, format))) } : null;
   // Linhas do relatório sem o evento correspondente: as colunas de origem saem em branco, então o leia-me avisa.
   const missing = report.rows.filter((row) => !byId.has(row.id));
 
