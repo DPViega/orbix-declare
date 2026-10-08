@@ -559,8 +559,8 @@ function RowsTable({ report }: { report: ReportDetail }) {
     { label: c.date, width: "76px" },
     { label: c.type, width: "76px" },
     { label: c.asset },
-    { label: c.qty, width: "156px", align: "right" as const },
-    { label: c.ptax, width: "94px", align: "right" as const },
+    { label: c.qty, width: "128px", align: "right" as const },
+    { label: c.ptax, width: "78px", align: "right" as const },
     { label: c.value, width: "100px", align: "right" as const },
     { label: c.cost, width: "100px", align: "right" as const },
     { label: c.gain, width: "96px", align: "right" as const },
@@ -570,7 +570,8 @@ function RowsTable({ report }: { report: ReportDetail }) {
     <Table
       dense
       caption={t.report.rowsCaption(monthLong(report.month))}
-      minWidth={960}
+      // F13: cabe na coluna ao lado do cartão de verificação (1192 − 340 − 20 = 832 px) sem rolagem lateral.
+      minWidth={820}
       columns={cols}
       footer={
         <tr className="bg-card font-medium">
@@ -597,7 +598,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
             {r.asset}
             {r.manualPrice && (
               <span
-                className="ml-2 rounded-md border border-dashed border-line2 px-1.5 py-px font-mono text-[10.5px] text-muted"
+                className="ml-2 inline-block whitespace-nowrap rounded-md border border-dashed border-line2 px-1.5 py-px font-mono text-[10.5px] text-muted"
                 title={t.common.manualTitle}
               >
                 {t.common.manual}
@@ -605,7 +606,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
             )}
             {r.costManual && (
               <span
-                className="ml-2 rounded-md border border-dashed border-line2 px-1.5 py-px font-mono text-[10.5px] text-muted"
+                className="ml-2 inline-block whitespace-nowrap rounded-md border border-dashed border-line2 px-1.5 py-px font-mono text-[10.5px] text-muted"
                 title={t.report.costManualTitle}
               >
                 {t.report.costManualBadge}
@@ -613,7 +614,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
             )}
             {r.costUnknown && (
               <span
-                className="ml-2 rounded-md border border-dashed border-warn px-1.5 py-px font-mono text-[10.5px] text-warn"
+                className="ml-2 inline-block whitespace-nowrap rounded-md border border-dashed border-warn px-1.5 py-px font-mono text-[10.5px] text-warn"
                 title={t.report.costUnknownTitle}
               >
                 {t.report.costUnknownBadge}
