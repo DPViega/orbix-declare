@@ -4,7 +4,7 @@ import { OrbixSignature } from "@/components/orbix-signature";
 
 import { LoginPlanet } from "@/components/login-planet";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import type { Wallet as AdapterWallet } from "@solana/wallet-adapter-react";
 import {
@@ -39,6 +39,28 @@ const INSTALL_LINKS = [
   { name: "Phantom", href: "https://phantom.app/download" },
   { name: "Solflare", href: "https://solflare.com/download" },
 ];
+
+/*
+ * Celular: Safari, Brave e Chrome não recebem a carteira injetada (não há extensão), e o link de
+ * download só abre o app na tela inicial. Os links "browse" abrem esta mesma página dentro do
+ * navegador do app, onde a carteira existe e a assinatura funciona (o domínio continua o nosso).
+ */
+const IN_APP_LINKS = [
+  { name: "Phantom", href: (url: string, ref: string) => `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}` },
+  { name: "Solflare", href: (url: string, ref: string) => `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}` },
+];
+
+const noSubscribe = () => () => {};
+
+/** Nome do adapter que o WalletProvider injeta no Android (@solana-mobile/wallet-adapter-mobile). */
+const MWA_NAME = "Mobile Wallet Adapter";
+
+function isMobileBrowser() {
+  if (typeof navigator === "undefined") return false;
+  // iPadOS se apresenta como Mac; o toque denuncia.
+  const ipad = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return ipad || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
 
 type AuthMode = "idle" | "code";
 
@@ -166,7 +188,10 @@ export function LoginView() {
     }
   };
 
-  const noWallet = detected && wallets.length === 0;
+  // No Android, o WalletProvider acrescenta sozinho o "Mobile Wallet Adapter" (Loadable) mesmo sem
+  // carteira no navegador. Ele não conta como carteira detectada: o card com "Abrir na Phantom/
+  // Solflare" aparece junto com o botão dele.
+  const noWallet = detected && wallets.every((w) => w.adapter.name === MWA_NAME);
   const anyBusy = busy || demoBusy || emailBusy || codeBusy || oauthBusy !== null;
   // Enquanto providers ainda não chegou, mostra tudo (evita esconder botão à toa); depois, respeita o servidor.
   const showWallet = providers?.wallet !== false;
@@ -251,8 +276,6 @@ export function LoginView() {
                 <Button size="lg" loading disabled className="w-full">
                   {t.login.searching}
                 </Button>
-              ) : noWallet ? (
-                <NoWalletCard />
               ) : (
                 wallets.map((w) => {
                   const isActive = active === w.adapter.name;
@@ -283,6 +306,7 @@ export function LoginView() {
                   );
                 })
               )}
+              {detected && noWallet && <NoWalletCard />}
             </div>
           )}
 
@@ -454,6 +478,33 @@ export function LoginView() {
 /** Estado "sem extensão": card discreto com ícone pequeno e as ações ao lado. */
 function NoWalletCard() {
   const { t } = useI18n();
+  // No servidor é sempre "não"; no navegador, lê o user agent (não muda durante a visita).
+  const mobile = useSyncExternalStore(noSubscribe, isMobileBrowser, () => false);
+  if (mobile) {
+    return (
+      <div role="status" className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-4">
+        <div className="flex flex-col gap-1">
+          <p className="m-0 text-sm font-medium">{t.login.mobileWalletTitle}</p>
+          <p className="m-0 text-[13px] leading-normal text-muted">{t.login.mobileWalletText}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {IN_APP_LINKS.map((l) => (
+            <button
+              key={l.name}
+              type="button"
+              onClick={() => {
+                window.location.href = l.href(window.location.href, window.location.origin);
+              }}
+              className="cursor-pointer inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[15px] font-medium text-on-accent no-underline transition-colors hover:bg-accent-hover"
+            >
+              {t.login.openInApp(l.name)}
+              <ArrowSquareOutIcon size={15} aria-hidden />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div role="status" className="flex gap-3.5 rounded-xl border border-line bg-panel p-4">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-card text-accent-text">

@@ -101,6 +101,10 @@ export const pt = {
     noWalletTitle: "Nenhuma carteira Solana neste navegador",
     noWalletText: "Instale a Phantom ou a Solflare e recarregue a página para entrar.",
     reload: "Recarregar",
+    mobileWalletTitle: "Entre pelo app da carteira",
+    mobileWalletText:
+      "No celular, o navegador não enxerga o app da carteira. Abra esta página dentro do app (Phantom ou Solflare) e assine por lá.",
+    openInApp: (name: string) => `Abrir na ${name}`,
     checkingProviders: "Verificando formas de login disponíveis…",
     emailLabel: "E-mail",
     emailPlaceholder: "voce@exemplo.com",
