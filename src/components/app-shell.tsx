@@ -157,7 +157,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       "/configuracoes": t.meta.settings,
     };
     const key = Object.keys(titles).find((route) => pathname === route || pathname.startsWith(`${route}/`));
-    if (key) document.title = `${titles[key]} · Orbix Declare`;
+    if (!key) return;
+    const want = `${titles[key]} · Orbix Declare`;
+    const apply = () => {
+      if (document.title !== want) document.title = want;
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [pathname, t]);
 
   // Gaveta do celular: foco entra ao abrir, Tab fica preso nela, Escape fecha e o foco volta ao botão do menu.
