@@ -201,20 +201,6 @@ export default function AgentePage() {
 
           {rules && <RulesExplanation month={context?.month} reason={rules} onClose={() => setRules(null)} />}
 
-          {!pending && month && !exhausted && chips.length > 0 && (
-            <div className="flex flex-wrap gap-2 sm:pl-12">
-              {chips.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => send(s)}
-                  className="cursor-pointer rounded-xl bg-card px-3 py-2 text-left text-[13px] text-chip-text transition-[filter] hover:brightness-95"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         <form
@@ -231,6 +217,20 @@ export default function AgentePage() {
             <button type="button" className="min-h-11 self-start text-sm text-accent-text" onClick={() => setRules("quota")}>
               {t.rules.show}
             </button>
+          )}
+          {!pending && month && !exhausted && chips.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {chips.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => send(s)}
+                  className="cursor-pointer rounded-xl bg-card px-3 py-2 text-left text-[13px] text-chip-text transition-[filter] hover:brightness-95"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           )}
           <div className="flex h-[54px] items-center gap-2.5 rounded-xl border border-line2 bg-panel pr-2 pl-[18px] transition-colors focus-within:border-accent">
             <label htmlFor="agent-input" className="sr-only">
