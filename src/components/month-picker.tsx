@@ -7,7 +7,17 @@ import { cn } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 
 /** Botão "Setembro 2026 ▾" do painel, com lista de meses disponíveis. */
-export function MonthPicker({ value, months, onChange }: { value: string; months: string[]; onChange: (m: string) => void }) {
+export function MonthPicker({
+  value,
+  months,
+  onChange,
+  disabled = false,
+}: {
+  value: string;
+  months: string[];
+  onChange: (m: string) => void;
+  disabled?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
@@ -46,16 +56,17 @@ export function MonthPicker({ value, months, onChange }: { value: string; months
       <button
         ref={trigger}
         type="button"
+        disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-line2 bg-transparent px-4 text-[15px] text-ink transition-colors hover:border-soft/60"
+        className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-line2 bg-transparent px-4 text-[15px] text-ink transition-colors hover:border-soft/60 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <CalendarBlankIcon size={18} aria-hidden />
         {monthLabel(value)}
         <CaretDownIcon size={14} aria-hidden className={cn("transition-transform", open && "rotate-180")} />
       </button>
-      {open && (
+      {open && !disabled && (
         <ul
           ref={list}
           role="listbox"

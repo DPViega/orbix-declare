@@ -398,6 +398,8 @@ export const en: Messages = {
   agent: {
     title: "AI agent",
     context: (month) => `Context: ${month}`,
+    focusMonth: "Focus month",
+    noReports: "No reports are available to choose a context month.",
     starters: ["Why did I have this gain in March?", "How was the average cost calculated?", "Did this gain trigger tax?"],
     intro:
       "Ask about any report. I'll explain where each number comes from: the PTAX rate used, the average cost and the source transaction on the blockchain.",

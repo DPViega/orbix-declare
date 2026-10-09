@@ -403,6 +403,8 @@ export const pt = {
   agent: {
     title: "Agente IA",
     context: (month: string) => `Contexto: ${month}`,
+    focusMonth: "Mês em foco",
+    noReports: "Nenhum relatório disponível para escolher um mês de contexto.",
     starters: ["Por que tive esse ganho em março?", "Como foi calculado o custo médio?", "Esse ganho gerou imposto?"],
     intro:
       "Pergunte sobre qualquer relatório. Eu explico de onde vem cada número: a cotação PTAX usada, o custo médio e a transação de origem na blockchain.",
