@@ -1,6 +1,7 @@
 "use client";
 
 import { OrbixSignature } from "@/components/orbix-signature";
+import { LumeIcon } from "@/components/lume-icon";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,7 +11,6 @@ import {
   GearSixIcon,
   ListIcon,
   SignOutIcon,
-  SparkleIcon,
   SquaresFourIcon,
   WalletIcon,
   XIcon,
@@ -27,11 +27,12 @@ import { useI18n, type Messages } from "@/lib/i18n";
 /** Rotas que ocupam a área inteira, sem o padding padrão (ex.: chat do agente). */
 const FULL_BLEED = ["/agente"];
 
-const NAV: { href: string; key: keyof Messages["nav"]; icon: Icon }[] = [
+type NavigationIcon = Icon | typeof LumeIcon;
+const NAV: { href: string; key: keyof Messages["nav"]; icon: NavigationIcon }[] = [
   { href: "/painel", key: "dashboard", icon: SquaresFourIcon },
   { href: "/carteiras", key: "wallets", icon: WalletIcon },
   { href: "/relatorios", key: "reports", icon: FileTextIcon },
-  { href: "/agente", key: "agent", icon: SparkleIcon },
+  { href: "/agente", key: "agent", icon: LumeIcon },
 ];
 
 function NavItem({
@@ -43,7 +44,7 @@ function NavItem({
 }: {
   href: string;
   label: string;
-  icon: Icon;
+  icon: NavigationIcon;
   active: boolean;
   onNavigate?: () => void;
 }) {
