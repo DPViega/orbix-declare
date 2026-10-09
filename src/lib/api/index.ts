@@ -79,7 +79,7 @@ const httpApi = {
   generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Verificação pública (sem login)
-  verifyPublic: (publicId: string) => http<PublicVerification>("GET", `/api/verify/${enc(publicId)}`),
+  verifyPublic: (publicId: string) => http<PublicVerification>("GET", `/api/verify/${enc(publicId)}`, undefined, { auth: false }),
 
   // Agente IA (o back-end chama o Claude; a chave nunca fica no front)
   agent: (req: AgentRequest) => http<AgentReply>("POST", "/api/agent", req, { timeoutMs: SLOW_TIMEOUT_MS }),
@@ -99,7 +99,8 @@ export type Api = typeof httpApi;
 const impl = (): Api => (config.useMocks || isDemoSession() ? mockApi : httpApi);
 
 export const api: Api = new Proxy({} as Api, {
-  get: (_target, prop: keyof Api) => impl()[prop],
+  get: (_target, prop: keyof Api) =>
+    prop === "verifyPublic" ? (config.useMocks ? mockApi.verifyPublic : httpApi.verifyPublic) : impl()[prop],
 }) as Api;
 
 /** Login de demonstração (sempre via mockApi, mesmo com a API real configurada). */

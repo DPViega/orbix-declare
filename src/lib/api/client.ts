@@ -52,6 +52,7 @@ export const SLOW_TIMEOUT_MS = 90_000;
 interface HttpInit {
   signal?: AbortSignal;
   timeoutMs?: number;
+  auth?: boolean;
 }
 
 export async function http<T>(method: Method, path: string, body?: unknown, init?: HttpInit): Promise<T> {
@@ -68,7 +69,8 @@ export async function http<T>(method: Method, path: string, body?: unknown, init
   else callerSignal?.addEventListener("abort", onCallerAbort, { once: true });
 
   try {
-    return await send<T>(method, path, body, timeout.signal, callerSignal, t);
+    const token = init?.auth === false ? null : authToken;
+    return await send<T>(method, path, body, timeout.signal, callerSignal, t, token);
   } finally {
     clearTimeout(timer);
     callerSignal?.removeEventListener("abort", onCallerAbort);
@@ -82,6 +84,7 @@ async function send<T>(
   signal: AbortSignal,
   callerSignal: AbortSignal | undefined,
   t: ReturnType<typeof messagesFor>["api"],
+  token: string | null,
 ): Promise<T> {
   let res: Response;
   try {
@@ -91,7 +94,7 @@ async function send<T>(
         Accept: "application/json",
         "Accept-Language": intlLocale(getLocale()),
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal,
@@ -110,7 +113,7 @@ async function send<T>(
   if (signal.aborted && !callerSignal?.aborted) throw new ApiError(t.timeout, 0, "timeout");
 
   // 401 com sessão ativa = sessão expirou. Sem sessão (ex.: assinatura recusada no login), usa a mensagem do back-end.
-  if (res.status === 401 && authToken) {
+  if (res.status === 401 && token) {
     onUnauthorized?.();
     throw new ApiError(t.sessionExpired, 401, "unauthorized");
   }

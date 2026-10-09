@@ -103,7 +103,7 @@ function Result({ data, match }: { data: PublicVerification; match: boolean | nu
   const verified = data.valid && match === true;
   return (
     <div className="flex min-w-0 flex-col gap-8">
-      <DemoNotice text={t.demo.verify} />
+      {config.useMocks && <DemoNotice text={t.demo.verify} />}
       <div className="flex flex-col gap-[18px]">
         <StateIcon icon={failed ? SealWarningIcon : verified ? SealCheckIcon : MagnifyingGlassIcon} tone={failed ? "danger" : demo ? "warn" : verified ? "ok" : "accent"} size={60} />
         <h1 aria-live="polite" className={cn("type-h1 m-0 max-w-[760px] text-pretty", failed && "text-danger", verified && !demo && "text-ok")}>

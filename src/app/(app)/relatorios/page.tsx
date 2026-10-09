@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRightIcon, CalendarCheckIcon, FileTextIcon, PencilSimpleIcon, SealCheckIcon } from "@phosphor-icons/react";
-import { api } from "@/lib/api";
+import { api, type ReportSummary } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { formatBRL, formatDate, monthLabel, monthName, parseMonthKey } from "@/lib/format";
 import { Badge, Card, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
@@ -24,6 +24,16 @@ export default function RelatoriosPage() {
   const { data, error, loading, reload } = useApi(() => api.reports(), []);
   const years = data ? [...new Set(data.map((r) => r.month.slice(0, 4)))].join(", ") : "";
   const draft = data?.find((r) => r.status === "draft");
+  const statusBadge = (status: ReportSummary["status"]) =>
+    status === "final" ? (
+      <Badge tone="ok" icon={SealCheckIcon}>
+        {t.common.final}
+      </Badge>
+    ) : (
+      <Badge tone="draft" icon={PencilSimpleIcon}>
+        {t.common.draft}
+      </Badge>
+    );
 
   return (
     <>
@@ -49,7 +59,41 @@ export default function RelatoriosPage() {
           {t.reports.emptyText}
         </StateBlock>
       ) : (
-        <Panel className="overflow-hidden">
+        <Panel className="overflow-hidden sm:hidden">
+          <ul className="m-0 list-none divide-y divide-line p-0">
+            {loading && !data
+              ? [0, 1, 2, 3].map((i) => (
+                  <li key={i} className="p-4">
+                    <Skeleton className="h-12" />
+                  </li>
+                ))
+              : data!.map((r) => (
+                  <li key={r.month}>
+                    <Link
+                      href={`/relatorios/${r.month}`}
+                      className="flex min-h-[76px] flex-col justify-center gap-2 px-4 py-3.5 no-underline transition-colors hover:bg-card/40"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="min-w-0 break-words font-display text-base font-medium text-ink">
+                          {monthLabel(r.month)}
+                        </span>
+                        {statusBadge(r.status)}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-[13px]">
+                        <span className="min-w-0 truncate text-muted">
+                          {r.events} {t.reports.cols.events}
+                        </span>
+                        <span className="shrink-0 font-mono">{formatBRL(r.totalBrl)}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+          </ul>
+        </Panel>
+      )}
+
+      {!(error && !data) && !(data && data.length === 0) && (
+        <Panel className="hidden overflow-hidden sm:block">
           <Table
             caption={t.reports.tableCaption}
             minWidth={820}
@@ -80,17 +124,7 @@ export default function RelatoriosPage() {
                         {monthLabel(r.month)}
                       </Link>
                     </Td>
-                    <Td>
-                      {r.status === "final" ? (
-                        <Badge tone="ok" icon={SealCheckIcon}>
-                          {t.common.final}
-                        </Badge>
-                      ) : (
-                        <Badge tone="draft" icon={PencilSimpleIcon}>
-                          {t.common.draft}
-                        </Badge>
-                      )}
-                    </Td>
+                    <Td>{statusBadge(r.status)}</Td>
                     <Td align="right" className="font-mono text-[13px] text-muted">
                       {r.events}
                     </Td>
