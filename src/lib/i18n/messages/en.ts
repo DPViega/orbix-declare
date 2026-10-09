@@ -100,6 +100,10 @@ export const en: Messages = {
     noWalletTitle: "No Solana wallet in this browser",
     noWalletText: "Install Phantom or Solflare and reload the page to sign in.",
     reload: "Reload",
+    mobileWalletTitle: "Sign in from your wallet app",
+    mobileWalletText:
+      "On a phone, the browser can't see your wallet app. Open this page inside the app (Phantom or Solflare) and sign there.",
+    openInApp: (name) => `Open in ${name}`,
     checkingProviders: "Checking available sign-in methods…",
     emailLabel: "Email",
     emailPlaceholder: "you@example.com",
