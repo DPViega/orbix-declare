@@ -148,6 +148,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (status === "anonymous") router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
   }, [status, router, pathname]);
 
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      "/painel": t.meta.dashboard,
+      "/carteiras": t.meta.wallets,
+      "/relatorios": t.meta.reports,
+      "/agente": t.meta.agent,
+      "/configuracoes": t.meta.settings,
+    };
+    const key = Object.keys(titles).find((route) => pathname === route || pathname.startsWith(`${route}/`));
+    if (key) document.title = `${titles[key]} · Orbix Declare`;
+  }, [pathname, t]);
+
   // Gaveta do celular: foco entra ao abrir, Tab fica preso nela, Escape fecha e o foco volta ao botão do menu.
   useEffect(() => {
     if (!open) return;
