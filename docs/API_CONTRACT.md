@@ -224,6 +224,8 @@ Esta rota **não** exige token e **não** pode expor dados pessoais.
 ### `POST /api/agent` → `AgentReply`
 Request: `{ "message": "Por que tive esse ganho em março?", "month": "2026-03", "conversationId": "conv_1" }`. `month` e `conversationId` são opcionais.
 
+Quando `month` for enviado, use esse mês como fonte de verdade para a resposta, o `context` e as sugestões; não use dados nem sugira perguntas sobre outro mês. Se omitido, o back-end pode inferir o mês a partir da conversa.
+
 O back-end chama o Claude com `ANTHROPIC_API_KEY`. A chave **nunca** vem para o front.
 A resposta é **estruturada em blocos** para que o front mostre os cálculos e as fontes, como no mockup:
 ```json

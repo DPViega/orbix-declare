@@ -404,7 +404,11 @@ export const en: Messages = {
     context: (month) => `Context: ${month}`,
     focusMonth: "Focus month",
     noReports: "No reports are available to choose a context month.",
-    starters: ["Why did I have this gain in March?", "How was the average cost calculated?", "Did this gain trigger tax?"],
+    starters: (month) => [
+      `Why did I have this gain in ${month}?`,
+      `How was the average cost calculated in ${month}?`,
+      `Did this gain trigger tax in ${month}?`,
+    ],
     intro:
       "I'm Lume, your agent in Orbix Declare. Ask about any report. I'll explain where each number comes from: the PTAX rate used, the average cost and the source transaction on the blockchain.",
     thinking: "Calculating",

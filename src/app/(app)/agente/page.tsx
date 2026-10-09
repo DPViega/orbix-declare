@@ -8,7 +8,7 @@ import { RulesExplanation, type RulesReason } from "@/components/rules-explanati
 import { config } from "@/lib/config";
 import { DemoNotice } from "@/components/demo-notice";
 import { useSession } from "@/lib/session";
-import { formatBRL, formatDate, formatInt, formatTime, monthLabel } from "@/lib/format";
+import { formatBRL, formatDate, formatInt, formatTime, monthLabel, monthLong } from "@/lib/format";
 import { Badge, Card, cn, InlineError, KeyValue, Kicker } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useApi } from "@/lib/use-api";
@@ -35,7 +35,7 @@ export default function AgentePage() {
   const month = picked ?? context?.month ?? months[0] ?? null;
   // null = ainda sem resposta do agente: mostra as perguntas iniciais no idioma atual.
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
-  const chips = suggestions ?? t.agent.starters;
+  const chips = suggestions ?? (month ? t.agent.starters(monthLong(month)) : []);
   const [conversationId, setConversationId] = useState<string>();
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);

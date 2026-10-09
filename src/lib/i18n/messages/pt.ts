@@ -409,7 +409,11 @@ export const pt = {
     context: (month: string) => `Contexto: ${month}`,
     focusMonth: "Mês em foco",
     noReports: "Nenhum relatório disponível para escolher um mês de contexto.",
-    starters: ["Por que tive esse ganho em março?", "Como foi calculado o custo médio?", "Esse ganho gerou imposto?"],
+    starters: (month: string) => [
+      `Por que tive esse ganho em ${month}?`,
+      `Como foi calculado o custo médio em ${month}?`,
+      `Esse ganho em ${month} gerou imposto?`,
+    ],
     intro:
       "Sou o Lume, seu agente no Orbix Declare. Pergunte sobre qualquer relatório. Eu explico de onde vem cada número: a cotação PTAX usada, o custo médio e a transação de origem na blockchain.",
     thinking: "Calculando",
