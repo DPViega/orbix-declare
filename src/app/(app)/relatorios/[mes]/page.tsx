@@ -316,7 +316,7 @@ function MonthReport({ mes }: { mes: string }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <Panel className="overflow-hidden">
           {loading && !data ? (
             <div className="flex flex-col gap-3 p-6">
@@ -570,7 +570,7 @@ function RowsTable({ report }: { report: ReportDetail }) {
     <Table
       dense
       caption={t.report.rowsCaption(monthLong(report.month))}
-      // F13: cabe na coluna ao lado do cartão de verificação (1192 − 340 − 20 = 832 px) sem rolagem lateral.
+      // F13/F24: lado a lado só a partir de 2xl (1536 px): 1536 − 248 − 96 − 340 − 20 = 832 px ≥ 820.
       minWidth={820}
       columns={cols}
       footer={
