@@ -1,20 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon, SparkleIcon } from "@phosphor-icons/react";
 import { api, ApiError, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
 import { RulesExplanation, type RulesReason } from "@/components/rules-explanation";
 import { config } from "@/lib/config";
 import { DemoNotice } from "@/components/demo-notice";
 import { useSession } from "@/lib/session";
-import { formatBRL, formatDate, formatInt, formatTime, monthLabel, monthSlash } from "@/lib/format";
+import { formatBRL, formatDate, formatInt, formatTime, monthLabel } from "@/lib/format";
 import { Badge, Card, cn, InlineError, KeyValue, Kicker } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
+import { useApi } from "@/lib/use-api";
+import { MonthPicker } from "@/components/month-picker";
 
 export default function AgentePage() {
   const { user, setUser } = useSession();
   const { t } = useI18n();
   const copy = t.agent;
+  const reports = useApi(() => api.reports(), []);
+  const months = useMemo(() => {
+    const available = (reports.data ?? []).map((report) => report.month).sort((a, b) => b.localeCompare(a));
+    // O agente simulado só tem respostas consistentes para março de 2026.
+    return config.useMocks || isDemoSession() ? available.filter((month) => month === "2026-03") : available;
+  }, [reports.data]);
   // Explicação por regras: aparece quando a IA está indisponível (503) ou a cota acabou (429).
   const [rules, setRules] = useState<RulesReason | null>(null);
   const exhausted = user !== null && user.agentQuestionsLeft <= 0;
@@ -22,6 +30,8 @@ export default function AgentePage() {
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [context, setContext] = useState<AgentContext | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const month = picked ?? context?.month ?? months[0] ?? null;
   // null = ainda sem resposta do agente: mostra as perguntas iniciais no idioma atual.
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const chips = suggestions ?? t.agent.starters;
@@ -41,7 +51,7 @@ export default function AgentePage() {
 
   const send = async (text: string, retry = false) => {
     const message = text.trim();
-    if (!message || inFlight.current || exhausted) return;
+    if (!message || !month || inFlight.current || exhausted) return;
     inFlight.current = true;
     setFailedMessage(null);
     setError(null);
@@ -60,7 +70,7 @@ export default function AgentePage() {
       const reply = await api.agent({
         message,
         conversationId,
-        month: context?.month,
+        month,
       });
       setConversationId(reply.conversationId);
       setMessages((m) => [...m, reply.message]);
@@ -83,26 +93,57 @@ export default function AgentePage() {
     }
   };
 
+  const reset = () => {
+    setMessages([]);
+    setContext(null);
+    setConversationId(undefined);
+    setSuggestions(null);
+    setRules(null);
+    setError(null);
+    setFailedMessage(null);
+    setInput("");
+    inputRef.current?.focus();
+  };
+
+  const changeFocusMonth = (nextMonth: string) => {
+    if (nextMonth === month) return;
+    setPicked(nextMonth);
+    reset();
+  };
+
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="flex min-h-[72px] flex-wrap shrink-0 items-center justify-between gap-3 py-3 border-b border-line px-5 sm:px-10 lg:h-[84px]">
           <h1 className="type-h1 m-0">{t.agent.title}</h1>
-          {context && (
-            <Badge tone="accent" icon={FileTextIcon}>
-              {t.agent.context(monthSlash(context.month))}
-            </Badge>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Kicker as="span">{copy.focusMonth}</Kicker>
+            {month && months.length > 0 ? (
+              <MonthPicker value={month} months={months} onChange={changeFocusMonth} disabled={pending} />
+            ) : (
+              <span className="text-sm text-muted">{reports.loading ? t.common.loading : copy.noReports}</span>
+            )}
+          </div>
         </header>
 
+        {reports.error && (
+          <div className="flex flex-wrap items-center gap-3 px-5 pt-3 sm:px-10">
+            <InlineError>{reports.error}</InlineError>
+            <button type="button" className="min-h-11 text-sm text-accent-text" onClick={reports.reload}>
+              {t.common.retry}
+            </button>
+          </div>
+        )}
         <div className="px-5 pt-4 sm:px-10"><DemoNotice text={copy.demo} /></div>
         <div className="px-5 pt-3 sm:px-10">
-          <button type="button" disabled={pending} className="min-h-11 cursor-pointer text-sm text-accent-text disabled:opacity-50" onClick={() => {
-            setMessages([]); setContext(null); setConversationId(undefined); setSuggestions(null);
-            setError(null); setFailedMessage(null); setInput(""); inputRef.current?.focus();
-          }}>{copy.fresh}</button>
+          <button type="button" disabled={pending} className="min-h-11 cursor-pointer text-sm text-accent-text disabled:opacity-50" onClick={reset}>
+            {copy.fresh}
+          </button>
         </div>
         <div ref={scroller} className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-8 sm:px-10" role="log" aria-label={t.agent.title} aria-live="polite" aria-relevant="additions text">
+          {!reports.loading && !reports.error && months.length === 0 && (
+            <p role="status" className="m-0 text-sm text-muted">{copy.noReports}</p>
+          )}
           {messages.length === 0 && (
             <div className="flex max-w-[620px] gap-3.5">
               <AgentAvatar />
@@ -153,7 +194,7 @@ export default function AgentePage() {
 
           {rules && <RulesExplanation month={context?.month} reason={rules} onClose={() => setRules(null)} />}
 
-          {!pending && !exhausted && chips.length > 0 && (
+          {!pending && month && !exhausted && chips.length > 0 && (
             <div className="flex flex-wrap gap-2 sm:pl-12">
               {chips.map((s) => (
                 <button
@@ -196,12 +237,13 @@ export default function AgentePage() {
               placeholder={t.agent.placeholder}
               autoComplete="off"
               maxLength={600}
+              disabled={pending || !month}
               className="min-w-0 flex-1 border-none bg-transparent text-[15px] text-ink outline-none focus-visible:outline-none"
             />
             <button
               type="submit"
               aria-label={t.agent.send}
-              disabled={pending || exhausted || !input.trim()}
+              disabled={pending || exhausted || !month || !input.trim()}
               className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-accent text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowUpIcon size={18} aria-hidden />
