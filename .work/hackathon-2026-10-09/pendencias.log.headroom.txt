@@ -1,0 +1,1 @@
+F8/F9/D1/D2: indicadores, fuso, quantidades PT/EN, 14/26 colunas, carteira, total e hash OK.

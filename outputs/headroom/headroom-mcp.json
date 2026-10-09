@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "headroom": {
+      "type": "stdio",
+      "command": "C:\\Users\\viega\\AppData\\Local\\Programs\\Python\\Python313\\Scripts\\headroom.exe",
+      "args": ["mcp", "serve"],
+      "env": {
+        "HEADROOM_BEACON": "off",
+        "DO_NOT_TRACK": "1"
+      }
+    }
+  }
+}

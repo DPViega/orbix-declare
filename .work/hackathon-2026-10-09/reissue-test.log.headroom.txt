@@ -1,0 +1,23 @@
+node : node:internal/modules/run_main:107
+No linha:1 caractere:520
++ ... reenshots'; node examples/verify-reissue-browser.mjs *> '.work\hackat ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/run_main:107:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'CSV do relatório', exact: true }) to be visible[22m
+
+    at load (D:\Orbix Lab\Hackaton\Sys-Front\examples\verify-reissue-browser.mjs:64:114)
+    at async file:///D:/Orbix%20Lab/Hackaton/Sys-Front/examples/verify-reissue-browser.mjs:67:5 {
+  log: [
+    "  - waiting for getByRole('button', { name: 'CSV do relatório', exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

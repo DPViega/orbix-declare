@@ -954,6 +954,12 @@ export const mockApi = {
     return buildReport(month);
   },
 
+  /** Compatibilidade da demo: o versionamento persistido pertence ao back-end real. */
+  async reissueReport(month: string): Promise<ReportDetail> {
+    await wait(700);
+    return buildReport(month);
+  },
+
   async generateDecripto(month: string): Promise<DownloadLink> {
     await wait(1100);
     // Igual ao back-end real: finaliza sozinho se o mês ainda era rascunho.

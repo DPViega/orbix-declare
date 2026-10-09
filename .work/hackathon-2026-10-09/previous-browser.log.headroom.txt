@@ -1,0 +1,2 @@
+pt: F8/F10/F11/F12, upload original/alterado, devnet, histórico, relatório e mobile OK.
+en: F8/F10/F11/F12, upload original/alterado, devnet, histórico, relatório e mobile OK.
