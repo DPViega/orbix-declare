@@ -1,2 +1,0 @@
-pt: contrato POST, totais negativos/zero, bloqueio, 409/503, v2, polling, legado e mobile OK.
-en: contrato POST, totais negativos/zero, bloqueio, 409/503, v2, polling, legado e mobile OK.

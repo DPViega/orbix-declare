@@ -43,3 +43,9 @@ next-env.d.ts
 
 # Vídeos de referência (ficam só local)
 docs/*.mp4
+
+# arquivos locais de trabalho
+.manus/
+.work/
+inputs/
+outputs/
