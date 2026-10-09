@@ -75,8 +75,9 @@ export function SyncView() {
     );
   }
 
-  const pct = sync?.estimated ? Math.min(100, Math.round((sync.read / sync.estimated) * 100)) : null;
   const done = sync?.state === "done";
+  // Concluída: barra cheia e sem "calculando estimativa", mesmo com 0 transações (carteira nova).
+  const pct = done ? 100 : sync?.estimated ? Math.min(100, Math.round((sync.read / sync.estimated) * 100)) : null;
   const failed = sync?.state === "error";
 
   if (welcoming !== null) return <WelcomeScreen duration={welcoming} />;
@@ -127,7 +128,7 @@ export function SyncView() {
             <div className="flex flex-col gap-1">
               <span className="text-base">{t.sync.txRead}</span>
               <span className="font-mono text-xs text-muted">
-                {sync?.estimated ? t.sync.estimate(formatInt(sync.estimated), pct ?? 0) : t.sync.estimating}
+                {done ? t.sync.readDone : sync?.estimated ? t.sync.estimate(formatInt(sync.estimated), pct ?? 0) : t.sync.estimating}
               </span>
             </div>
           </div>
