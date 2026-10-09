@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon, SparkleIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon } from "@phosphor-icons/react";
+import { LumeIcon } from "@/components/lume-icon";
 import { api, ApiError, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
 import { RulesExplanation, type RulesReason } from "@/components/rules-explanation";
 import { config } from "@/lib/config";
@@ -115,7 +116,13 @@ export default function AgentePage() {
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="flex min-h-[72px] flex-wrap shrink-0 items-center justify-between gap-3 py-3 border-b border-line px-5 sm:px-10 lg:h-[84px]">
-          <h1 className="type-h1 m-0">{t.agent.title}</h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <LumeIcon size={36} accent className="shrink-0 text-accent-text" aria-hidden />
+            <div className="min-w-0">
+              <h1 className="type-h1 m-0">{copy.title}</h1>
+              <p className="m-0 text-xs leading-relaxed text-muted">{copy.subtitle}</p>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Kicker as="span">{copy.focusMonth}</Kicker>
             {month && months.length > 0 ? (
@@ -296,7 +303,7 @@ export default function AgentePage() {
 function AgentAvatar() {
   return (
     <div className="flex size-[34px] shrink-0 items-center justify-center rounded-xl bg-brand-deep text-brand-mist" aria-hidden>
-      <SparkleIcon size={18} />
+      <LumeIcon size={22} />
     </div>
   );
 }
