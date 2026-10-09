@@ -56,7 +56,7 @@ function MonthReport({ mes }: { mes: string }) {
   const { data, error, loading, reload, setData } = useApi(() => api.report(mes), [mes], valid);
   // Exportar só com o relatório deste mês carregado e atualizado.
   const ready = !!data && !loading;
-  const [busy, setBusy] = useState<"csv" | "package" | "decripto" | "finalize" | null>(null);
+  const [busy, setBusy] = useState<"csv" | "package" | "decripto" | "finalize" | "reissue" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmFinalize, setConfirmFinalize] = useState(false);
@@ -187,6 +187,23 @@ function MonthReport({ mes }: { mes: string }) {
     }
   };
 
+  const reissue = async () => {
+    if (!ready || !data || data.status !== "final" || !data.outdated || !data.currentTotals || busy !== null) return;
+    setBusy("reissue");
+    setActionError(null);
+    setNotice(null);
+    try {
+      const updated = await api.reissueReport(mes);
+      setData(updated);
+      // attestation volta null: o polling existente acompanha o registro da nova versão.
+      setNotice(t.report.reissued(updated.version ?? 2));
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const review = data?.review;
   const hasReviewItems = !!review?.reviewItems?.length;
   const decriptoReady = !!data && data.status === "final" && review?.decriptoReady === true &&
@@ -297,6 +314,16 @@ function MonthReport({ mes }: { mes: string }) {
       {data && <ReportReviewPanel report={data} onReviewed={reload} />}
 
       <InlineError>{actionError}</InlineError>
+      {data?.status === "final" && data.outdated && data.currentTotals && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warn-bg p-4 text-sm leading-relaxed text-warn">
+          <span className="min-w-0 flex-1 basis-80">
+            {t.report.outdated(formatBRL(data.totals.gainBrl), formatBRL(data.currentTotals.gainBrl))}
+          </span>
+          <Button icon={SealCheckIcon} onClick={reissue} loading={busy === "reissue"} disabled={!ready || busy !== null}>
+            {t.report.reissue}
+          </Button>
+        </div>
+      )}
       {notice && (
         <Card role="status" className="px-5 py-4 text-sm text-muted">
           {notice}

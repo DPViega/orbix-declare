@@ -180,6 +180,20 @@ Ordene do mais recente para o mais antigo. `status`: `"draft" | "final"`.
 
 Metadados opcionais `review` devem trazer `engineVersion`, `coverage` (`state`, período importado e quantidade de eventos), `limitations`, `pendingReasons`, `unsupportedOperations`, `reviewItems` e `decriptoReady`. `reviewItems` descreve pendências revisáveis (`acquisition_cost` ou `classification`). O front só habilita a geração da DeCripto quando o relatório é final e o motor confirma cobertura completa, sem pendências/revisões/operações não suportadas e com `decriptoReady: true`. Sem esses metadados, a geração permanece indisponível. O CSV de revisão não equivale a um arquivo DeCripto validado.
 
+### B18-F · versões de um relatório final
+
+`ReportDetail` aceita os campos opcionais `version: number`, `outdated: boolean`, `currentTotals: ReportDetail["totals"] | null` e `previousVersions`. Cada versão anterior contém `{ version, hash, publicId, txSignature, slot, registeredAt, finalizedAt }`; assinatura, slot e datas podem ser `null`. Ausência dos campos mantém compatibilidade com APIs anteriores.
+
+O back-end mantém `totals`, linhas e arquivo da versão final congelados. Quando os dados mudam, devolve `outdated: true` e os totais recalculados em `currentTotals`. O front exibe a diferença entre o ganho registrado e o atual, sem substituir os números congelados antes da reemissão.
+
+### `POST /api/report/:month/reissue` → `ReportDetail`
+
+Requisição autenticada, sem corpo, com timeout de 90 segundos. O front oferece **Gerar nova versão** somente em relatório final com `outdated: true` e `currentTotals` preenchido, bloqueando a ação enquanto carrega ou outra ação está em andamento.
+
+Resposta `200`: nova versão final, `version` incrementado, `outdated: false` e `attestation: null` até confirmar na Solana. O front atualiza os dados e reaproveita o polling de 5 segundos. Arquivos, hashes e links públicos das versões anteriores continuam verificáveis; nada é apagado. O nome do CSV retornado pela API pode incluir `-v2`, `-v3`, etc., e é usado sem alterações no download real.
+
+Erros: `409 report_not_final`, `409 attestation_pending`, `409 report_up_to_date`, `409 missing_prices`, `409 nothing_to_report` e `503 storage_unavailable`. O front apresenta `error.message` da API, preserva o relatório carregado e permite nova tentativa. No modo demonstração, `reissueReport` devolve o relatório simulado sem reproduzir o armazenamento/versionamento do servidor.
+
 ### `GET /api/report/:month/csv` → `DownloadLink`
 ### `POST /api/report/:month/decripto` → `DownloadLink`
 ```json

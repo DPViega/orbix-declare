@@ -76,6 +76,8 @@ const httpApi = {
   reportCsv: (month: string) => http<DownloadLink>("GET", `/api/report/${enc(month)}/csv`),
   finalizeReport: (month: string) =>
     http<ReportDetail>("POST", `/api/report/${enc(month)}/finalize`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
+  reissueReport: (month: string) =>
+    http<ReportDetail>("POST", `/api/report/${enc(month)}/reissue`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
   generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Verificação pública (sem login)

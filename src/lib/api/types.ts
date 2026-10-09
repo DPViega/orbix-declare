@@ -286,6 +286,20 @@ export interface ReportDetail {
   attestation: Attestation | null;
   /** Metadados de cobertura e validação do motor; ausente em APIs ainda não integradas. */
   review?: ReportReview;
+  /** Versão congelada pelo back-end; ausente em APIs anteriores. */
+  version?: number;
+  /** Os dados atuais diferem da versão final, que continua imutável. */
+  outdated?: boolean;
+  currentTotals?: ReportDetail["totals"] | null;
+  previousVersions?: {
+    version: number;
+    hash: string;
+    publicId: string;
+    txSignature: string | null;
+    slot: number | null;
+    registeredAt: string | null;
+    finalizedAt: string | null;
+  }[];
 }
 
 export interface ReportReview {
