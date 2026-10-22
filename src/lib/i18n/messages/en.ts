@@ -809,7 +809,7 @@ export const en: Messages = {
         period: "/mo",
         tagline: "For trading on more than one wallet.",
         features: ["Unlimited wallets", "Unlimited agent questions", "Review package for your accountant", "Priority support"],
-        cta: { label: "Request early access", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20Pro" },
+        cta: { soon: true },
         highlighted: true,
         badge: "Early access",
       },
@@ -820,7 +820,7 @@ export const en: Messages = {
         period: "/client/mo",
         tagline: "For firms with several crypto clients.",
         features: ["Everything in Pro, per client", "One dashboard for your client wallets", "Standardized review package", "Volume pricing, on a call"],
-        cta: { label: "Talk to us", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20for%20accountants" },
+        cta: { soon: true },
         highlighted: false,
       },
     ],
@@ -836,8 +836,8 @@ export const en: Messages = {
           a: "Not yet. Today we prepare the DeCripto data and a review package; the file in the official transmission layout is our next step.",
         },
         {
-          q: "Why do Pro and Accountant ask to get in touch instead of a subscribe button?",
-          a: "We're early and don't have automatic billing yet. Requesting access now helps set the final price and puts you first in line when it opens.",
+          q: "Why don't Pro and Accountant have a button yet?",
+          a: "We haven't opened paid sign-up yet: we're validating the price with the Free plan first. The button shows up here once it opens.",
         },
         {
           q: "Is my data safe?",

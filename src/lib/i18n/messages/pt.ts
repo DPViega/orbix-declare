@@ -829,7 +829,7 @@ export const pt = {
         period: "/mês",
         tagline: "Para quem opera em mais de uma carteira.",
         features: ["Carteiras ilimitadas", "Perguntas ilimitadas ao agente", "Pacote de revisão para o contador", "Suporte prioritário"],
-        cta: { label: "Pedir acesso antecipado", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20Pro" },
+        cta: { soon: true },
         highlighted: true,
         badge: "Acesso antecipado",
       },
@@ -840,7 +840,7 @@ export const pt = {
         period: "/cliente/mês",
         tagline: "Para escritório com vários clientes em cripto.",
         features: ["Tudo do Pro, por cliente", "Painel único para a carteira de clientes", "Pacote de revisão padronizado", "Preço por volume, sob conversa"],
-        cta: { label: "Falar com a gente", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20para%20contadores" },
+        cta: { soon: true },
         highlighted: false,
       },
     ],
@@ -856,8 +856,8 @@ export const pt = {
           a: "Ainda não. Hoje preparamos os dados da DeCripto e um pacote de revisão; o arquivo no leiaute oficial de transmissão é o nosso próximo passo.",
         },
         {
-          q: "Por que Pro e Contador pedem contato em vez de botão de assinar?",
-          a: "Estamos no começo e ainda não temos cobrança automática. Quem pede acesso agora ajuda a definir o preço final e entra primeiro quando abrir.",
+          q: "Por que Pro e Contador ainda não têm botão?",
+          a: "Ainda não abrimos inscrição paga: primeiro validamos o preço com o plano Grátis. Quando abrir, o botão aparece aqui.",
         },
         {
           q: "Meus dados ficam seguros?",

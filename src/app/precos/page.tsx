@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckIcon } from "@phosphor-icons/react/dist/ssr";
-import { Badge, Brand, ButtonLink, Card, Kicker } from "@/components/ui";
+import { Badge, Brand, Button, ButtonLink, Card, Kicker } from "@/components/ui";
 import { getMessages } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,12 +11,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * Página pública e estática. O plano Grátis é real (mesmos limites de Configurações);
- * Pro e Contador ainda não têm cobrança, então o CTA é pedir contato, não assinar — ver
- * FAQ "Por que Pro e Contador pedem contato". Preços são de lançamento, sujeitos a mudar
- * (status interno BIZ-02: tratar preço como hipótese, não como receita).
+ * Pro e Contador ainda não têm cobrança nem canal de contato aberto, então o botão fica
+ * desabilitado com "Em breve" — ver FAQ "Por que Pro e Contador ainda não têm botão".
+ * Preços são de lançamento, sujeitos a mudar (status interno BIZ-02: tratar preço como
+ * hipótese, não como receita).
  */
 export default async function PricingPage() {
-  const t = (await getMessages()).pricing;
+  const messages = await getMessages();
+  const t = messages.pricing;
+  const soon = messages.settings.soon;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg px-5 py-10 text-ink sm:px-12">
@@ -55,14 +58,20 @@ export default async function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <ButtonLink
-                href={plan.cta.href}
-                variant={plan.highlighted ? "primary" : "secondary"}
-                size="lg"
-                className="w-full justify-center"
-              >
-                {plan.cta.label}
-              </ButtonLink>
+              {typeof plan.cta.href === "string" && typeof plan.cta.label === "string" ? (
+                <ButtonLink
+                  href={plan.cta.href}
+                  variant={plan.highlighted ? "primary" : "secondary"}
+                  size="lg"
+                  className="w-full justify-center"
+                >
+                  {plan.cta.label}
+                </ButtonLink>
+              ) : (
+                <Button variant="secondary" size="lg" className="w-full justify-center" disabled title={soon}>
+                  {soon}
+                </Button>
+              )}
             </Card>
           ))}
         </div>
