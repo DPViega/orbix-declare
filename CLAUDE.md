@@ -9,6 +9,8 @@ Front-end only do Orbix Declare (impostos cripto em reais para carteiras Solana 
 
 Interface em PT e EN: nenhum texto fixo em componente; use `t` de `useI18n()` (`src/lib/i18n`) e adicione a chave em `messages/pt.ts` e `messages/en.ts`.
 
-Visual = mockups em `docs/*.html` (tokens em `src/app/globals.css`). Contrato com o back-end: `docs/API_CONTRACT.md`. Antes de entregar: `npm run check`.
+Visual = mockups em `docs/*.html` (tokens em `src/app/globals.css`). Contrato com o back-end: `docs/API_CONTRACT.md`. Antes de entregar: `npm run check` (typecheck, lint, testes e build, nessa ordem).
+
+Testes com Vitest (`src/**/*.test.ts`, roda com `npm test`): cobrem só código sem rede/DOM real (formatadores em `lib/format.ts`, hooks puros como `lib/use-api.ts`). Nada de teste de componente de tela ainda — se adicionar, usar `@testing-library/react` (já é devDependency).
 
 For detailed architecture, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).
