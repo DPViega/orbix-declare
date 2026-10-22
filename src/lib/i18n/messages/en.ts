@@ -20,6 +20,8 @@ export const en: Messages = {
     verifyDescription: "Check whether an Orbix Declare report was altered by comparing its hash with the record on the Solana blockchain.",
     privacy: "Privacy",
     privacyDescription: "What Orbix Declare reads, where the data lives, and how to delete all of it for good.",
+    pricing: "Pricing",
+    pricingDescription: "A free wallet to get started, plus Pro and Accountant plans for when you need more.",
   },
 
   common: {
@@ -779,6 +781,70 @@ export const en: Messages = {
       },
     ],
     outro: "Something not covered here? Reach out through Orbix Lab's channels.",
+    back: "Back to dashboard",
+  },
+
+  pricing: {
+    kicker: "Pricing",
+    title: "Start for free. Grow when you need to.",
+    intro:
+      "Launch pricing, still being validated with our first users — it can change. Free already works today; Pro and Accountant open by invite while we test with the first group.",
+    marketNote:
+      "For comparison: other crypto tax tools in Brazil cost from R$700 to nearly R$5,000 a year, and a specialized accountant charges from R$3,000 a year, per client.",
+    plans: [
+      {
+        id: "free",
+        name: "Free",
+        price: "R$0",
+        period: "",
+        tagline: "To try it with your own wallet.",
+        features: ["Up to 3 wallets (Solana and Hyperliquid)", "Monthly reports", "20 agent questions per month", "Public verification of the report on Solana"],
+        cta: { label: "Sign in now", href: "/login" },
+        highlighted: false,
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        price: "R$29",
+        period: "/mo",
+        tagline: "For trading on more than one wallet.",
+        features: ["Unlimited wallets", "Unlimited agent questions", "Review package for your accountant", "Priority support"],
+        cta: { label: "Request early access", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20Pro" },
+        highlighted: true,
+        badge: "Early access",
+      },
+      {
+        id: "accountant",
+        name: "Accountant",
+        price: "from R$19",
+        period: "/client/mo",
+        tagline: "For firms with several crypto clients.",
+        features: ["Everything in Pro, per client", "One dashboard for your client wallets", "Standardized review package", "Volume pricing, on a call"],
+        cta: { label: "Talk to us", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20for%20accountants" },
+        highlighted: false,
+      },
+    ],
+    faq: {
+      title: "Questions before you decide",
+      items: [
+        {
+          q: "Does this replace an accountant?",
+          a: "No. Orbix Declare calculates an estimate and shows where every number came from; the final review and filing stay with an accountant.",
+        },
+        {
+          q: "Is the generated file already the official Receita format?",
+          a: "Not yet. Today we prepare the DeCripto data and a review package; the file in the official transmission layout is our next step.",
+        },
+        {
+          q: "Why do Pro and Accountant ask to get in touch instead of a subscribe button?",
+          a: "We're early and don't have automatic billing yet. Requesting access now helps set the final price and puts you first in line when it opens.",
+        },
+        {
+          q: "Is my data safe?",
+          a: "We only ask for the wallet's public address, never a key. See exactly what we read and store on the Privacy page.",
+        },
+      ],
+    },
     back: "Back to dashboard",
   },
 };

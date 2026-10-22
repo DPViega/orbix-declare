@@ -18,6 +18,8 @@ export const pt = {
     verifyDescription: "Confira se um relatório do Orbix Declare foi alterado, comparando seu hash com o registro na blockchain Solana.",
     privacy: "Privacidade",
     privacyDescription: "O que o Orbix Declare lê, onde os dados ficam e como apagar tudo para sempre.",
+    pricing: "Preços",
+    pricingDescription: "Carteira gratuita para começar, e os planos Pro e Contador para quem precisa de mais.",
   },
 
   common: {
@@ -799,6 +801,70 @@ export const pt = {
       },
     ],
     outro: "Dúvida sobre algo que não está aqui? Fale com a gente pelos canais do Orbix Lab.",
+    back: "Voltar ao painel",
+  },
+
+  pricing: {
+    kicker: "Preços",
+    title: "Comece de graça. Cresça quando precisar.",
+    intro:
+      "Preços de lançamento, ainda em validação com os primeiros usuários — podem mudar. O plano Grátis já funciona hoje; Pro e Contador abrem por convite enquanto testamos com o primeiro grupo.",
+    marketNote:
+      "Para comparar: outros programas de imposto de cripto no Brasil custam de R$ 700 a quase R$ 5.000 por ano, e um contador especializado cobra a partir de R$ 3.000 por ano, por cliente.",
+    plans: [
+      {
+        id: "free",
+        name: "Grátis",
+        price: "R$ 0",
+        period: "",
+        tagline: "Para testar com a sua carteira.",
+        features: ["Até 3 carteiras (Solana e Hyperliquid)", "Relatórios mensais", "20 perguntas ao agente por mês", "Verificação pública do relatório na Solana"],
+        cta: { label: "Entrar agora", href: "/login" },
+        highlighted: false,
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        price: "R$ 29",
+        period: "/mês",
+        tagline: "Para quem opera em mais de uma carteira.",
+        features: ["Carteiras ilimitadas", "Perguntas ilimitadas ao agente", "Pacote de revisão para o contador", "Suporte prioritário"],
+        cta: { label: "Pedir acesso antecipado", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20Pro" },
+        highlighted: true,
+        badge: "Acesso antecipado",
+      },
+      {
+        id: "accountant",
+        name: "Contador",
+        price: "a partir de R$ 19",
+        period: "/cliente/mês",
+        tagline: "Para escritório com vários clientes em cripto.",
+        features: ["Tudo do Pro, por cliente", "Painel único para a carteira de clientes", "Pacote de revisão padronizado", "Preço por volume, sob conversa"],
+        cta: { label: "Falar com a gente", href: "mailto:contato@orbixlab.com.br?subject=Orbix%20Declare%20para%20contadores" },
+        highlighted: false,
+      },
+    ],
+    faq: {
+      title: "Perguntas antes de decidir",
+      items: [
+        {
+          q: "Isso substitui um contador?",
+          a: "Não. O Orbix Declare calcula uma estimativa e organiza a origem de cada número; a conferência final e o envio continuam com um contador.",
+        },
+        {
+          q: "O arquivo gerado já é o oficial da Receita?",
+          a: "Ainda não. Hoje preparamos os dados da DeCripto e um pacote de revisão; o arquivo no leiaute oficial de transmissão é o nosso próximo passo.",
+        },
+        {
+          q: "Por que Pro e Contador pedem contato em vez de botão de assinar?",
+          a: "Estamos no começo e ainda não temos cobrança automática. Quem pede acesso agora ajuda a definir o preço final e entra primeiro quando abrir.",
+        },
+        {
+          q: "Meus dados ficam seguros?",
+          a: "Só pedimos o endereço público da carteira, nunca uma chave. Veja exatamente o que lemos e guardamos na página de Privacidade.",
+        },
+      ],
+    },
     back: "Voltar ao painel",
   },
 };

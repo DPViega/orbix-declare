@@ -9,7 +9,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { useSession } from "@/lib/session";
 import { identityLabel, shortAddress } from "@/lib/format";
-import { Button, Card, Chip, cn, InlineError, Input, Kicker, Panel, Skeleton } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, cn, InlineError, Input, Kicker, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
 
@@ -77,9 +77,9 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
         {!isPro && (
-          <Button iconRight={ArrowRightIcon} className="justify-self-start md:justify-self-end" disabled title={t.settings.soon}>
+          <ButtonLink href="/precos" iconRight={ArrowRightIcon} className="justify-self-start md:justify-self-end">
             {t.settings.discoverPro}
-          </Button>
+          </ButtonLink>
         )}
       </Card>
 
