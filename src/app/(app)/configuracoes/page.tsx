@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
@@ -178,7 +179,13 @@ export default function ConfiguracoesPage() {
             {t.settings.danger}
           </h2>
         </div>
-        <p className="m-0 max-w-[640px] text-sm leading-[1.65] text-pretty text-muted">{t.settings.dangerText}</p>
+        <p className="m-0 max-w-[640px] text-sm leading-[1.65] text-pretty text-muted">
+          {t.settings.dangerText}{" "}
+          <Link href="/privacidade" className="text-accent-text underline-offset-2 hover:underline">
+            {t.privacy.title}
+          </Link>
+          .
+        </p>
         {!dangerOpen ? (
           <Button variant="danger" icon={TrashIcon} className="self-start" onClick={() => setDangerOpen(true)}>
             {t.settings.deleteData}

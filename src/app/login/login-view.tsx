@@ -3,6 +3,7 @@
 import { OrbixSignature } from "@/components/orbix-signature";
 
 import { LoginPlanet } from "@/components/login-planet";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
@@ -468,6 +469,9 @@ export function LoginView() {
               </span>
             </div>
             <p className="m-0 text-pretty">{t.login.signatureNote}</p>
+            <Link href="/privacidade" className="w-fit text-accent-text underline-offset-2 hover:underline">
+              {t.privacy.title}
+            </Link>
           </div>
         </div>
       </section>

@@ -18,6 +18,8 @@ export const en: Messages = {
     settings: "Settings",
     verify: "Public verification",
     verifyDescription: "Check whether an Orbix Declare report was altered by comparing its hash with the record on the Solana blockchain.",
+    privacy: "Privacy",
+    privacyDescription: "What Orbix Declare reads, where the data lives, and how to delete all of it for good.",
   },
 
   common: {
@@ -743,5 +745,40 @@ export const en: Messages = {
     title: "Something went wrong on this screen",
     text: "Your data wasn't changed. Try again; if the error persists, reload the page.",
     code: (digest) => `Code: ${digest}`,
+  },
+
+  privacy: {
+    kicker: "How we handle your data",
+    title: "Privacy",
+    intro:
+      "This page describes, in plain terms, what Orbix Declare reads, stores and exposes. It is not a legal opinion; it is an exact description of what the system does today.",
+    sections: [
+      {
+        heading: "What we ask for to sign in",
+        text: "To sign in with a wallet, we only ask you to sign a message — it proves the wallet is yours and moves no funds and authorizes nothing. Signing in by e-mail, Google or GitHub stores the e-mail and name those providers report.",
+      },
+      {
+        heading: "What we read from the blockchain",
+        text: "Once you paste a wallet's public address, we read its public history: on Solana through Helius, on Hyperliquid through the exchange's own public API. We never ask for a private key, a seed phrase, or trading permission. The read happens once when a wallet is added, and again every time you sync.",
+      },
+      {
+        heading: "Where the data lives",
+        text: "Everything sits in a Postgres database with Row Level Security: each user only ever sees their own rows, even if a query tries to read someone else's. Report files live in a private storage bucket, not a public one.",
+      },
+      {
+        heading: "What stays public",
+        text: "Only the SHA-256 hash of a final report, recorded in a Solana transaction, and the verification page that shows that hash, the transaction and the month — no name, no address, no amount. The verification page itself says \"holder hidden.\"",
+      },
+      {
+        heading: "The AI agent",
+        text: "The agent only sees the report data of the user asking the question. It has no tools and moves nothing; any text coming from the blockchain is treated as data, never as an instruction.",
+      },
+      {
+        heading: "Deleting everything",
+        text: "In Settings, \"Delete my data\" permanently deletes wallets, reports, drafts and the agent history, as required by Brazil's LGPD (art. 18). Hashes already recorded on Solana remain public — they never held personal data to delete.",
+      },
+    ],
+    outro: "Something not covered here? Reach out through Orbix Lab's channels.",
+    back: "Back to dashboard",
   },
 };

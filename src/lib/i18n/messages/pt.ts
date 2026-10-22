@@ -16,6 +16,8 @@ export const pt = {
     settings: "Configurações",
     verify: "Verificação pública",
     verifyDescription: "Confira se um relatório do Orbix Declare foi alterado, comparando seu hash com o registro na blockchain Solana.",
+    privacy: "Privacidade",
+    privacyDescription: "O que o Orbix Declare lê, onde os dados ficam e como apagar tudo para sempre.",
   },
 
   common: {
@@ -763,6 +765,41 @@ export const pt = {
     title: "Algo deu errado nesta tela",
     text: "Seus dados não foram alterados. Tente de novo; se o erro continuar, recarregue a página.",
     code: (digest: string) => `Código: ${digest}`,
+  },
+
+  privacy: {
+    kicker: "Como tratamos seu dado",
+    title: "Privacidade",
+    intro:
+      "Esta página descreve, em termos simples, o que o Orbix Declare lê, guarda e expõe. Não é um parecer jurídico; é a descrição exata do que o sistema faz hoje.",
+    sections: [
+      {
+        heading: "O que pedimos para entrar",
+        text: "Para entrar com carteira, só a assinatura de uma mensagem — ela prova que a carteira é sua e não move fundos nem autoriza nada. Para entrar por e-mail, Google ou GitHub, guardamos o e-mail e o nome que esses provedores informam.",
+      },
+      {
+        heading: "O que lemos da blockchain",
+        text: "Depois que você cola o endereço público de uma carteira, lemos o histórico público dela: na Solana pela Helius, na Hyperliquid pela API pública da própria corretora. Nunca pedimos chave privada, frase de recuperação nem permissão de negociar. A leitura é feita uma vez por carteira adicionada, e de novo sempre que você sincroniza.",
+      },
+      {
+        heading: "Onde o dado fica",
+        text: "Tudo fica num banco Postgres com Row Level Security: cada usuário só enxerga as próprias linhas, mesmo que a consulta tente ler as de outra pessoa. Os arquivos de relatório ficam num bucket de armazenamento privado, não público.",
+      },
+      {
+        heading: "O que fica público",
+        text: "Só o hash SHA-256 do relatório final, gravado numa transação na Solana, e a página de verificação que mostra esse hash, a transação e o mês — sem nome, sem endereço, sem valor. A própria página de verificação diz “titular ocultado”.",
+      },
+      {
+        heading: "O agente de IA",
+        text: "O agente só enxerga os dados do relatório do próprio usuário que pergunta. Ele não tem nenhuma ferramenta e não move nada; qualquer texto vindo da blockchain entra como dado, nunca como instrução.",
+      },
+      {
+        heading: "Apagar tudo",
+        text: "Em Configurações, “Excluir meus dados” apaga carteiras, relatórios, rascunhos e o histórico do agente para sempre, conforme a LGPD (art. 18). Hashes já gravados na Solana continuam públicos — eles nunca tiveram dado pessoal para apagar.",
+      },
+    ],
+    outro: "Dúvida sobre algo que não está aqui? Fale com a gente pelos canais do Orbix Lab.",
+    back: "Voltar ao painel",
   },
 };
 
