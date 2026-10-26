@@ -245,6 +245,10 @@ export const en: Messages = {
     exemptionOver: (amount) => `${amount} over`,
     exemptionLeft: (amount) => `${amount} left`,
     exemptionMeter: "Volume disposed this month",
+    monthlyEvolution: "Monthly evolution",
+    monthlyEvolutionNote: "Total disposed (R$) across the reports already generated.",
+    monthlyEvolutionEmpty: "Not enough reports yet to show an evolution.",
+    monthlyDisposed: "Total disposed",
   },
 
   wallets: {

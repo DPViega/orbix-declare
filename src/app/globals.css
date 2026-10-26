@@ -482,6 +482,18 @@ dialog::backdrop {
 }
 
 /*
+ * Painel: glow sutil atrás do conteúdo (Dashboard v2, Parte 1). Fixo e atrás de tudo — não
+ * empurra layout, não aparece na impressão do certificado (outro @media print cobre esse caso).
+ */
+.painel-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(900px 480px at 18% -8%, color-mix(in oklab, var(--color-accent) 20%, transparent), transparent 70%);
+}
+
+/*
  * Certificado para impressão/PDF (/relatorios/:mes/certificado): esconde a sidebar e o resto do
  * shell da área logada, deixando só o conteúdo marcado com #certificado. Escopado por :has() para
  * não afetar a impressão de nenhuma outra página.

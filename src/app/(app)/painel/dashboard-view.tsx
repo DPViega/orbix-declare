@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRightIcon, FileTextIcon, TrayIcon, WarningIcon } from "@phosphor-icons/react";
-import { api, isDemoSession, type EventType, type TaxEvent } from "@/lib/api";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { api, isDemoSession, type EventType, type ReportSummary, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { eventCost } from "@/lib/event-cost";
 import { useSession } from "@/lib/session";
@@ -18,6 +19,7 @@ import {
   formatQty,
   formatQtyFull,
   isPseudoHash,
+  monthLabel,
   monthName,
   previousMonthKey,
   shortAddress,
@@ -92,6 +94,7 @@ export function DashboardView() {
 
   return (
     <>
+      <div aria-hidden className="painel-glow" />
       <PageHeader
         kicker={d ? t.dashboard.updatedAt(formatDateTime(d.updatedAt)) : t.common.loading}
         title={t.dashboard.title}
@@ -156,6 +159,9 @@ export function DashboardView() {
           [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[126px] rounded-xl" />)
         )}
       </div>
+
+      {/* Evolução mensal */}
+      <MonthlyEvolutionChart reports={reports.data} loading={reports.loading} />
 
       {/* Limite de isenção */}
       {d ? <ExemptionBar volume={d.volumeBrl} limit={d.exemptionLimitBrl} /> : <Skeleton className="h-[120px] rounded-xl" />}
@@ -419,6 +425,75 @@ function Kpi({
       <span className={cn("font-mono text-[26px] leading-tight font-medium tracking-[-0.02em]", valueClass)}>{value}</span>
       <span className={cn("text-[13px] text-muted", noteClass)}>{note}</span>
     </Card>
+  );
+}
+
+function MonthlyEvolutionChart({ reports, loading }: { reports: ReportSummary[] | null; loading: boolean }) {
+  const { t } = useI18n();
+  const data = useMemo(
+    () =>
+      [...(reports ?? [])]
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .map((r) => ({ month: r.month, label: monthLabel(r.month).split(" ")[0].slice(0, 3), total: r.totalBrl })),
+    [reports],
+  );
+
+  if (loading && !reports) return <Skeleton className="h-[280px] rounded-xl" />;
+  if (data.length < 2) return null;
+
+  return (
+    <Panel className="flex flex-col gap-1 px-7 py-6">
+      <h2 className="type-h2 m-0">{t.dashboard.monthlyEvolution}</h2>
+      <p className="m-0 text-[13px] text-muted">{t.dashboard.monthlyEvolutionNote}</p>
+      <div className="h-[220px] pt-4" aria-hidden>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+            <defs>
+              <linearGradient id="monthlyEvolutionFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-accent)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="var(--color-line)" strokeDasharray="3 5" />
+            <XAxis
+              dataKey="label"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "var(--color-muted)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+            />
+            <YAxis
+              width={64}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v: number) => formatBRLShort(v)}
+              tick={{ fill: "var(--color-muted)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+            />
+            <Tooltip content={<MonthlyEvolutionTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="total"
+              stroke="var(--color-accent)"
+              strokeWidth={2.5}
+              fill="url(#monthlyEvolutionFill)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </Panel>
+  );
+}
+
+function MonthlyEvolutionTooltip({ active, payload }: { active?: boolean; payload?: { payload: { month: string; total: number } }[] }) {
+  const { t } = useI18n();
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+  return (
+    <div className="rounded-xl border border-line bg-panel px-3.5 py-2.5 shadow-frame">
+      <div className="text-[12px] text-muted">{monthLabel(point.month)}</div>
+      <div className="font-mono text-[14px] font-medium">
+        {t.dashboard.monthlyDisposed}: {formatBRL(point.total)}
+      </div>
+    </div>
   );
 }
 

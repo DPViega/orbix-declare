@@ -246,6 +246,10 @@ export const pt = {
     exemptionOver: (amount: string) => `passou ${amount}`,
     exemptionLeft: (amount: string) => `faltam ${amount}`,
     exemptionMeter: "Volume alienado no mês",
+    monthlyEvolution: "Evolução mensal",
+    monthlyEvolutionNote: "Total alienado (R$) dos relatórios já gerados.",
+    monthlyEvolutionEmpty: "Sem relatórios suficientes ainda para mostrar evolução.",
+    monthlyDisposed: "Total alienado",
   },
 
   wallets: {
