@@ -332,10 +332,12 @@ export const pt = {
     generateDecriptoOficial: "Baixar DeCripto oficial",
     decriptoOficialTitle:
       "Arquivo no leiaute oficial da Receita (registro de permuta, IN RFB 2.291/2025). Cobre hoje trocas feitas por protocolo identificado na Solana (ex.: Jupiter, Raydium). Transferências entre carteiras e operações na Hyperliquid ainda não entram.",
-    decriptoOficialResult: (included: number, excluded: number) =>
-      excluded > 0
-        ? `Arquivo gerado com ${included} operação${included === 1 ? "" : "ões"}. ${excluded} ficou${excluded === 1 ? "" : "aram"} de fora por falta de protocolo identificado — confira no pacote de revisão.`
-        : `Arquivo gerado com ${included} operação${included === 1 ? "" : "ões"}.`,
+    decriptoOficialResult: (included: number, excluded: number) => {
+      const op = included === 1 ? "operação" : "operações";
+      return excluded > 0
+        ? `Arquivo gerado com ${included} ${op}. ${excluded} ficou${excluded === 1 ? "" : "aram"} de fora por falta de protocolo identificado — confira no pacote de revisão.`
+        : `Arquivo gerado com ${included} ${op}.`;
+    },
     decriptoOficialEmpty: "Nenhuma troca com protocolo identificado neste mês para o arquivo oficial.",
     finalize: "Finalizar relatório",
     finalizing: "Finalizando…",
