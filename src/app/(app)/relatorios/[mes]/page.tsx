@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeftIcon,
   ArrowSquareOutIcon,
+  CertificateIcon,
   CheckIcon,
   CopyIcon,
   DownloadSimpleIcon,
+  FileArrowDownIcon,
   FileArrowUpIcon,
   HourglassIcon,
   PackageIcon,
@@ -56,7 +58,7 @@ function MonthReport({ mes }: { mes: string }) {
   const { data, error, loading, reload, setData } = useApi(() => api.report(mes), [mes], valid);
   // Exportar só com o relatório deste mês carregado e atualizado.
   const ready = !!data && !loading;
-  const [busy, setBusy] = useState<"csv" | "package" | "decripto" | "finalize" | "reissue" | null>(null);
+  const [busy, setBusy] = useState<"csv" | "package" | "decripto" | "decriptoOficial" | "finalize" | "reissue" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmFinalize, setConfirmFinalize] = useState(false);
@@ -163,6 +165,23 @@ function MonthReport({ mes }: { mes: string }) {
       const link = await api.generateDecripto(mes);
       if (link.url) triggerDownload(link.url, link.filename);
       else setNotice(t.report.demoDecripto);
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const generateDecriptoOficial = async () => {
+    if (!ready || !data || data.rows.length === 0) return;
+    setBusy("decriptoOficial");
+    setActionError(null);
+    setNotice(null);
+    try {
+      const result = await api.generateDecriptoOficial(mes);
+      if (result.url) triggerDownload(result.url, result.filename);
+      if (result.includedCount === 0) setNotice(t.report.decriptoOficialEmpty);
+      else setNotice(t.report.decriptoOficialResult(result.includedCount, result.excludedCount));
     } catch (err) {
       setActionError(errorMessage(err));
     } finally {
@@ -278,6 +297,19 @@ function MonthReport({ mes }: { mes: string }) {
               )}
               <Button
                 variant="secondary"
+                icon={FileArrowDownIcon}
+                onClick={generateDecriptoOficial}
+                loading={busy === "decriptoOficial"}
+                disabled={!data || !ready || busy !== null || data.rows.length === 0}
+                title={t.report.decriptoOficialTitle}
+              >
+                {t.report.generateDecriptoOficial}
+              </Button>
+              <ButtonLink variant="secondary" icon={CertificateIcon} href={`/relatorios/${mes}/certificado`}>
+                {t.certificate.title}
+              </ButtonLink>
+              <Button
+                variant="secondary"
                 icon={FileArrowUpIcon}
                 onClick={generateDecripto}
                 loading={busy === "decripto"}
@@ -295,8 +327,9 @@ function MonthReport({ mes }: { mes: string }) {
       <DemoNotice text={t.demo.report} />
 
       {/*
-        A5 · o botão "Gerar DeCripto" ainda não entrega o arquivo no leiaute oficial. A explicação fica
-        aqui, visível sem passar o mouse (nem title, nem tooltip), com link para o pacote de revisão.
+        A5 · o botão "Gerar DeCripto" é só um resumo de apoio, não o leiaute oficial — esse é o
+        "Baixar DeCripto oficial" acima. A explicação fica aqui, visível sem passar o mouse
+        (nem title, nem tooltip), com link para o pacote de revisão.
       */}
       <Card className="px-5 py-4 text-sm leading-relaxed text-muted">
         {t.report.decriptoSoonBefore}

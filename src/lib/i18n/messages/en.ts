@@ -319,12 +319,19 @@ export const en: Messages = {
     downloadReviewCsv: "Report CSV",
     comingSoon: "coming soon",
     generateDecripto: "Generate DeCripto",
-    decriptoSoonBefore: "Generate DeCripto: coming soon. For now, download ",
+    decriptoSoonBefore: "This summary is for support, not the file Receita accepts — for that, use the \"Download official DeCripto\" button above. For what your accountant needs to review before filing, download ",
     decriptoSoonLink: "the review package",
-    decriptoSoonAfter:
-      ": it has everything your accountant needs to fill in DeCripto on Coleta Nacional (e-CAC). The file in the official Receita layout is next.",
+    decriptoSoonAfter: ".",
     decriptoSummaryNote:
       "The generated file is a support summary for filing. It doesn't follow the Federal Revenue's official transmission layout yet.",
+    generateDecriptoOficial: "Download official DeCripto",
+    decriptoOficialTitle:
+      "File in the Federal Revenue's official layout (exchange record, IN RFB 2.291/2025). Covers today's trades made through an identified protocol on Solana (e.g. Jupiter, Raydium). Wallet-to-wallet transfers and Hyperliquid operations aren't included yet.",
+    decriptoOficialResult: (included: number, excluded: number) =>
+      excluded > 0
+        ? `File generated with ${included} operation${included === 1 ? "" : "s"}. ${excluded} ${excluded === 1 ? "was" : "were"} left out for missing an identified protocol — check the review package.`
+        : `File generated with ${included} operation${included === 1 ? "" : "s"}.`,
+    decriptoOficialEmpty: "No trade with an identified protocol this month for the official file.",
     finalize: "Finalize report",
     finalizing: "Finalizing…",
     finalizeConfirmTitle: "Finalize this report?",
@@ -608,6 +615,17 @@ export const en: Messages = {
     saved: "Review recorded and price updated.",
     saveReview: "Save audited review",
     skip: "Skip for now",
+  },
+
+  certificate: {
+    title: "Statement certificate",
+    subtitle: (month: string) => `Summary for ${month}`,
+    print: "Print / save PDF",
+    draftWarning: "Report still a draft: figures may change until finalized.",
+    authenticity: "Authenticity",
+    disclaimer:
+      "Document generated automatically by Orbix Declare from data imported from the user's wallets. It is not a filing transmitted to the Federal Revenue and does not replace an accountant's guidance.",
+    generatedAt: (date: string, time: string) => `Generated on ${date} at ${time} (Brasília time).`,
   },
 
   reviewPackage: {

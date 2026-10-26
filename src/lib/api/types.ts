@@ -331,6 +331,19 @@ export interface DownloadLink {
   expiresAt: string;
 }
 
+/**
+ * Arquivo oficial da DeCripto (leiaute da Receita, registro 0210 - permuta entre
+ * criptoativos). `includedCount`/`excludedCount` avisam quantas operações elegíveis do mês
+ * entraram no arquivo e quantas ficaram de fora por falta de protocolo identificado na troca.
+ */
+export interface DecriptoOficial {
+  url: string;
+  filename: string;
+  expiresAt: string;
+  includedCount: number;
+  excludedCount: number;
+}
+
 /* ---------- Verificação pública ---------- */
 
 export interface PublicVerification {

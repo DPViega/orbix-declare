@@ -15,6 +15,7 @@ import type {
   AgentReply,
   AgentRequest,
   Dashboard,
+  DecriptoOficial,
   DownloadLink,
   EmailStartResponse,
   ManualCostRequest,
@@ -79,6 +80,7 @@ const httpApi = {
   reissueReport: (month: string) =>
     http<ReportDetail>("POST", `/api/report/${enc(month)}/reissue`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
   generateDecripto: (month: string) => http<DownloadLink>("POST", `/api/report/${enc(month)}/decripto`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
+  generateDecriptoOficial: (month: string) => http<DecriptoOficial>("GET", `/api/report/${enc(month)}/decripto-oficial`, undefined, { timeoutMs: SLOW_TIMEOUT_MS }),
 
   // Verificação pública (sem login)
   verifyPublic: (publicId: string) => http<PublicVerification>("GET", `/api/verify/${enc(publicId)}`, undefined, { auth: false }),

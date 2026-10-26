@@ -480,3 +480,22 @@ dialog::backdrop {
     animation-duration: 2.4s !important;
   }
 }
+
+/*
+ * Certificado para impressão/PDF (/relatorios/:mes/certificado): esconde a sidebar e o resto do
+ * shell da área logada, deixando só o conteúdo marcado com #certificado. Escopado por :has() para
+ * não afetar a impressão de nenhuma outra página.
+ */
+@media print {
+  body:has(#certificado) * {
+    visibility: hidden;
+  }
+  body:has(#certificado) #certificado,
+  body:has(#certificado) #certificado * {
+    visibility: visible;
+  }
+  body:has(#certificado) #certificado {
+    position: absolute;
+    inset: 0;
+  }
+}

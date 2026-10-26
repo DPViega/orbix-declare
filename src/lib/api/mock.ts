@@ -18,6 +18,7 @@ import type {
   AgentReply,
   AgentRequest,
   Dashboard,
+  DecriptoOficial,
   DownloadLink,
   EmailStartResponse,
   EventType,
@@ -970,6 +971,19 @@ export const mockApi = {
       url: "",
       filename: `decripto-${month}.txt`,
       expiresAt: new Date().toISOString(),
+    };
+  },
+
+  async generateDecriptoOficial(month: string): Promise<DecriptoOficial> {
+    await wait(900);
+    const report = await buildReport(month);
+    const swaps = report.rows.filter((r) => r.type === "swap").length;
+    return {
+      url: "",
+      filename: `decripto-oficial-${month}.txt`,
+      expiresAt: new Date().toISOString(),
+      includedCount: swaps,
+      excludedCount: 0,
     };
   },
 

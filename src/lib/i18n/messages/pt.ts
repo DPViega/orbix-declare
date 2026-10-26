@@ -324,12 +324,19 @@ export const pt = {
      * Explicação do botão "Gerar DeCripto", visível na própria página (nunca em title ou tooltip).
      * Três partes porque o miolo é um link para o pacote de revisão; juntas formam o texto aprovado.
      */
-    decriptoSoonBefore: "Gerar DeCripto: em breve. Hoje, baixe ",
+    decriptoSoonBefore: "Esse resumo é de apoio, não o arquivo que a Receita aceita — para esse, use o botão \"Baixar DeCripto oficial\" acima. Para o que seu contador precisa revisar antes de declarar, baixe ",
     decriptoSoonLink: "o pacote para revisão",
-    decriptoSoonAfter:
-      ": ele traz tudo o que seu contador precisa para preencher a DeCripto no Coleta Nacional (e-CAC). O arquivo no leiaute oficial da Receita vem a seguir.",
+    decriptoSoonAfter: ".",
     decriptoSummaryNote:
       "O arquivo gerado é um resumo de apoio para o preenchimento. Ainda não segue o leiaute oficial de transmissão da Receita Federal.",
+    generateDecriptoOficial: "Baixar DeCripto oficial",
+    decriptoOficialTitle:
+      "Arquivo no leiaute oficial da Receita (registro de permuta, IN RFB 2.291/2025). Cobre hoje trocas feitas por protocolo identificado na Solana (ex.: Jupiter, Raydium). Transferências entre carteiras e operações na Hyperliquid ainda não entram.",
+    decriptoOficialResult: (included: number, excluded: number) =>
+      excluded > 0
+        ? `Arquivo gerado com ${included} operação${included === 1 ? "" : "ões"}. ${excluded} ficou${excluded === 1 ? "" : "aram"} de fora por falta de protocolo identificado — confira no pacote de revisão.`
+        : `Arquivo gerado com ${included} operação${included === 1 ? "" : "ões"}.`,
+    decriptoOficialEmpty: "Nenhuma troca com protocolo identificado neste mês para o arquivo oficial.",
     finalize: "Finalizar relatório",
     finalizing: "Finalizando…",
     finalizeConfirmTitle: "Finalizar este relatório?",
@@ -628,6 +635,17 @@ export const pt = {
     saved: "Revisão registrada e preço atualizado.",
     saveReview: "Salvar revisão auditada",
     skip: "Ignorar por enquanto",
+  },
+
+  certificate: {
+    title: "Certificado de apuração",
+    subtitle: (month: string) => `Resumo do mês de ${month}`,
+    print: "Imprimir / salvar PDF",
+    draftWarning: "Relatório ainda em rascunho: os valores podem mudar até a finalização.",
+    authenticity: "Autenticidade",
+    disclaimer:
+      "Documento gerado automaticamente pelo Orbix Declare a partir dos dados importados das carteiras do usuário. Não é uma declaração transmitida à Receita Federal e não substitui a orientação de um contador.",
+    generatedAt: (date: string, time: string) => `Gerado em ${date} às ${time} (horário de Brasília).`,
   },
 
   reviewPackage: {
