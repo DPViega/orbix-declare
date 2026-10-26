@@ -26,6 +26,8 @@ import { useI18n, type Messages } from "@/lib/i18n";
 
 /** Rotas que ocupam a área inteira, sem o padding padrão (ex.: chat do agente). */
 const FULL_BLEED = ["/agente"];
+/** Rotas de painel, que usam a largura toda da tela larga (as demais ficam em 1192px, boas para leitura). */
+const WIDE = ["/painel"];
 
 type NavigationIcon = Icon | typeof LumeIcon;
 const NAV: { href: string; key: keyof Messages["nav"]; icon: NavigationIcon }[] = [
@@ -274,9 +276,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           id="conteudo"
           tabIndex={-1}
-          className="outline-none min-w-0 flex-1 px-4 pt-[calc(56px+24px+env(safe-area-inset-top))] pb-12 sm:px-8 lg:px-12 lg:pt-10"
+          className="outline-none min-w-0 flex-1 overflow-x-clip px-4 pt-[calc(56px+24px+env(safe-area-inset-top))] pb-12 sm:px-8 lg:px-12 lg:pt-10"
         >
-          <div key={pathname} className="page-enter mx-auto flex w-full max-w-[1192px] flex-col gap-6 md:gap-7">
+          <div
+            key={pathname}
+            className={cn(
+              "page-enter relative isolate mx-auto flex w-full flex-col gap-6 md:gap-7",
+              WIDE.some((p) => pathname === p) ? "max-w-[1640px]" : "max-w-[1192px]",
+            )}
+          >
             {children}
           </div>
         </main>

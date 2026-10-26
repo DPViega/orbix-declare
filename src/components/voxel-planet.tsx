@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export function LoginPlanet() {
+/**
+ * Planeta voxel 3D (public/voxel-planet-orbits.glb, three.js sob demanda) — nasceu no /login e
+ * também é usado como o orbe central do mapa interativo do painel. `size` em px; o modelo gira
+ * devagar sozinho (pausa com prefers-reduced-motion). Se o WebGL falhar, fica só o brilho lilás.
+ */
+export function VoxelPlanet({ size = 92 }: { size?: number }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -19,7 +24,7 @@ export function LoginPlanet() {
       if (disposed) return;
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(92, 92);
+      renderer.setSize(size, size);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.domElement.style.cssText = "display:block;width:100%;height:100%";
       host.appendChild(renderer.domElement);
@@ -64,7 +69,7 @@ export function LoginPlanet() {
       const pivot = new THREE.Group();
       pivot.add(gltf.scene);
       scene.add(pivot);
-      camera.position.z = radius * 1.1 / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2));
+      camera.position.z = (radius * 1.1) / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2));
       camera.near = camera.position.z / 100;
       camera.far = camera.position.z * 10;
       camera.updateProjectionMatrix();
@@ -75,7 +80,7 @@ export function LoginPlanet() {
         const elapsed = Math.min((now - last) / 1000, 0.1);
         last = now;
         if (!document.hidden && host.getClientRects().length) {
-          if (!motion.matches) pivot.rotation.y += elapsed * Math.PI * 2 / 40;
+          if (!motion.matches) pivot.rotation.y += (elapsed * Math.PI * 2) / 40;
           renderer.render(scene, camera);
         }
         frame = requestAnimationFrame(render);
@@ -85,18 +90,21 @@ export function LoginPlanet() {
       frame = requestAnimationFrame(render);
     }
 
-    void setup().catch(() => { cleanup(); });
+    void setup().catch(() => {
+      cleanup();
+    });
     return () => {
       disposed = true;
       cleanup();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `size` só importa na montagem: o host é recriado do zero a cada troca de tela, nunca redimensionado in place.
   }, []);
 
   return (
-    <div aria-hidden="true" className="relative size-[92px] shrink-0">
+    <div aria-hidden="true" className="relative shrink-0" style={{ width: size, height: size }}>
       {/* Enquanto o modelo carrega (ou se o WebGL falhar): brilho lilás no lugar do planeta, sem a logo antiga. */}
       <div
-        className={`absolute inset-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#c9bcf7_0%,#8b6ae8_45%,transparent_72%)] blur-[2px] transition-opacity duration-700 ${ready ? "opacity-0" : "animate-pulse opacity-50"}`}
+        className={`absolute inset-[18%] rounded-full bg-[radial-gradient(circle_at_35%_30%,#c9bcf7_0%,#8b6ae8_45%,transparent_72%)] blur-[2px] transition-opacity duration-700 ${ready ? "opacity-0" : "animate-pulse opacity-50"}`}
       />
       <div ref={hostRef} className={`size-full transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`} />
     </div>

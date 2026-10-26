@@ -2,7 +2,7 @@
 
 import { OrbixSignature } from "@/components/orbix-signature";
 
-import { LoginPlanet } from "@/components/login-planet";
+import { VoxelPlanet } from "@/components/voxel-planet";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -208,7 +208,7 @@ export function LoginView() {
         <div aria-hidden="true" className="login-panel-blend" />
 
         <div className="relative z-10 flex items-center gap-3.5">
-          <LoginPlanet />
+          <VoxelPlanet />
           <div className="flex flex-col gap-[3px]">
             <span className="font-display text-2xl leading-[1.1] font-semibold tracking-[-0.02em] text-brand-paper"><span className="text-gold">Orbix</span>{" "}Declare</span>
             <span className="font-mono text-[11px] tracking-[0.04em] text-brand-paper"><OrbixSignature text={t.common.byOrbix} /></span>

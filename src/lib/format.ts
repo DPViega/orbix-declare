@@ -83,6 +83,12 @@ export function formatTime(iso: string, seconds = false): string {
   }).format(new Date(iso));
 }
 
+/** "18 de jun. de 2026" · "Jun 18, 2026" */
+export const formatDateMedium = (iso: string) => dtf({ day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
+
+/** "segunda-feira, 26 de outubro de 2026" · "Monday, October 26, 2026" */
+export const formatLongDate = (date: Date) => dtf({ weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+
 /** "30/09/2026 · 14:32" */
 export const formatDateTime = (iso: string) => `${formatDate(iso)} · ${formatTime(iso)}`;
 

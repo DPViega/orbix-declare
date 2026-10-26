@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { ArrowRightIcon, DesktopIcon, MoonIcon, SunIcon, TrashIcon, WarningOctagonIcon } from "@phosphor-icons/react";
+import { ArrowRightIcon, MoonIcon, SunIcon, TrashIcon, WarningOctagonIcon } from "@phosphor-icons/react";
 import { api, errorMessage } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { useSession } from "@/lib/session";
 import { identityLabel, shortAddress } from "@/lib/format";
-import { Button, ButtonLink, Card, Chip, cn, InlineError, Input, Kicker, Panel, Skeleton } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, InlineError, Input, Kicker, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
 
@@ -233,41 +233,38 @@ export default function ConfiguracoesPage() {
 
 const noopSubscribe = () => () => {};
 
+/**
+ * Alternância clara/escura só do app (sem opção "sistema" — era o pedido: "modo claro e escuro
+ * internos apenas"). Se o usuário tinha "system" salvo de antes, o primeiro clique já define um
+ * valor explícito. Visual adaptado de um toggle da Uiverse.io (by chicogale), recolorido pra
+ * marca: claro = branco com roxo, escuro = roxo profundo com o lilás de sempre.
+ */
 function ThemePicker() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const { t } = useI18n();
-  // O tema só é conhecido no navegador; no servidor nenhuma opção aparece marcada.
+  // O tema só é conhecido no navegador; no servidor cai no claro (sem "piscar" escuro depois).
   const mounted = useSyncExternalStore(
     noopSubscribe,
     () => true,
     () => false,
   );
-  const options = [
-    { key: "light", label: t.settings.light, icon: SunIcon },
-    { key: "dark", label: t.settings.dark, icon: MoonIcon },
-    { key: "system", label: t.settings.system, icon: DesktopIcon },
-  ] as const;
+  const isDark = mounted && resolvedTheme === "dark";
   return (
-    <div role="radiogroup" aria-label={t.settings.theme} className="flex w-fit gap-1 rounded-xl border border-line bg-panel p-[3px]">
-      {options.map(({ key, label, icon: I }) => {
-        const active = mounted && theme === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setTheme(key)}
-            className={cn(
-              "inline-flex cursor-pointer items-center gap-2 rounded-[9px] px-3.5 py-2 text-[13px] transition-colors",
-              active ? "bg-chip font-medium text-chip-text" : "text-muted hover:text-ink",
-            )}
-          >
-            <I size={16} aria-hidden />
-            {label}
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isDark}
+      aria-label={t.settings.theme}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="theme-toggle"
+      data-on={isDark}
+    >
+      <span className="theme-toggle-track">
+        <span className="theme-toggle-glow" aria-hidden />
+      </span>
+      <span className="theme-toggle-thumb">
+        {isDark ? <MoonIcon size={13} weight="fill" aria-hidden /> : <SunIcon size={13} weight="fill" aria-hidden />}
+      </span>
+    </button>
   );
 }

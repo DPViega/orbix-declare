@@ -40,6 +40,7 @@ import type {
   Wallet,
 } from "./types";
 import { prepareReportCsv, reportToCsv, sha256Hex } from "@/lib/report-file";
+import { buildDecriptoOficialDemo } from "@/lib/decripto-oficial-demo";
 import { explorerTxUrl } from "@/lib/config";
 import { formatBRL, formatDate, monthLabel, monthName, previousMonthKey } from "@/lib/format";
 import { getLocale } from "@/lib/i18n/locale";
@@ -324,6 +325,44 @@ function monthInfo(key: string) {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+/** Hash-like string determinístico (sem criptografia nenhuma) só pra preencher a demonstração. */
+function fakeHash(seed: number, len = 32) {
+  let x = (seed * 2654435761) >>> 0;
+  let s = "";
+  for (let i = 0; i < len; i++) {
+    x = (x * 1103515245 + 12345) >>> 0;
+    s += BASE58[x % BASE58.length];
+  }
+  return s;
+}
+
+/**
+ * Rajada de vendas pequenas de SOL, só em outubro: enche o leque do modo interativo (ao detalhar
+ * o ativo SOL) com dezenas de eventos, pra mostrar como ele fica com volume real de operações —
+ * os outros meses ficam com o conjunto base (7 eventos), que já serve pros KPIs e pro relatório.
+ */
+const SOL_BURST: BaseEvent[] = Array.from({ length: 22 }, (_, i) => {
+  const solQty = round2(0.3 + ((i * 37) % 11) * 0.28);
+  const price = 870 + ((i * 53) % 95);
+  const brl = round2(solQty * price);
+  const ptax = round2(5.36 + (i % 9) * 0.012);
+  return {
+    d: 2 + ((i * 23) % 28),
+    network: "solana",
+    type: "swap",
+    asset: "SOL → USDC",
+    qty: solQty,
+    qtyAsset: "SOL",
+    brl,
+    hash: fakeHash(i + 400),
+    ptax,
+    cost: round2(brl * (0.74 + ((i * 17) % 20) / 100)),
+    qtyIn: round2(brl / ptax),
+    exact: true,
+  };
+});
+
 /**
  * Outubro (rascunho) tem casos próprios, exatos:
  * - BONK: token barato (preço por unidade ~R$ 0,0000107), para o preço não aparecer como R$ 0,00;
@@ -377,7 +416,7 @@ const APRIL: BaseEvent[] = [{
 }];
 
 const baseFor = (key: string) =>
-  key === "2026-04" ? APRIL : key === "2026-10" ? [...BASE.slice(2, 6), ...OCTOBER_EXTRA] : BASE;
+  key === "2026-04" ? APRIL : key === "2026-10" ? [...BASE.slice(2, 6), ...OCTOBER_EXTRA, ...SOL_BURST] : BASE;
 
 function eventsFor(key: string): TaxEvent[] {
   const info = monthInfo(key);
@@ -976,14 +1015,17 @@ export const mockApi = {
 
   async generateDecriptoOficial(month: string): Promise<DecriptoOficial> {
     await wait(900);
-    const report = await buildReport(month);
-    const swaps = report.rows.filter((r) => r.type === "swap").length;
+    // Monta o arquivo de verdade no navegador (mesmo leiaute do back-end): sem isso, a demo
+    // pública — sem API conectada — não tinha de onde baixar nada e o botão parecia quebrado.
+    const { content, includedCount, excludedCount } = buildDecriptoOficialDemo(eventsFor(month));
+    const url = content ? URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" })) : "";
+    if (url) setTimeout(() => URL.revokeObjectURL(url), 30_000);
     return {
-      url: "",
+      url,
       filename: `decripto-oficial-${month}.txt`,
       expiresAt: new Date().toISOString(),
-      includedCount: swaps,
-      excludedCount: 0,
+      includedCount,
+      excludedCount,
     };
   },
 

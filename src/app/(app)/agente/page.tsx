@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowSquareOutIcon, ArrowUpIcon, BankIcon, FileTextIcon } from "@phosphor-icons/react";
 import { LumeIcon } from "@/components/lume-icon";
 import { api, ApiError, errorMessage, isDemoSession, type AgentBlock, type AgentContext, type AgentMessage } from "@/lib/api";
@@ -37,7 +38,9 @@ export default function AgentePage() {
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const chips = suggestions ?? (month ? t.agent.starters(monthLong(month)) : []);
   const [conversationId, setConversationId] = useState<string>();
-  const [input, setInput] = useState("");
+  // ?q= vem do mapa interativo do painel: só preenche o campo, não envia (cada pergunta gasta cota).
+  const params = useSearchParams();
+  const [input, setInput] = useState(() => params.get("q") ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);

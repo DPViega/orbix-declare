@@ -447,6 +447,146 @@ html:has(.splash) .login-typed-steps::before {
   animation: rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/*
+ * Toggle claro/escuro (Configurações). Visual adaptado de um componente da Uiverse.io (by
+ * chicogale), recolorido pra marca: claro = trilho branco com roxo, escuro = roxo profundo com
+ * o lilás de sempre. As cores são fixas (não var(--color-*)) de propósito — o controle precisa
+ * representar os dois temas de forma estável, não herdar o tema que ele mesmo está trocando.
+ */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  width: 56px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: none;
+}
+.theme-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1.5px solid #d6c9f7;
+  box-shadow: inset 0 1px 3px rgba(91, 53, 200, 0.15);
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease;
+}
+.theme-toggle-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 72% 50%, rgba(167, 140, 240, 0.4), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #5b35c8;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(91, 53, 200, 0.45);
+  transition:
+    left 0.35s cubic-bezier(0.3, 1.5, 0.7, 1),
+    background 0.35s ease,
+    color 0.35s ease;
+}
+.theme-toggle[data-on="true"] .theme-toggle-track {
+  background: #1f0d5c;
+  border-color: #33207a;
+}
+.theme-toggle[data-on="true"] .theme-toggle-glow {
+  opacity: 1;
+}
+.theme-toggle[data-on="true"] .theme-toggle-thumb {
+  left: 29px;
+  background: #e3ddf7;
+  color: #5b35c8;
+}
+.theme-toggle:hover .theme-toggle-thumb {
+  filter: brightness(1.08);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/*
+ * Modo interativo do painel (InteractiveMap). Palco sempre escuro: o brilho das arestas é a
+ * linguagem visual do modo. Com "reduzir movimento", o bloco global de reduced-motion encurta
+ * todas as animações abaixo para um quadro só.
+ */
+.map-stage {
+  background:
+    radial-gradient(rgba(201, 188, 247, 0.07) 1px, transparent 1px) 0 0 / 22px 22px,
+    radial-gradient(ellipse 70% 60% at 50% 45%, #1c1236 0%, #0e0a18 60%, #07040d 100%);
+}
+/* Vidro fosco de verdade (não só uma cor opaca): borra o que passa atrás — arestas, pontos, o leque — em vez de escondê-las. */
+.map-glass {
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.map-flow {
+  stroke-dasharray: 2 14;
+  animation: map-flow 1.6s linear infinite;
+}
+@keyframes map-flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+.map-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: map-draw 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes map-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.map-pop {
+  animation: map-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes map-pop {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+.map-spin {
+  animation: map-spin 22s linear infinite;
+}
+@keyframes map-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.map-pulse {
+  animation: map-pulse 3.2s ease-in-out infinite;
+}
+@keyframes map-pulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.12);
+  }
+}
+
 dialog::backdrop {
   background: rgb(7 4 13 / 0.55);
   backdrop-filter: blur(3px);
@@ -485,6 +625,70 @@ dialog::backdrop {
  * Painel: glow sutil atrás do conteúdo (Dashboard v2, Parte 1). Fixo e atrás de tudo — não
  * empurra layout, não aparece na impressão do certificado (outro @media print cobre esse caso).
  */
+/*
+ * Painel v3: cards com borda e um leve brilho roxo no topo; no tema escuro, a arte espacial
+ * (public/painel-hero.webp) atrás do cabeçalho, ocupando a largura toda do <main> e sumindo para
+ * baixo e para a esquerda. O contêiner da página é `relative isolate` (AppShell): o z-index -1 fica
+ * atrás do conteúdo mas acima do fundo. A largura usa vw porque o contêiner é centralizado no <main>
+ * (248px de sidebar a partir de lg); o <main> corta o que sobra (overflow-x: clip).
+ */
+.dash-card {
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--color-accent) 7%, var(--color-panel)), var(--color-panel) 55%);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 5%, transparent);
+}
+
+.painel-hero {
+  position: absolute;
+  z-index: -1;
+  top: -80px;
+  height: 460px;
+  inset-inline: calc(50% - 50vw);
+  pointer-events: none;
+  display: none;
+  background: url("/painel-hero.webp") right 20% / cover no-repeat;
+  mask-image: linear-gradient(to bottom, #000 35%, transparent);
+}
+@media (min-width: 1024px) {
+  .painel-hero {
+    top: -40px;
+    inset-inline: calc(50% - (100vw - 248px) / 2);
+  }
+}
+[data-theme="dark"] .painel-hero {
+  display: block;
+}
+
+.receita-banner-art {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 220px;
+  background: url("/painel-hero.webp") 24% 62% / 900px auto no-repeat;
+  mask-image: linear-gradient(to right, #000 45%, transparent);
+  opacity: 0.9;
+}
+.wave-hand {
+  transform-origin: 70% 75%;
+  animation: wave-hand 2.2s ease-in-out 0.5s 2;
+}
+@keyframes wave-hand {
+  0%, 60%, 100% { rotate: 0deg; }
+  10%, 30% { rotate: 14deg; }
+  20% { rotate: -8deg; }
+  40% { rotate: -4deg; }
+  50% { rotate: 10deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave-hand { animation: none; }
+}
+@media (max-width: 1023px) {
+  .receita-banner-art {
+    width: 100%;
+    opacity: 0.25;
+  }
+}
+
 .painel-glow {
   position: fixed;
   inset: 0;
