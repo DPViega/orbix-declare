@@ -25,7 +25,7 @@ import { api } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { formatBRL, formatBRLShort, formatDate, formatDateMedium, formatInt, formatPct, formatQty, monthLabel } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { cn, Skeleton } from "@/components/ui";
+import { cn, Select, Skeleton } from "@/components/ui";
 import { TokenIcon } from "@/components/token-icon";
 import { EVENT_TYPES, TYPE_COLOR, TYPE_ICON } from "@/components/event-type";
 
@@ -663,18 +663,15 @@ export function TypeSummary({ events, loading }: { events: TaxEvent[] | null; lo
   return (
     <section className="dash-card flex flex-col gap-4 px-6 py-5">
       <CardHeader icon={SquaresFourIcon} title={ty.title}>
-        <label className="sr-only" htmlFor="type-summary-metric">
-          {ty.metric}
-        </label>
-        <select
-          id="type-summary-metric"
+        <Select
+          label={ty.metric}
           value={metric}
-          onChange={(e) => setMetric(e.target.value as "count" | "value")}
-          className="h-9 rounded-xl border border-line2 bg-bg px-2.5 text-[13px] text-ink"
-        >
-          <option value="count">{ty.byCount}</option>
-          <option value="value">{ty.byValue}</option>
-        </select>
+          onChange={setMetric}
+          options={[
+            { value: "count", label: ty.byCount },
+            { value: "value", label: ty.byValue },
+          ]}
+        />
       </CardHeader>
       {loading && !events ? (
         <Skeleton className="h-[180px]" />

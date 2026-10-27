@@ -40,7 +40,7 @@ import {
 } from "@/lib/format";
 import { downloadText, reportToCsv, triggerDownload } from "@/lib/report-file";
 import { buildReviewPackage } from "@/lib/review-package";
-import { Badge, Button, ButtonLink, Card, InlineError, Input, Kicker, PageHeader, Panel, Skeleton, StateBlock } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, InlineError, Input, Kicker, PageHeader, Panel, Select, Skeleton, StateBlock } from "@/components/ui";
 import { Table, Td } from "@/components/table";
 import { useI18n } from "@/lib/i18n";
 import { DemoNotice } from "@/components/demo-notice";
@@ -537,16 +537,18 @@ function ReviewAction({
         ) : (
           <label className="flex flex-col gap-1.5 text-[13px] font-medium" htmlFor={`${item.id}-class`}>
             {t.report.classification}
-            <select
+            <Select
               id={`${item.id}-class`}
+              label={t.report.classification}
               value={classification}
-              onChange={(e) => setClassification(e.target.value as EventType | "")}
+              onChange={setClassification}
               disabled={!usable}
-              className="h-11 w-full rounded-xl border border-line2 bg-bg px-3.5 text-sm text-ink disabled:opacity-60"
-            >
-              <option value="">{t.report.classifyPlaceholder}</option>
-              {(["swap", "perp", "funding"] as const).map((type) => <option key={type} value={type}>{t.eventType[type]}</option>)}
-            </select>
+              triggerClassName="h-11 w-full px-3.5 text-sm"
+              options={[
+                { value: "", label: t.report.classifyPlaceholder },
+                ...(["swap", "perp", "funding"] as const).map((type) => ({ value: type, label: t.eventType[type] })),
+              ]}
+            />
           </label>
         )}
         <div className="grid grid-cols-2 gap-3 rounded-lg bg-bg px-3 py-2.5 text-xs">

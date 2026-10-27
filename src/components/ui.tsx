@@ -7,8 +7,8 @@
  */
 import Image from "next/image";
 import Link from "next/link";
-import { forwardRef } from "react";
-import { CircleNotchIcon, type Icon } from "@phosphor-icons/react";
+import { forwardRef, useEffect, useId, useRef, useState } from "react";
+import { CaretDownIcon, CheckIcon, CircleNotchIcon, type Icon } from "@phosphor-icons/react";
 
 export function cn(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -231,6 +231,128 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
     />
   );
 });
+
+/**
+ * Dropdown com visual próprio (mesmo padrão do MonthPicker) no lugar do <select> nativo: a lista
+ * aberta de um <select> é desenhada pelo sistema operacional, não pela página — não dá pra dar
+ * estilo nela. Troca o <select>/<option> por um botão + listbox próprios, com teclado e aria.
+ */
+export function Select<T extends string>({
+  value,
+  onChange,
+  options,
+  label,
+  id,
+  disabled = false,
+  triggerClassName,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: React.ReactNode }[];
+  /** Nome acessível do campo (aparece só pra leitor de tela: o rótulo visível continua de fora, como hoje). */
+  label: string;
+  id?: string;
+  disabled?: boolean;
+  triggerClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const reactId = useId();
+  const listId = id ?? reactId;
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const current = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    if (open) list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        ref={trigger}
+        id={id}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex h-9 max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-line2 bg-bg px-2.5 text-[13px] text-ink transition-colors hover:border-soft/60 disabled:cursor-not-allowed disabled:opacity-50",
+          triggerClassName,
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate text-left">{current?.label ?? value}</span>
+        <CaretDownIcon size={13} aria-hidden className={cn("shrink-0 text-muted transition-transform", open && "rotate-180")} />
+      </button>
+      {open && !disabled && (
+        <ul
+          ref={list}
+          role="listbox"
+          aria-label={label}
+          id={listId}
+          onKeyDown={(e) => {
+            const items = Array.from(list.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+            const i = items.indexOf(document.activeElement as HTMLButtonElement);
+            const next =
+              e.key === "ArrowDown"
+                ? i + 1
+                : e.key === "ArrowUp"
+                  ? i - 1
+                  : e.key === "Home"
+                    ? 0
+                    : e.key === "End"
+                      ? items.length - 1
+                      : null;
+            if (next === null) return;
+            e.preventDefault();
+            items[Math.max(0, Math.min(items.length - 1, next))]?.focus();
+          }}
+          className="absolute left-0 z-20 mt-2 max-h-72 min-w-full overflow-auto rounded-xl border border-line bg-panel p-1.5 shadow-frame"
+        >
+          {options.map((o) => (
+            <li key={o.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={o.value === value}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                  trigger.current?.focus();
+                }}
+                className={cn(
+                  "flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-[13px] whitespace-nowrap text-ink transition-colors hover:bg-card",
+                  o.value === value && "bg-chip font-medium text-chip-text",
+                )}
+              >
+                {o.label}
+                {o.value === value && <CheckIcon size={14} aria-hidden className="shrink-0" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /* ---------------- Marca ---------------- */
 

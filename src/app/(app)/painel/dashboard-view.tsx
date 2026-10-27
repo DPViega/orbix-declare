@@ -35,7 +35,7 @@ import {
   shortAddress,
 } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { Button, ButtonLink, Card, Chip, cn, Panel, Skeleton } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, cn, Panel, Select, Skeleton } from "@/components/ui";
 import { MonthPicker } from "@/components/month-picker";
 import { TokenIcon } from "@/components/token-icon";
 import { InteractiveMap } from "@/components/interactive-map";
@@ -448,29 +448,26 @@ function EventsTable({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-[18px]">
         <h2 className="m-0 font-display text-[17px] font-semibold">{t.dashboard.monthEvents}</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="event-network-filter">{t.dashboard.filterByNetwork}</label>
-          <select
-            id="event-network-filter"
+          <Select
+            label={t.dashboard.filterByNetwork}
             value={networkFilter}
-            onChange={(event) => setNetworkFilter(event.target.value as NetworkFilter)}
-            className="h-9 max-w-full rounded-lg border border-line2 bg-bg px-2.5 text-[13px] text-ink"
-          >
-            <option value="all">{t.dashboard.networkAll}</option>
-            <option value="solana">Solana</option>
-            <option value="hyperliquid">Hyperliquid</option>
-          </select>
-          <label className="sr-only" htmlFor="event-wallet-filter">{t.dashboard.filterByWallet}</label>
-          <select
-            id="event-wallet-filter"
+            onChange={setNetworkFilter}
+            options={[
+              { value: "all", label: t.dashboard.networkAll },
+              { value: "solana", label: "Solana" },
+              { value: "hyperliquid", label: "Hyperliquid" },
+            ]}
+          />
+          <Select
+            label={t.dashboard.filterByWallet}
             value={walletFilter}
-            onChange={(event) => setWalletFilter(event.target.value)}
-            className="h-9 max-w-[220px] rounded-lg border border-line2 bg-bg px-2.5 text-[13px] text-ink"
-          >
-            <option value="all">{t.dashboard.walletAll}</option>
-            {wallets.map((wallet) => (
-              <option key={wallet.id} value={wallet.address}>{wallet.label} · {shortAddress(wallet.address)}</option>
-            ))}
-          </select>
+            onChange={setWalletFilter}
+            triggerClassName="max-w-[220px]"
+            options={[
+              { value: "all", label: t.dashboard.walletAll },
+              ...wallets.map((wallet) => ({ value: wallet.address, label: `${wallet.label} · ${shortAddress(wallet.address)}` })),
+            ]}
+          />
           {walletFilter !== "all" && (events ?? []).some((event) => !event.wallet) && (
             <span className="text-xs text-muted">{t.dashboard.walletFilterHint}</span>
           )}

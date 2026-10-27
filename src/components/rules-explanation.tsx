@@ -6,7 +6,7 @@ import { api, type ReportRow, type TaxEvent } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { formatBRL, formatDate, formatPtax, formatQtyFull, formatUnitPriceBRL, monthLabel } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { Badge, Card, IconButton, Skeleton } from "@/components/ui";
+import { Badge, Card, IconButton, Select, Skeleton } from "@/components/ui";
 import { MonthPicker } from "@/components/month-picker";
 
 /** Por que a explicação por regras apareceu: IA indisponível (503) ou cota do mês esgotada (429). */
@@ -72,18 +72,16 @@ export function RulesExplanation({ month, reason, onClose }: { month?: string; r
         <>
           <label className="flex flex-col gap-1.5 text-[13px] text-muted">
             {r.eventLabel}
-            <select
+            <Select
+              label={r.eventLabel}
               value={current.id}
-              onChange={(e) => setSelected(e.target.value)}
-              className="min-h-11 rounded-xl border border-line2 bg-panel px-3 text-sm text-ink"
-            >
-              {list.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {formatDate(e.date)} · {t.eventType[e.type]} · {e.asset}
-                  {e.valueBrl !== null ? ` · ${formatBRL(e.valueBrl)}` : ""}
-                </option>
-              ))}
-            </select>
+              onChange={setSelected}
+              triggerClassName="min-h-11 h-auto py-2.5 px-3 text-sm"
+              options={list.map((e) => ({
+                value: e.id,
+                label: `${formatDate(e.date)} · ${t.eventType[e.type]} · ${e.asset}${e.valueBrl !== null ? ` · ${formatBRL(e.valueBrl)}` : ""}`,
+              }))}
+            />
           </label>
           <p className="m-0 text-[15px] leading-[1.7] text-pretty">{explain(current, row, t)}</p>
           {!!current.pendingReasons?.length && <p className="m-0 text-sm text-warn">{r.pending(current.pendingReasons.join(" · "))}</p>}
