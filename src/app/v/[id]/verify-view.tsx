@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowSquareOutIcon,
   CheckCircleIcon,
@@ -16,6 +16,7 @@ import { useApi } from "@/lib/use-api";
 import { config, explorerTxUrl } from "@/lib/config";
 import { formatDate, formatInt, formatTime } from "@/lib/format";
 import { sha256Hex } from "@/lib/report-file";
+import { checkHashOnChain } from "@/lib/onchain-verify";
 import { Brand, Button, Card, cn, Kicker, Panel, Skeleton, StateBlock, StateIcon } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
@@ -99,6 +100,18 @@ function Result({ data, match }: { data: PublicVerification; match: boolean | nu
   const { t } = useI18n();
   // Modo demonstração: hash e transação são fictícios; nada pode parecer um registro real na Solana.
   const demo = config.useMocks;
+  // Segunda conferência, independente da nossa API: lê a transação direto no RPC público da Solana.
+  const [chain, setChain] = useState<"checking" | "ok" | "mismatch" | "error">("checking");
+  useEffect(() => {
+    if (demo || !data.txSignature) return;
+    let live = true;
+    checkHashOnChain(data.txSignature, data.hash, config.attestationCluster)
+      .then((ok) => live && setChain(ok ? "ok" : "mismatch"))
+      .catch(() => live && setChain("error"));
+    return () => {
+      live = false;
+    };
+  }, [demo, data.txSignature, data.hash]);
   const failed = !data.valid || match === false;
   const verified = data.valid && match === true;
   return (
@@ -140,6 +153,29 @@ function Result({ data, match }: { data: PublicVerification; match: boolean | nu
             </div>
           )}
         </Row>
+        {!demo && data.txSignature && (
+          <Row label={t.verify.chainCheck}>
+            <div className="flex flex-col gap-2">
+              <span
+                aria-live="polite"
+                className={cn("inline-flex items-start gap-1.5 text-sm", chain === "ok" && "text-ok", chain === "mismatch" && "text-danger", chain === "error" && "text-warn")}
+              >
+                {chain === "ok" && <CheckCircleIcon size={17} className="mt-0.5 shrink-0" aria-hidden />}
+                {chain === "mismatch" && <XCircleIcon size={17} className="mt-0.5 shrink-0" aria-hidden />}
+                {chain === "checking" ? t.verify.chainChecking : chain === "ok" ? t.verify.chainOk : chain === "mismatch" ? t.verify.chainMismatch : t.verify.chainError}
+              </span>
+              <a
+                href={explorerTxUrl(data.txSignature, config.attestationCluster)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-accent-text"
+              >
+                {t.common.viewOnExplorer}
+                <ArrowSquareOutIcon size={15} aria-hidden />
+              </a>
+            </div>
+          </Row>
+        )}
         <Row label={t.verify.registeredAt} last>
           <span className="font-mono text-[13px]">
             {formatDate(data.registeredAt)} · {formatTime(data.registeredAt, true)} (BRT)
