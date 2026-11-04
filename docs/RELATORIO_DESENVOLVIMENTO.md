@@ -267,7 +267,7 @@ Medido no Edge headless, do clique até `/painel`: 4,09 s na primeira vez e 1,86
 
 ### 9.6 Competitividade: tarefas do front sem esperar o back — 07/10/2026
 
-Base: [`COMPETITIVIDADE_STATUS.md`](COMPETITIVIDADE_STATUS.md), seção 4. Os quatro itens que o front podia fazer sozinho estão prontos.
+Os quatro itens que o front podia fazer sozinho estão prontos.
 
 1. **Pacote para revisão** (`lib/review-package.ts`; botão em *Relatórios → mês*).
    - Gera no navegador, a partir de `GET /api/report/:mes` e `GET /api/events?month=`, dois arquivos:
@@ -287,7 +287,7 @@ Base: [`COMPETITIVIDADE_STATUS.md`](COMPETITIVIDADE_STATUS.md), seção 4. Os qu
    - Três casos sintéticos de setembro de 2026 da demo: swap com stablecoin, perp com funding e venda com custo informado (antes e depois).
    - O README explica as regras e como reproduzir.
    - `npx tsx examples/verify-demo.ts` confere os 24 valores esperados contra o modo demonstração.
-4. **Teste com usuários** (`docs/TESTE_USUARIOS.md` e `docs/teste-usuarios-registro.csv`).
+4. **Teste com usuários** (`docs/TESTE_USUARIOS.md`).
    - Roteiro de 30 min com a mesma tarefa para 5 pessoas e 1 contador.
    - Mede o tempo do jeito atual e com o Orbix, dúvidas, erros, pendências resolvidas e confiança de 1 a 5.
    - Inclui regras de privacidade e como ler os resultados.

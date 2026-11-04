@@ -1,7 +1,6 @@
 # Teste com usuários · roteiro e medição
 
 **Meta:** 5 pessoas que operam cripto e 1 contador. Todas fazem a mesma tarefa, no mesmo recorte, primeiro do jeito que fazem hoje e depois com o Orbix Declare.
-**Registro:** [`teste-usuarios-registro.csv`](teste-usuarios-registro.csv). Abra no Excel ou no Google Sheets: separador vírgula, uma linha por sessão.
 **Quem observa:** cronometra e anota. Nada é medido dentro do app nesta rodada.
 
 ## 1. Privacidade (antes de tudo)
