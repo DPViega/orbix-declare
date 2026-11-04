@@ -179,7 +179,7 @@ export const en: Messages = {
     progressLabel: "Sync progress",
     autoRetry: (error) => `${error} We'll retry automatically.`,
     whatsHappening: "What's happening",
-    canClose: "You can close this window. We'll let you know when it's done.",
+    canClose: "You can close this window. The read keeps going and the dashboard opens when you come back.",
     stepDone: "Done",
     stepRunning: "In progress",
     stepPending: "Pending",

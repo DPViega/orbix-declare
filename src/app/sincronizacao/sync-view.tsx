@@ -51,8 +51,9 @@ export function SyncView() {
         setSync(s);
         setError(null);
         if (s.state === "done") {
-          await refreshUser();
-          return;
+          // done pode chegar antes do onboarded (ex.: cotação falhou): segue consultando até liberar o painel.
+          const u = await refreshUser();
+          if (!alive || u?.onboarded) return;
         }
         if (s.state === "error") return; // o usuário decide quando tentar de novo
       } catch (err) {
