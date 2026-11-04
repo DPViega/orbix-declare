@@ -630,6 +630,7 @@ export const en: Messages = {
     chainChecking: "Querying Solana through the public RPC…",
     chainOk: "Checked on the blockchain: the transaction exists and its memo contains this hash.",
     chainMismatch: "The transaction exists, but its memo does not contain this hash.",
+    chainNotFound: (network: string) => `Transaction not found on ${network} yet. It may not be confirmed; try again in a few minutes.`,
     chainError: "Could not reach Solana right now. The check through our API is still valid.",
     testNetwork: (network) => `${network} (test network)`,
     fileError: "The file could not be read. Please select it again.",

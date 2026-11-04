@@ -652,6 +652,7 @@ export const pt = {
     chainChecking: "Consultando a Solana pelo RPC público…",
     chainOk: "Conferido na blockchain: a transação existe e o memo contém este hash.",
     chainMismatch: "A transação existe, mas o memo não contém este hash.",
+    chainNotFound: (network: string) => `Transação ainda não encontrada na ${network}. Ela pode não estar confirmada ainda; tente de novo em alguns minutos.`,
     chainError: "Não foi possível consultar a Solana agora. A conferência pela nossa API continua válida.",
     testNetwork: (network: string) => `${network} (rede de testes)`,
     fileError: "Não foi possível ler o arquivo. Tente selecioná-lo novamente.",
