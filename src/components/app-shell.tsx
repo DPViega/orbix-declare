@@ -139,17 +139,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
+  const { status, user } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { t } = useI18n();
   const menuButton = useRef<HTMLButtonElement>(null);
   const drawer = useRef<HTMLDivElement>(null);
+  // Sem a primeira leitura concluída, o painel mostraria números incompletos: volta para a sincronização.
+  const syncing = status === "authenticated" && user !== null && !user.onboarded;
 
   useEffect(() => {
     if (status === "anonymous") router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
-  }, [status, router, pathname]);
+    else if (syncing) router.replace("/sincronizacao");
+  }, [status, syncing, router, pathname]);
 
   useEffect(() => {
     const titles: Record<string, string> = {
@@ -203,7 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [open]);
 
-  if (status !== "authenticated") {
+  if (status !== "authenticated" || syncing) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-bg" aria-busy="true">
         <LogoMark size={36} className="animate-pulse" />
