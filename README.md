@@ -35,7 +35,7 @@ API (orbix-core: ingestion, PTAX, tax engine, AI agent)
 ```
 
 - **Back-end repository:** [ERIKFABIANO/orbix-core](https://github.com/ERIKFABIANO/orbix-core)
-- **Submitted commit (October 12, 2026 deadline):** [`2170dab`](https://github.com/DPViega/orbix-declare/commit/2170dab5376bac468cb0b6a47f679bcb3036ef20), tagged [`colosseum-submission`](https://github.com/DPViega/orbix-declare/tree/colosseum-submission)
+- **Submitted commit (October 12, 2026 deadline):** [`2170dab`](https://github.com/ERIKFABIANO/orbix-declare/commit/2170dab5376bac468cb0b6a47f679bcb3036ef20), tagged [`colosseum-submission`](https://github.com/ERIKFABIANO/orbix-declare/tree/colosseum-submission)
 
 ### What changed after October 12
 
@@ -49,7 +49,7 @@ API (orbix-core: ingestion, PTAX, tax engine, AI agent)
 
 As stated in the submission, the front-end code was written during the event, starting on September 29, 2026, from the `create-next-app` skeleton.
 
-The first commit ([`f06d402`](https://github.com/DPViega/orbix-declare/commit/f06d402), September 30) adds 18,175 lines at once because the first two days of work were done locally before the repository was published. Most of those lines are not hand-written code:
+The first commit ([`f06d402`](https://github.com/ERIKFABIANO/orbix-declare/commit/f06d402), September 30) adds 18,175 lines at once because the first two days of work were done locally before the repository was published. Most of those lines are not hand-written code:
 
 | Part of the first commit | Lines |
 |---|---|
@@ -87,7 +87,7 @@ Without a back-end, the app runs in **demo mode** with sample data, and every sc
 Requirements: **Node.js 20.9+** (tested with Node 24) and npm.
 
 ```bash
-git clone https://github.com/DPViega/orbix-declare.git
+git clone https://github.com/ERIKFABIANO/orbix-declare.git
 cd orbix-declare
 npm install
 npm run dev
