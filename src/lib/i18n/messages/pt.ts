@@ -180,7 +180,7 @@ export const pt = {
     progressLabel: "Progresso da sincronização",
     autoRetry: (error: string) => `${error} Vamos tentar de novo automaticamente.`,
     whatsHappening: "O que está acontecendo",
-    canClose: "Pode fechar esta janela. Avisamos quando terminar.",
+    canClose: "Pode fechar esta janela. A leitura continua e o painel abre quando você voltar.",
     stepDone: "Concluído",
     stepRunning: "Em andamento",
     stepPending: "Pendente",

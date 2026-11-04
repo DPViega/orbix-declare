@@ -147,7 +147,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const drawer = useRef<HTMLDivElement>(null);
   // Sem a primeira leitura concluída, o painel mostraria números incompletos: volta para a sincronização.
-  const syncing = status === "authenticated" && user !== null && !user.onboarded;
+  // Só quem já tem carteira: o back só grava onboarded com pelo menos uma, e /carteiras precisa abrir para a primeira.
+  const syncing = status === "authenticated" && user !== null && user.hasWallets && !user.onboarded;
 
   useEffect(() => {
     if (status === "anonymous") router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
