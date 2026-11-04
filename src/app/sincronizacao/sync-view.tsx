@@ -14,7 +14,7 @@ import {
 import { api, errorMessage, type StepState, type SyncStatus, type SyncWalletProgress } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { formatDate, formatInt, identityLabel, shortAddress } from "@/lib/format";
-import { Badge, Brand, Button, ButtonLink, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
+import { Badge, Brand, Button, Card, cn, InlineError, Kicker, LogoMark, Panel, Skeleton } from "@/components/ui";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useI18n } from "@/lib/i18n";
 import { welcomeDuration, WelcomeScreen } from "@/components/welcome-screen";
@@ -184,15 +184,15 @@ export function SyncView() {
             </ul>
           </Card>
           {!done && !failed && <p className="m-0 text-[13px] leading-relaxed text-muted">{t.sync.canClose}</p>}
-          {done ? (
-            <Button iconRight={ArrowRightIcon} onClick={() => setWelcoming(welcomeDuration())} className="self-start">
-              {t.common.goToDashboard}
-            </Button>
-          ) : (
-            <ButtonLink href="/painel" variant="secondary" iconRight={ArrowRightIcon} className="self-start">
-              {t.common.goToDashboard}
-            </ButtonLink>
-          )}
+          {/* O painel só abre com a leitura concluída; antes disso os números estariam incompletos. */}
+          <Button
+            iconRight={ArrowRightIcon}
+            onClick={() => setWelcoming(welcomeDuration())}
+            disabled={!done || user?.onboarded !== true}
+            className="self-start"
+          >
+            {t.common.goToDashboard}
+          </Button>
         </aside>
       </div>
     </div>
